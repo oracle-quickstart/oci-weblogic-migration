@@ -28,7 +28,7 @@ from wlsdeploy.aliases import model_constants
 from wlsdeploy.util import path_helper
 from wlsdeploy.util import string_utils
 from wlsdeploy.tool.util.wlst_helper import WlstHelper
-
+from wlsdeploy.exception import exception_helper
 
 
 
@@ -76,17 +76,24 @@ class InfraDiscoverer(Discoverer):
         _method_name = 'discover'
         _logger.entering(class_name=_class_name, method_name=_method_name)
 
-        # _logger.info('WLSDPLY-06600', class_name=_class_name, method_name=_method_name)
-        model_top_folder_name, host = self.get_host_details()
-        discoverer.add_to_model_if_not_empty(self._dictionary, model_top_folder_name, host)
         domain_name = self._discovered_model.get_model_topology()[model_constants.DOMAIN_NAME]
         domain_path = self._discovered_model.get_model_topology()[infra_constants.DOMAIN_HOME_DIR]
 
+        if string_utils.is_empty(domain_path)  or string_utils.is_empty(domain_name):
+            ex = exception_helper.create_discover_exception('WLSDPLY-06023')
+            _logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+            raise ex
+
+
+        # _logger.info('WLSDPLY-06600', class_name=_class_name, method_name=_method_name)
+        model_top_folder_name, host = self.get_host_details()
+        discoverer.add_to_model_if_not_empty(self._dictionary, model_top_folder_name, host)
 
         # Find if domain_path is on a shared mount or volume
         # Not in v1.
         # model_top_folder_name, fs_shared = self.get_fs_details(domain_path)
         # discoverer.add_to_model_if_not_empty(self._dictionary, model_top_folder_name, fs_shared)
+
 
         # Adds OS user, OS group (if linux) who owns weblogic domain directory
         model_top_folder_name, owner = self.get_weblogic_owner_details(domain_path)

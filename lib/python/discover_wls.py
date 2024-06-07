@@ -636,16 +636,22 @@ def __check_and_customize_model(model, model_context, aliases, credential_inject
     except ValidateException, ex:
         __logger.warning('WLSDPLY-06015', ex.getLocalizedMessage(), class_name=_class_name, method_name=_method_name)
 
-    discoverer.add_to_model(model.get_model_resources(), infra_constants.DOMAIN_HOME_DIR,
+    # Custom fields to store DOMAIN_HOME and ORACLE_HOME_DIR
+    # For now storing it under Topology()
+    # holder_dict=model.get_model_resources()
+    # holder_dict=model.get_model_domain_info()
+    holder_dict = model.get_model_topology()
+    discoverer.add_to_model(holder_dict, infra_constants.DOMAIN_HOME_DIR,
                             model_context.get_domain_home())
 
     if model_context.is_remote():
         archive_entry_path = model_context.get_remote_oracle_home()
     else:
         archive_entry_path =model_context.get_effective_oracle_home()
-    discoverer.add_to_model(model.get_model_resources(), infra_constants.ORACLE_HOME_DIR,
+
+    discoverer.add_to_model(holder_dict, infra_constants.ORACLE_HOME_DIR,
                             archive_entry_path)
-    __logger.exiting(_class_name, _method_name)
+    __logger.exiting(class_name=_class_name, method_name=_method_name)
     return model
 
 
