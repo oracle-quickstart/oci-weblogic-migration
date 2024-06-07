@@ -78,12 +78,16 @@ class InfraDiscoverer(Discoverer):
 
         domain_name = self._discovered_model.get_model_topology()[model_constants.DOMAIN_NAME]
         domain_path = self._discovered_model.get_model_topology()[infra_constants.DOMAIN_HOME_DIR]
+        oracle_path = self._discovered_model.get_model_topology()[infra_constants.ORACLE_HOME_DIR] or self._model_context.get_oracle_home()
 
         if string_utils.is_empty(domain_path)  or string_utils.is_empty(domain_name):
             ex = exception_helper.create_discover_exception('WLSDPLY-06023')
             _logger.throwing(ex, class_name=_class_name, method_name=_method_name)
             raise ex
-
+        _logger.finest("WLSDPLY-06102", oracle_path, domain_path)
+        unique_paths = list()
+        unique_paths.append(domain_path)
+        unique_paths.append(oracle_path)
 
         # _logger.info('WLSDPLY-06600', class_name=_class_name, method_name=_method_name)
         model_top_folder_name, host = self.get_host_details()
@@ -103,12 +107,23 @@ class InfraDiscoverer(Discoverer):
         # model_top_folder_name, owner = self.get_weblogic_owner_details(self._model_context.get_model_home())
         # discoverer.add_to_model_if_not_empty(self._dictionary, model_top_folder_name, owner)
 
-        model_top_folder_name, fs = self.get_wls_extra_dir(domain_path,domain_name)
+        # Find all jvms running and filter by domain_name
+        all_running_jvms = self._cmd_helper.get_java_processes(domain_name)
+
+        model_top_folder_name, jdk_home = self.find_jdk_homes(all_running_jvms)
+
+        unique_paths.append(jdk_home)
+        discoverer.add_to_model(self._dictionary, model_top_folder_name, jdk_home)
+
+        model_top_folder_name, fs = self.find_wls_extra_dir(all_running_jvms,unique_paths, domain_name)
         discoverer.add_to_model(self._dictionary, model_top_folder_name, fs)
 
         _logger.exiting(class_name=_class_name, method_name=_method_name)
         return self._dictionary
 
+    def find_jdk_homes(self,jvms):
+        jdk_homes = self._cmd_helper.get_unique_java_homes(jvms)
+        return infra_constants.JAVA_DIR,jdk_homes
     def get_host_details(self):
         """
         Discover hostname, ip, and extras.
@@ -135,44 +150,11 @@ class InfraDiscoverer(Discoverer):
         _logger.exiting(class_name=_class_name, method_name=_method_name)
         return infra_constants.OWNER, result
 
-    def get_wls_extra_dir(self,exclude_path,domain_name):
+    def find_wls_extra_dir(self, jvms, exclude_paths, domain_name):
         _method_name = 'get_wls_extra_dir'
         _logger.entering(class_name=_class_name, method_name=_method_name)
-        extra_dirs_used=OrderedDict()
-        _path_helper = path_helper.get_path_helper()
-        all_running_jvms = self._cmd_helper.get_java_processes(domain_name)
-        if len(all_running_jvms) > 0:
-            # for jvm in all_running_jvms:
-                # assuming first item after split
-                #/u01/app/oracle/jdk/bin/java -server -Xms256m -Xmx512m -XX:CompileThreshold=8000 -cp /u01/app/oracle/middleware/wlserver/server/lib/weblogic-launcher.jar
-                # would return /u01/app/oracle/jdk/bin/java
-                # java_cmd=java_home.split()[0]
-                jdk_homes=self._cmd_helper.get_unique_java_homes(all_running_jvms)
-                # if not java_cmd is None:
-                #     # TODO(joi) check if path is contains env VARIABLES.
-                #     bin_dir=_path_helper.get_parent_directory(java_cmd)
-                #     jdk_home=_path_helper.get_parent_directory(bin_dir)
-                #     if not jdk_home.startswith(exclude_path):
-                #         discoverer.add_to_model(extra_dirs_used, infra_constants.JAVA_DIR, jdk_homes)
-                discoverer.add_to_model(extra_dirs_used,infra_constants.JAVA_DIR,jdk_homes)
-                # jvm_details=self._cmd_helper.get_node_manager_vm()
-                # self._cmd_helper.get_unique_paths_jvm(jvm_details,exclude_path)
-                # jvm_details=self._cmd_helper.get_node_manager_vm()
-                extra_dirs_used=self._cmd_helper.get_unique_paths_in_jvms(all_running_jvms, exclude_path)
-                # jvm_details = self._cmd_helper.get_node_manager_processes()
-                # for value in jvm_details.get_sys_props_dict().itervalues():
-                #     import re
-                #     dir_pattern=self._os_helper.get_directory_regexp()
-                #     if bool(re.match(dir_pattern, value)) and not value.startswith(exclude_path):
-                #         discoverer.add_to_model(extra_dirs_used, infra_constants.NM_HOME_DIR, value)
-                # jvms = self._cmd_helper.get_weblogic_server_processes()
-                # for jvm in jvms:
-                #     for key,value in jvm.get_sys_props_dict().iteritems():
-                #         import re
-                #         dir_pattern = self._os_helper.get_directory_regexp()
-                #         # _logger.info('WLSDPLY-06034', value, class_name=_class_name, method_name=_method_name)
-                #         if bool(re.match(dir_pattern, value)) and not value.startswith(exclude_path):
-                #             discoverer.add_to_model(extra_dirs_used, key, value)
-                _logger.exiting(class_name=_class_name, method_name=_method_name, result=extra_dirs_used)
-                return infra_constants.FILESYSTEM, extra_dirs_used
+        if len(jvms) > 0:
+                extra_dirs=self._cmd_helper.get_unique_paths_in_jvms(jvms, exclude_paths)
+                _logger.exiting(class_name=_class_name, method_name=_method_name, result=extra_dirs)
+                return infra_constants.FILESYSTEM, extra_dirs
 

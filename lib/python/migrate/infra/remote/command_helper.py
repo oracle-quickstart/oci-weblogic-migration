@@ -156,6 +156,7 @@ class CommandHelper(object):
 
     def get_java_processes(self, domain_name):
         _method_name = "get_jdk_processes"
+        #TODO(joi) filter only those related to domain_name
         _logger.entering(class_name=_class_name, method_name=_method_name)
         java_proc=self.get_processes(infra_constants.JAVA_PROCESS_KEY)
         jvm_processes = []
@@ -272,23 +273,29 @@ class CommandHelper(object):
         _method_name = "get_unique_java_homes"
         _logger.entering(class_name=_class_name, method_name=_method_name)
         _path_helper = path_helper.get_path_helper()
-        unique_java_homes=OrderedDict()
+        # unique_java_homes=OrderedDict()
         for jvm in jvm_list:
-            matches=self.find_partial_matches(jvm.get_unsorted_args_list(),self.cmd_builder.get_java_binary_cmd_path())
+            #Attempting to find java homes by filtering out jvms unsorted arguments by bin/java (linux) or java.exe (windows)
+            matches=self.find_partial_matches(jvm.get_unsorted_args_list(),self.cmd_builder.get_java_exec())
             for java_cmd in matches:
                 bin_dir = _path_helper.get_parent_directory(java_cmd)
                 jdk_home = _path_helper.get_parent_directory(bin_dir)
-                # if not jdk_home.startswith(exclude_path):
-                #     discoverer.add_to_model(extra_dirs_used, infra_constants.JAVA_DIR, jdk_home)
-                discoverer.add_to_model(unique_java_homes,jdk_home,infra_constants.JAVA_DIR)
-        _logger.exiting(class_name=_class_name, method_name=_method_name, result=unique_java_homes)
-        return unique_java_homes
+                # discoverer.add_to_model(unique_java_homes,jdk_home,infra_constants.EMPTY)
+                # Should find only one java_home.  Others maybe captured incorrectly.
+                _logger.exiting(class_name=_class_name, method_name=_method_name, result=jdk_home)
+                return jdk_home
+        _logger.exiting(class_name=_class_name, method_name=_method_name)
+        return infra_constants.EMPTY
 
-
-    def get_unique_paths_in_jvms(self, jvms, exclude_path):
-        _method_name = "get_unique_paths_jvm"
+    def get_unique_paths_in_jvms(self, jvms, exclude_patterns):
+        paths=self._get_paths_in_jvms(jvms, exclude_patterns)
+        unique_paths = [path for path in paths.iterkeys()]
+        return self.cmd_builder.get_unique_paths(unique_paths)
+    def list_paths_in_jvms(self,jvms):
+        return self._get_paths_in_jvms(self, jvms, None)
+    def _get_paths_in_jvms(self, jvms, exclude_patterns):
+        _method_name = "_get_paths_in_jvms"
         _logger.entering(class_name=_class_name, method_name=_method_name)
-        print("======================================================================================")
         unique_paths=OrderedDict()
         #
         # jvm.get_xx_args_dict()
@@ -296,33 +303,28 @@ class CommandHelper(object):
         # jvm.get_sys_props_dict()
         # jvm.get_unsorted_args_list()
         for jvm in jvms:
-            # _logger.info('WLSDPLY-06034', jvm.get_arguments_string(), class_name=_class_name, method_name=_method_name)
             for key,value in jvm.get_x_args_dict().iteritems():
-                self._find_unique_dirs_except_pattern(unique_paths, value, key, exclude_path)
+                self._find_unique_dirs_except_pattern(unique_paths, value, key, exclude_patterns)
             for key,value in jvm.get_xx_args_dict().iteritems():
-                self._find_unique_dirs_except_pattern(unique_paths, value, key, exclude_path)
+                self._find_unique_dirs_except_pattern(unique_paths, value, key, exclude_patterns)
             for key,value in jvm.get_sys_props_dict().iteritems():
-                # _logger.info('WLSDPLY-06034', value, class_name=_class_name, method_name=_method_name)
-                # _logger.info('WLSDPLY-06034', key, class_name=_class_name, method_name=_method_name)
-                self._find_unique_dirs_except_pattern(unique_paths,value,key,exclude_path)
+                self._find_unique_dirs_except_pattern(unique_paths,value,key,exclude_patterns)
             for value in jvm.get_unsorted_args_list():
-                self._find_unique_dirs_except_pattern(unique_paths, value, value, exclude_path)
+                self._find_unique_dirs_except_pattern(unique_paths, value, value, exclude_patterns)
             _logger.exiting(class_name=_class_name, method_name=_method_name, result=unique_paths)
         return unique_paths
 
-    def __add_path_except_pattern(self,dictionary,value,key,exclude_pattern):
+    def __add_path_except_pattern(self,dictionary,path,key,exclude_patterns):
         import re
         dir_pattern = self.cmd_builder.get_directory_regexp()
-        if value is not None:
-            print(value)
-            if re.match(dir_pattern, value):
-                print(re.match(dir_pattern, value))
-                if not value.startswith(exclude_pattern):
-                    discoverer.add_to_model(dictionary, value, key)
+        if path is not None:
+            if re.match(dir_pattern, path):
+                if all([not path.startswith(item) for item in exclude_patterns]):
+                    discoverer.add_to_model(dictionary, path, key)
 
-    def _find_unique_dirs_except_pattern(self,unique_paths,value,key,exclude_filter):
+    def _find_unique_dirs_except_pattern(self,unique_paths,value,key,exclude_patterns):
         if isinstance(value, (str,unicode)):
-            self.__add_path_except_pattern(unique_paths,value,key,exclude_filter)
+            self.__add_path_except_pattern(unique_paths,value,key,exclude_patterns)
         elif isinstance(value, OrderedDict):
             for next_key, next_value in value.iteritems():
-                self._find_unique_dirs_except_pattern(unique_paths,next_value,next_key,exclude_filter)
+                self._find_unique_dirs_except_pattern(unique_paths,next_value,next_key,exclude_patterns)

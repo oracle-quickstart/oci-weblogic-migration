@@ -6,7 +6,7 @@ Licensed under the Universal Permissive License v1.0 as shown at https://oss.ora
 import os
 
 
-
+EMPTY = ""
 FAIL = 1
 WARNING = -1
 SUCCESS    = 0

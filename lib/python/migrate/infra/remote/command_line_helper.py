@@ -148,9 +148,48 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
         pattern = r"[/\\](?:(?!\.\s+)\S)+(\.)?"
         return pattern
 
-    def get_java_binary_cmd_path(self):
+    def get_java_exec(self):
         command="bin/java"
         return command
+
+    def get_common_root(self,paths):
+        # Split each path into its components
+        split_paths = [p.split('/') for p in paths]
+        # Find the common prefix among these lists
+        common_components = []
+        for i in range(len(min(split_paths, key=lambda x: len(x)))):
+            component = set([sp[i] for sp in split_paths])
+
+            # If there's more than one unique component at this level, stop searching
+            if len(component) > 1: break
+
+            common_components.extend(list(component))
+
+        return '/'.join(common_components) + '/'
+
+    def get_unique_paths(self,input_list):
+        """
+        This function takes a list of Linux-style paths and returns a list of unique paths,
+        excluding paths that are subfolders of other paths.
+
+        Args:
+            input_list: A list of strings representing Linux-style paths.
+
+        Returns:
+            A list of strings representing unique paths, excluding subfolders.
+        """
+        unique_paths = []
+        for path in input_list:
+            # Check if the path is a subfolder of any existing path
+            is_subfolder = False
+            for existing_path in unique_paths:
+                if path.startswith(existing_path + os.sep):
+                    is_subfolder = True
+                    break
+            # Add the path only if it's not a subfolder
+            if not is_subfolder:
+                unique_paths.append(path)
+        return unique_paths
     # def __readExistingFile2(self):
     #     from wlsdeploy.util.model_translator import FileToPython
     #     from wlsdeploy.logging import platform_logger
