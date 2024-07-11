@@ -13,6 +13,7 @@ from oracle.weblogic.deploy.util import FileUtils
 from oracle.weblogic.deploy.util import TranslateException
 from oracle.weblogic.deploy.util import VariableException
 from oracle.weblogic.deploy.validate import ValidateException
+from oracle.weblogic.deploy.encrypt import EncryptionUtils
 
 
 # from lib.python.migrate.infra.infra_discoverer import InfraDiscoverer
@@ -125,7 +126,7 @@ __optional_arguments = [
 ]
 
 
-def __process_args(args):
+def __process_args(args, is_encryption_supported):
     """
     Process the command-line arguments and prompt the user for any missing information
     :param args: the command-line arguments list
@@ -176,6 +177,7 @@ def _get_domain_path(model_context, model):
     :param model: the model
     :return: the domain path
     """
+    _method_name="_get_domain_path"
     domain_parent = model_context.get_domain_parent_dir()
     if domain_parent is None:
         return model_context.get_domain_home()
@@ -186,117 +188,6 @@ def _get_domain_path(model_context, model):
         __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
         raise ex
 
-
-
-# def __ensure_upload_download_args(argument_map):
-#     _method_name = '__ensure_upload_download_args'
-#
-#     # if CommandLineArgUtil.REMOTE_TEST_FILE_SWITCH in argument_map:
-#     #     if CommandLineArgUtil.LOCAL_OUTPUT_DIR_SWITCH not in argument_map:
-#     #         ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR, 'WLSDPLY-32900',
-#     #                                                    argument_map[CommandLineArgUtil.REMOTE_TEST_FILE_SWITCH])
-#     #         __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#     #         raise ex
-#     # elif CommandLineArgUtil.LOCAL_OUTPUT_DIR_SWITCH in argument_map:
-#     #     ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR, 'WLSDPLY-32901',
-#     #                                                argument_map[CommandLineArgUtil.LOCAL_OUTPUT_DIR_SWITCH])
-#     #     __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#     #     raise ex
-#     #
-#     # if CommandLineArgUtil.LOCAL_TEST_FILE_SWITCH in argument_map:
-#     if CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH not in argument_map:
-#         ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR, 'WLSDPLY-32902',
-#                                                    argument_map[CommandLineArgUtil.LOCAL_TEST_FILE_SWITCH])
-#         __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#         raise ex
-#     # elif CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH in argument_map:
-#     #     ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR, 'WLSDPLY-32902',
-#     #                                                argument_map[CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH])
-#     #     __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#     #     raise ex
-
-
-# def __get_wls_owner_details(model_context):
-#     _method_name = '__get_wls_owner_details'
-#     __logger.entering(class_name=_class_name, method_name=_method_name)
-#
-#     # remote_path = model_context.get_remote_test_file()
-#     # if remote_path is None:
-#     #     return
-#
-#     # local_path = model_context.get_local_output_dir()
-#     exit_code, output=model_context.get_ssh_context()._run_exec_command("df -h /u01")
-#     if exit_code == 0:
-#         result_dict
-#     __logger.exiting(class_name=_class_name, method_name=_method_name, result=output)
-#     return result_dict
-
-# def __get_os_details(model_context):
-#     _method_name = '__do_test_download'
-#     __logger.entering(class_name=_class_name, method_name=_method_name)
-#
-#     remote_path = model_context.get_remote_test_file()
-#     if remote_path is None:
-#         return
-#
-#     local_path = model_context.get_local_output_dir()
-#     # model_context.get_ssh_context().download(remote_path, local_path)
-
-# def __get_fs_details(model_context):
-#     _method_name = '__do_test_download'
-#     __logger.entering(class_name=_class_name, method_name=_method_name)
-#
-#     remote_path = model_context.get_remote_test_file()
-#     if remote_path is None:
-#         return
-#
-#     local_path = model_context.get_local_output_dir()
-#     # model_context.get_ssh_context().download(remote_path, local_path)
-
-# def __discover_wls_installation(model_context):
-#     _method_name = '__do_test_download'
-#     __logger.entering(class_name=_class_name, method_name=_method_name)
-#
-#     remote_path = model_context.get_remote_test_file()
-#     if remote_path is None:
-#         return
-#
-#     local_path = model_context.get_local_output_dir()
-#     model_context.get_ssh_context().download(remote_path, local_path)
-
-# def __discover_wls_installation(model_context):
-#     _method_name = '__do_test_download'
-#     __logger.entering(class_name=_class_name, method_name=_method_name)
-#
-#     remote_path = model_context.get_remote_test_file()
-#     if remote_path is None:
-#         return
-#
-#     local_path = model_context.get_local_output_dir()
-#     model_context.get_ssh_context().download(remote_path, local_path)
-
-# def __do_test_download(model_context):
-#     _method_name = '__do_test_download'
-#     __logger.entering(class_name=_class_name, method_name=_method_name)
-#
-#     remote_path = model_context.get_remote_test_file()
-#     if remote_path is None:
-#         return
-#
-#     local_path = model_context.get_local_output_dir()
-#     model_context.get_ssh_context().download(remote_path, local_path)
-
-#
-# def __do_test_upload(model_context):
-#     _method_name = '__do_test_upload'
-#     __logger.entering(class_name=_class_name, method_name=_method_name)
-#
-#     local_path = model_context.get_local_test_file()
-#     if local_path is None:
-#         return
-#
-#     remote_path = model_context.get_remote_output_dir()
-#     model_context.get_ssh_context().upload(local_path, remote_path)
 
 def __generate_remote_report_json(model_context):
     _method_name = '__generate_remote_report_json'
@@ -373,19 +264,35 @@ def __discover(model, model_context, helper):
         # base_location = LocationContext()
         # __logger.info("WLSDPLY-09005", machine_nodes, unix_machine_nodes, method_name=_method_name, class_name=_class_name)
         nodes=unix_machine_nodes
-    for machine in nodes:
-        node_details = OrderedDict()
-        # print(machine[model_constants.LISTEN_ADDRESS])
-        listen_address=_traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
-        # listen_address = dictionary_utils.get_element(machine, model_constants.LISTEN_ADDRESS)
-        global init_argument_map
-        init_argument_map[CommandLineArgUtil.SSH_HOST_SWITCH]=listen_address
-        per_machine_model_context=__process_args(init_argument_map)
-        # per_machine_model_context=model_context.copy(new_arg_map)
-        host_result=InfraDiscoverer(per_machine_model_context, node_details, base_location, model).discover()
-        discoverer.add_to_model_if_not_empty(hosts_details,machine, host_result)
 
-        # InfraDiscoverer(model_context, model.get_model_resources(), base_location).discover()
+    # Verify tool is running from the same host.
+    if len(nodes)==1 and not model_context.is_ssh():
+        admin_server_name = topology['AdminServerName']
+        if 'Machine' in topology['Server'][admin_server_name]:
+            admin_machine=topology['Server'][admin_server_name]["Machine"]
+            if admin_machine in nodes:
+                #Do local Discovery.  It should include any managed server registered.
+                host_result=InfraDiscoverer(model_context, OrderedDict(), base_location, model).discover()
+                discoverer.add_to_model_if_not_empty(hosts_details,admin_machine, host_result)
+
+        else:
+            #  Todo raise an exception. Could not discover.
+            return None
+    else:
+        for machine in nodes:
+            node_details = OrderedDict()
+            listen_address=_traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
+            global init_argument_map
+            init_argument_map[CommandLineArgUtil.SSH_HOST_SWITCH]=listen_address
+            is_encryption_supported = EncryptionUtils.isEncryptionSupported()
+            if is_encryption_supported:
+                __logger.info('WLSDPLY-20044', init_argument_map, class_name=_class_name, method_name=_method_name)
+            else:
+                __logger.info('WLSDPLY-20045', init_argument_map, class_name=_class_name, method_name=_method_name)
+            per_machine_model_context=__process_args(init_argument_map,is_encryption_supported)
+            host_result=InfraDiscoverer(per_machine_model_context, node_details, base_location, model).discover()
+            discoverer.add_to_model_if_not_empty(hosts_details,machine, host_result)
+
     if len(hosts_details) == 0 :
         #  Todo raise an exception. Could not discover.
         return None
@@ -395,21 +302,6 @@ def __discover(model, model_context, helper):
     __logger.exiting(class_name=_class_name, method_name=_method_name, result=model.get_model_resources())
     return model
 
-
-# def __initialize_remote_path_helper(model_context):
-#     _method_name = '__initialize_remote_path_helper'
-#     _path_helper = path_helper.get_path_helper()
-#     ssh_context = model_context.get_ssh_context()
-#     if path_helper is None:
-#         ex = exception_helper.create_ssh_exception('WLSDPLY-32905')
-#         __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#         raise ex
-#     elif ssh_context is None:
-#         ex = exception_helper.create_ssh_exception('WLSDPLY-32906')
-#         __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#         raise ex
-#
-#     _path_helper.set_remote_path_module(ssh_context.is_remote_system_running_windows())
 
 def __persist_model(model, model_context):
     """

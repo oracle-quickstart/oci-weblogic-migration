@@ -1,0 +1,12 @@
+{
+  "create": [
+    { "name": "fixPassword", "path": "/home/user/fix-password.py" }
+  ],
+  "deploy": [
+  ],
+  "discover": [
+    { "name": "addParentHomes", "path": "/home/domain/mig/wdtconfig/lib/add_homes.py" }
+  ],
+  "update": [
+  ]
+}

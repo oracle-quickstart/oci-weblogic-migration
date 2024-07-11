@@ -46,7 +46,7 @@ import wlsdeploy.util.unicode_helper as str_helper
 _class_name = 'LiftNShiftTopologyDiscoverer'
 _logger = PlatformLogger(discoverer.get_discover_logger_name())
 
-# TODO(joi)  revisit if Override is needed.
+# TODO(joi)  revisit if Override is needed.  Specially method discoverer to perform directly mapping.
 class LiftNShiftTopologyDiscoverer(TopologyDiscoverer):
     """
     Discover the topology part of the model. The resulting data dictionary describes the topology of the domain,

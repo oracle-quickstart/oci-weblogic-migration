@@ -4,6 +4,7 @@ Licensed under the Universal Permissive License v 1.0 as shown at https://oss.or
 """
 import os
 import sys
+import re
 
 from oracle.weblogic.deploy.util import PyOrderedDict as OrderedDict
 
@@ -59,9 +60,11 @@ class InfraDiscoverer(Discoverer):
         Discoverer.__init__(self, model_context, base_location, wlst_mode)
         self._dictionary = deployments_dictionary
         self._discovered_model = discovered_model
+        self._os_helper = RemoteUnixCommandLineHelper()
         ssh_context = model_context.get_ssh_context()
         if self._model_context.is_ssh():
-            if not ssh_context.is_windows:
+            if ssh_context.is_windows:
+                # Todo :  Add WindowsCommandLineHelper
                 self._os_helper = RemoteUnixCommandLineHelper()
         self._cmd_helper=CommandHelper(model_context.is_ssh(), self._os_helper, ssh_context)
 
@@ -84,12 +87,14 @@ class InfraDiscoverer(Discoverer):
             ex = exception_helper.create_discover_exception('WLSDPLY-06023')
             _logger.throwing(ex, class_name=_class_name, method_name=_method_name)
             raise ex
+
         _logger.finest("WLSDPLY-06102", oracle_path, domain_path)
+        #unique_paths contains a list of filesystem directory paths that were already discovered. such us jdk /opt/jdk, domain_homes /opt/domains/mydomain
         unique_paths = list()
         unique_paths.append(domain_path)
         unique_paths.append(oracle_path)
 
-        # _logger.info('WLSDPLY-06600', class_name=_class_name, method_name=_method_name)
+
         model_top_folder_name, host = self.get_host_details()
         discoverer.add_to_model_if_not_empty(self._dictionary, model_top_folder_name, host)
 
@@ -98,36 +103,75 @@ class InfraDiscoverer(Discoverer):
         # model_top_folder_name, fs_shared = self.get_fs_details(domain_path)
         # discoverer.add_to_model_if_not_empty(self._dictionary, model_top_folder_name, fs_shared)
 
-
-        # Adds OS user, OS group (if linux) who owns weblogic domain directory
+        # Adds OS user, OS group (if linux) weblogic domain directory owner
         model_top_folder_name, owner = self.get_weblogic_owner_details(domain_path)
         discoverer.add_to_model_if_not_empty(self._dictionary, model_top_folder_name, owner)
 
-        # # Adds OS user, OS group (if linux) who owns weblogic domain directory
-        # model_top_folder_name, owner = self.get_weblogic_owner_details(self._model_context.get_model_home())
-        # discoverer.add_to_model_if_not_empty(self._dictionary, model_top_folder_name, owner)
 
         # Find all jvms running and filter by domain_name
-        all_running_jvms = self._cmd_helper.get_java_processes(domain_name)
+        all_running_jvms = self._find_running_jvms()
+
+        # Discover node_mgr_jvm.  Should only be one.
+        node_mgr_jvm= self._discover_node_manager(all_running_jvms, domain_name)
+        # discoverer.add_to_model(self._dictionary, infra_constants.NM_VM, node_mgr_jvm)
+        discoverer.add_to_model(self._dictionary, infra_constants.NM_VM, [jvm.get_arguments_string() for jvm in node_mgr_jvm])
+
+
+
+        # Discover admin or wls jvm.
+        wls_servers_jvm=self._discover_weblogic_server_jvms(all_running_jvms)
+        domain_only_jvms = self._get_domain_jvms(wls_servers_jvm,domain_name)
+        discoverer.add_to_model(self._dictionary, infra_constants.WLS_SERVER_VM, [jvm.get_arguments_string() for jvm in domain_only_jvms])
 
         model_top_folder_name, jdk_home = self.find_jdk_homes(all_running_jvms)
-
         unique_paths.append(jdk_home)
         discoverer.add_to_model(self._dictionary, model_top_folder_name, jdk_home)
 
-        model_top_folder_name, fs = self.find_wls_extra_dir(all_running_jvms,unique_paths, domain_name)
+        domain_jvms=node_mgr_jvm + domain_only_jvms
+        model_top_folder_name, fs = self.find_wls_extra_dir(domain_jvms,unique_paths, domain_name)
         discoverer.add_to_model(self._dictionary, model_top_folder_name, fs)
 
         _logger.exiting(class_name=_class_name, method_name=_method_name)
         return self._dictionary
 
+    def _discover_weblogic_server_jvms(self,jvms):
+        return self._cmd_helper.get_weblogic_server_processes(jvms)
+
+    def _discover_node_manager(self,jvms, domain_name):
+        _method_name="_discover_node_manager"
+        _logger.entering(class_name=_class_name, method_name=_method_name)
+        nm_jvms=self._cmd_helper.get_node_manager_vm(jvms)
+        if len(nm_jvms) == 0:
+            #TODO if empty, attempt to look it other way?
+            _logger.info("No Node Manager found",class_name=_class_name, method_name=_method_name)
+            return infra_constants.EMPTY_ARRAY
+        if len(nm_jvms) == 1 :
+            #Assume this is a single node manager per host
+            _logger.exiting(class_name=_class_name, method_name=_method_name)
+            return nm_jvms
+        else:
+            #Attempt to filter by domain_name.
+            expr = r'%s(.*)%s' % (domain_name,infra_constants.NM_JAVA_PROCESS_KEY)
+            nm_jvms=self._cmd_helper.filter_jvms_by_key(nm_jvms,expr)
+        _logger.exiting(class_name=_class_name, method_name=_method_name)
+        return nm_jvms
+
+    def _get_domain_jvms(self,jvms, domain_name):
+        # expr = r'%s(.*)%s' % (infra_constants.JAVA_PROCESS_KEY, domain_name)
+        expr = r'%s(.*)' % domain_name
+        return self._cmd_helper.filter_jvms_by_key(jvms,expr)
+
+    def _find_running_jvms(self):
+        return self._cmd_helper.get_java_processes()
+
     def find_jdk_homes(self,jvms):
         jdk_homes = self._cmd_helper.get_unique_java_homes(jvms)
         return infra_constants.JAVA_DIR,jdk_homes
+
     def get_host_details(self):
         """
         Discover hostname, ip, and extras.
-        :return: model name for the dictionary and the dictionary containing the shared library information
+        :return: infra_constants.DETAILS_KEY, result containing hostname, ip, and extras.
         """
         _method_name = 'get_host_details'
         _logger.entering(class_name=_class_name, method_name=_method_name)

@@ -7,6 +7,7 @@ import os
 
 
 EMPTY = ""
+EMPTY_ARRAY= []
 FAIL = 1
 WARNING = -1
 SUCCESS    = 0
@@ -37,6 +38,9 @@ COLON_SEPARATOR = ":"
 DOMAIN_HOME_DIR = "DomainPath"
 WL_HOME_DIR = "WLPath"
 JAVA_DIR = "JavaPath"
+JAVA_PROC = "JavaProcs"
+NM_VM="NodeManager"
+WLS_SERVER_VM="WeblogicServer"
 NM_HOME_DIR = "NmPath"
 EXTRA_HOME_DIR = "ExtraPath"
 ORACLE_HOME_DIR = "OraclePath"
@@ -49,15 +53,15 @@ DASH_STRING_SEPARATOR="-"
 DOT_STRING_SEPARATOR="."
 JAVA_FLAG_D_SEPARATOR="-D"
 
-FILESYSTEM="fs"
+FILESYSTEM="ExtraOSPaths"
 FILESYSTEM_TYPE="type"
 
-class FS_TYPE():
+class FS_TYPE:
     SHARED = "shared"
     VOLUME = "volume"
 
 
-class Owner():
+class Owner:
     def __init__(self, user_id, username, group_id, group_name, home):
         self.user_id = user_id
         self.username = username

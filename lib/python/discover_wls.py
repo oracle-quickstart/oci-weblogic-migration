@@ -113,7 +113,7 @@ __optional_arguments = [
 ]
 
 
-def __process_args(args):
+def __process_args(args, is_encryption_supported):
     """
     Process the command-line arguments and prompt the user for any missing information
     :param args: the command-line arguments list
@@ -332,6 +332,7 @@ def __discover(model_context, aliases, credential_injector, helper, extra_tokens
                              aliases=aliases, credential_injector=credential_injector).discover()
         # TopologyDiscoverer(model_context, model.get_model_topology(), base_location, wlst_mode=__wlst_mode,
         #                    aliases=aliases, credential_injector=credential_injector).discover()
+        # TODO (joi) revisit if liftNshiftTopologyDiscoverer is needed.
         LiftNShiftTopologyDiscoverer(model_context, model.get_model_topology(), base_location, wlst_mode=__wlst_mode,
                                                                     aliases=aliases, credential_injector=credential_injector).discover()
         ResourcesDiscoverer(model_context, model.get_model_resources(), base_location, wlst_mode=__wlst_mode,
@@ -753,16 +754,6 @@ def main(model_context):
         try:
             model = __discover(model_context, aliases, credential_injector, helper, extra_tokens)
             model = __check_and_customize_model(model, model_context, aliases, credential_injector, extra_tokens)
-
-            # discoverer.add_to_model(model.get_model_topology(), infra_constants.JAVA_HOME_DIR,
-            #                         model_context.get_effective_wl_home)
-            # print("JOI: type %s" % type(model.get_model_topology()))
-            # [infra_constants.DOMAIN_HOME_DIR] = model_context.get_domain_home()
-            # print("JOI:%s" % _class_name)
-            # print("JOI:model_info")
-            # print(model.get_model_domain_info())
-            # print("JOI:topology" )
-            # print(model.get_model_topology())
             __generate_remote_report_json(model_context)
         except DiscoverException, ex:
             __logger.severe('WLSDPLY-06011', _program_name, model_context.get_domain_name(),
