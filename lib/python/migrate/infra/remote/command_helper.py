@@ -65,6 +65,7 @@ class CommandHelper(object):
         self.is_remote=remote
         self.ssh_context=ssh_context
         self.cmd_builder=os_cmd_line_helper
+        self._path_helper = path_helper.get_path_helper()
 
     def get_server_details(self, server=None):
         _method_name = "get_server_details"
@@ -125,6 +126,19 @@ class CommandHelper(object):
             # response="running local"
         _logger.exiting(class_name=_class_name, method_name=_method_name, result=result)
         return result
+
+
+    def download_file_from_remote_server(self, model_context, remote_source_path, local_download_root_directory, file_type):
+        _method_name = 'download_file_from_remote_server'
+        _logger.entering(remote_source_path, local_download_root_directory, file_type,
+                              class_name=_class_name, method_name=_method_name)
+
+        return_path=self._path_helper.download_file_from_remote_server(model_context,remote_source_path,local_download_root_directory,file_type)
+
+
+
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=return_path)
+        return return_path
 
     def get_weblogic_server_processes(self,jvm_list):
         _method_name = "get_weblogic_server_processes"
@@ -316,15 +330,15 @@ class CommandHelper(object):
         """Return a list of unique JAVA_HOMES found in a list of JVM OS processes."""
         _method_name = "get_unique_java_homes"
         _logger.entering(class_name=_class_name, method_name=_method_name)
-        _path_helper = path_helper.get_path_helper()
+        # _path_helper = path_helper.get_path_helper()
         # unique_java_homes=OrderedDict()
         for jvm in jvm_list:
             #Attempting to find java homes by filtering out jvms unsorted arguments by bin/java (linux) or java.exe (windows)
             java_cmd,_=self.cmd_builder.get_java_exec()
             matches=self.find_partial_matches(jvm.get_unsorted_args_list(),java_cmd)
             for java_cmd in matches:
-                bin_dir = _path_helper.get_parent_directory(java_cmd)
-                jdk_home = _path_helper.get_parent_directory(bin_dir)
+                bin_dir = self._path_helper.get_parent_directory(java_cmd)
+                jdk_home = self._path_helper.get_parent_directory(bin_dir)
                 # discoverer.add_to_model(unique_java_homes,jdk_home,infra_constants.EMPTY)
                 # Should find only one java_home.  Others maybe captured incorrectly.
                 _logger.exiting(class_name=_class_name, method_name=_method_name, result=jdk_home)
@@ -379,7 +393,8 @@ class CommandHelper(object):
                 for item in exclude_patterns:
                     if path.startswith(item):
                         return;
-                discoverer.add_to_model(dictionary, path, key)
+                parent=self._path_helper.get_parent_directory(path)
+                discoverer.add_to_model(dictionary, parent, key)
 
     def _find_unique_dirs_except_pattern(self,unique_paths,value,key,exclude_patterns):
         if isinstance(value, (str,unicode)):
@@ -387,3 +402,12 @@ class CommandHelper(object):
         elif isinstance(value, OrderedDict):
             for next_key, next_value in value.iteritems():
                 self._find_unique_dirs_except_pattern(unique_paths,next_value,next_key,exclude_patterns)
+
+    def filter_top_dir(self, f_list):
+        _method_name="filter_top_dir"
+        file_list = list()
+        for item in f_list:
+            if not string_utils.is_empty(item) and len(string_utils.rsplit(item,":")) == 1 :
+                file_list.append(item)
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=file_list)
+        return file_list

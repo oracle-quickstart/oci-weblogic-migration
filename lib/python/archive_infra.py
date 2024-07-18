@@ -7,7 +7,7 @@ The main module for the WebLogic Deploy tool to verify the user's SSH configurat
 import os
 import sys
 
-from oracle.weblogic.deploy.util import SSHException
+from oracle.weblogic.deploy.util import SSHException, WLSDeployArchive
 from oracle.weblogic.deploy.util import CLAException
 from oracle.weblogic.deploy.util import FileUtils
 from oracle.weblogic.deploy.util import TranslateException
@@ -25,9 +25,15 @@ from java.lang import IllegalStateException
 from java.lang import String
 from java.lang import System
 
+
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))),'lib', 'python','migrate','infra'))
-from infra_discoverer import InfraDiscoverer
 import infra_constants
+import common
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))),'lib', 'python','migrate','data'))
+from wls_migration_archive import WLSMigrationArchiver
+
 
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))),'deps', 'wdt','lib','python'))
@@ -40,13 +46,14 @@ from wlsdeploy.tool.util import model_context_helper
 from wlsdeploy.tool.util import wlst_helper
 from wlsdeploy.tool.util.wlst_helper import WlstHelper
 from wlsdeploy.util import path_helper
-
+from wlsdeploy.util import tool_main
 from wlsdeploy.util.cla_utils import CommandLineArgUtil
 from wlsdeploy.util.cla_utils import TOOL_TYPE_DEFAULT
 from wlsdeploy.util.exit_code import ExitCode
 from wlsdeploy.util import env_helper
 from wlsdeploy.tool.discover import discoverer
 from wlsdeploy.json import json_translator
+from wlsdeploy.aliases.wlst_modes import WlstModes
 
 from oracle.weblogic.deploy.util import FileUtils
 from oracle.weblogic.deploy.util import PyOrderedDict as OrderedDict
@@ -93,9 +100,7 @@ wlst_helper.wlst_functions = globals()
 _store_result_environment_variable = '__WLSDEPLOY_STORE_RESULT__'
 
 _program_name = 'verifySSH'
-
-# _class_name = 'verify_ssh'
-_class_name = 'discover_infra'
+_class_name = 'archive_infra'
 __logger = PlatformLogger('wlsdeploy.tool.util')
 
 result_dict = OrderedDict()
@@ -122,6 +127,8 @@ __optional_arguments = [
     CommandLineArgUtil.SSH_PRIVATE_KEY_PASSPHRASE_FILE_SWITCH,
     CommandLineArgUtil.SSH_PRIVATE_KEY_PASSPHRASE_PROMPT_SWITCH,
     CommandLineArgUtil.SSH_HOST_SWITCH,
+    CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH #
+
 ]
 
 
@@ -137,15 +144,10 @@ def __process_args(args, is_encryption_supported):
         cla_util = CommandLineArgUtil(_program_name, __required_arguments, __optional_arguments)
         combined_argument_map = cla_util.process_args(args, TOOL_TYPE_DEFAULT)
         init_argument_map=combined_argument_map
-        # Todo Is process_java_home required?
-        __process_java_home(combined_argument_map)
-
-    # Verify that the domain type is a known type and load its typedef.
-    #
-    domain_typedef = model_context_helper.create_typedef(_program_name, init_argument_map)
-    model_context = model_context_helper.create_context(_program_name, init_argument_map, domain_typedef)
+        __verify_remote_output_dir_argument(init_argument_map)
+    # __process_archive_filename_arg(init_argument_map)
+    model_context = model_context_helper.create_context(_program_name, init_argument_map)
     return model_context
-
 
 def __check_initialize_argument_map():
     global init_argument_map
@@ -154,7 +156,57 @@ def __check_initialize_argument_map():
         return True
     return False
 
-def __process_java_home(optional_arg_map):
+# def __process_archive_filename_arg(argument_map):
+#     """
+#     Validate the archive file name and load the archive file object.
+#     :param argument_map: the optional arguments map
+#     :raises CLAException: if a validation error occurs while loading the archive file object
+#     """
+#     _method_name = '__process_archive_filename_arg'
+#
+#     if CommandLineArgUtil.ARCHIVE_FILE_SWITCH not in argument_map:
+#         archive_file = None
+#         if CommandLineArgUtil.SKIP_ARCHIVE_FILE_SWITCH not in argument_map and \
+#                 CommandLineArgUtil.REMOTE_SWITCH not in argument_map:
+#             ex = exception_helper.create_cla_exception(ExitCode.USAGE_ERROR, 'WLSDPLY-06028')
+#             __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+#             raise ex
+#     elif CommandLineArgUtil.SKIP_ARCHIVE_FILE_SWITCH in argument_map or \
+#             CommandLineArgUtil.REMOTE_SWITCH in argument_map:
+#         ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR,
+#                                                    'WLSDPLY-06033')
+#         __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+#         raise ex
+#     else:
+#         archive_file_name = argument_map[CommandLineArgUtil.ARCHIVE_FILE_SWITCH]
+#         path_helper_obj = path_helper.get_path_helper()
+#         archive_dir_name = path_helper_obj.get_local_parent_directory(archive_file_name)
+#         if not os.path.exists(archive_dir_name):
+#             ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR,
+#                                                        'WLSDPLY-06026', archive_file_name)
+#             __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+#             raise ex
+#
+#         # Delete any existing archive file for discoverDomain so that we always start with a fresh zip file.
+#         archive_file_obj = FileUtils.getCanonicalFile(archive_file_name)
+#         if archive_file_obj.exists() and not archive_file_obj.delete():
+#             ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR,'WLSDPLY-06047',
+#                                                        _program_name, archive_file_name)
+#             __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+#             raise ex
+#
+#         try:
+#             archive_file = WLSDeployArchive(archive_file_name)
+#         except (IllegalArgumentException, IllegalStateException), ie:
+#             ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR,
+#                                                        'WLSDPLY-06013', _program_name, archive_file_name,
+#                                                        ie.getLocalizedMessage(), error=ie)
+#             __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+#             raise ex
+#         argument_map[CommandLineArgUtil.ARCHIVE_FILE] = archive_file
+
+
+def __verify_java_home(optional_arg_map):
     _method_name = '__process_java_home'
     if CommandLineArgUtil.JAVA_HOME_SWITCH in optional_arg_map:
         java_home_name = optional_arg_map[CommandLineArgUtil.JAVA_HOME_SWITCH]
@@ -168,6 +220,18 @@ def __process_java_home(optional_arg_map):
         # The JAVA_HOME environment variable was validated by script.
         __logger.info('WLSDPLY-06027', java_home_name, iae.getLocalizedMessage(),
                       class_name=_class_name, method_name=_method_name)
+
+
+def __verify_remote_output_dir_argument(argument_map):
+    _method_name = '__ensure_upload_download_args'
+    if CommandLineArgUtil.SSH_USER_SWITCH in argument_map or CommandLineArgUtil.REMOTE_SWITCH in argument_map:
+        if not CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH in argument_map:
+            ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR, 'WLSDPLY-32902',
+                                                       argument_map[CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH])
+            __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+            raise ex
+
+
 
 def _get_domain_path(model_context, model):
     """
@@ -219,24 +283,7 @@ def __generate_remote_report_json(model_context):
                          class_name=_class_name, method_name=_method_name)
 
 
-def _traverse(dictionary, *args):
-    """
-    Recursively resolve keys in nested dictionaries.
-    Example: _traverse(model_dict, TOPOLOGY, SERVER, ms1)
-    :return: the last element in the key list
-    """
-    value = dictionary
-    for arg in args:
-        if not isinstance(value, dict):
-            # self.fail('Element ' + arg + ' parent is not a dictionary in ' + '/'.join(list(args)))
-            continue
-        if arg not in value:
-            # self.fail('Element ' + arg + ' not found in ' + '/'.join(list(args)))
-            continue
-        value = value[arg]
-    return value
-
-def __discover(model, model_context, helper):
+def __archive_directories(model, model_context, helper):
     """
     Populate the model from the domain.
     :param model_context: the model context
@@ -252,16 +299,11 @@ def __discover(model, model_context, helper):
     base_location = LocationContext()
     machine_nodes = dictionary_utils.get_dictionary_element(topology, MACHINE)
     unix_machine_nodes = dictionary_utils.get_dictionary_element(topology, UNIX_MACHINE)
+
+    # neither SSH nor WLS Admin Host.  Exception. Stop processing.
     if len(machine_nodes) > 0:
-        # self._create_named_mbeans(MACHINE, machine_nodes, location, log_created=True, delete_now=delete_now)
-        # print("machines"+machine_nodes)
-        # base_location = LocationContext()
         nodes=machine_nodes
     elif len(unix_machine_nodes) > 0:
-        # __logger.info('WLSMIG-06022', unix_machine_nodes, class_name=_class_name, method_name=_method_name)
-        # print("unix_machines"+unix_machine_nodes)
-        # base_location = LocationContext()
-        # __logger.info("WLSDPLY-09005", machine_nodes, unix_machine_nodes, method_name=_method_name, class_name=_class_name)
         nodes=unix_machine_nodes
 
     # Verify tool is running from the same host.
@@ -271,16 +313,20 @@ def __discover(model, model_context, helper):
             admin_machine=topology['Server'][admin_server_name]["Machine"]
             if admin_machine in nodes:
                 #Do local Discovery.  It should include any managed server registered.
-                host_result=InfraDiscoverer(model_context, OrderedDict(), base_location, model).discover()
-                discoverer.add_to_model_if_not_empty(hosts_details,admin_machine, host_result)
+                archive_result=WLSMigrationArchiver(admin_machine,model_context, OrderedDict(), base_location, model).archive()
+                if not infra_constants.SUCCESS == archive_result:
+                    ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902',
+                                                               "ERROR")
+                    __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+                    raise ex
 
-        else:
-            #  Todo raise an exception. Could not discover.
-            return None
+    # else:
+    #     #  Todo raise an exception. Could not discover.
+    #     return None
     else:
         for machine in nodes:
             node_details = OrderedDict()
-            listen_address=_traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
+            listen_address=common.traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
             global init_argument_map
             init_argument_map[CommandLineArgUtil.SSH_HOST_SWITCH]=listen_address
             is_encryption_supported = EncryptionUtils.isEncryptionSupported()
@@ -289,60 +335,17 @@ def __discover(model, model_context, helper):
             else:
                 __logger.info('WLSDPLY-20045', init_argument_map, class_name=_class_name, method_name=_method_name)
             per_machine_model_context=__process_args(init_argument_map,is_encryption_supported)
-            host_result=InfraDiscoverer(per_machine_model_context, node_details, base_location, model).discover()
-            discoverer.add_to_model_if_not_empty(hosts_details,machine, host_result)
-
+            host_result=WLSMigrationArchiver(machine,per_machine_model_context, node_details, base_location, model).archive()
+            if not infra_constants.SUCCESS == host_result:
+                ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902',
+                                                           "ERROR")
+                __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+                raise ex
     if len(hosts_details) == 0 :
         #  Todo raise an exception. Could not discover.
-        return None
-    # discoverer.add_to_model_if_not_empty(machines, MACHINES, hosts_details)
-    discoverer.add_to_model(machines,MACHINES,hosts_details)
-    # InfraDiscoverer(model_context, model.get_model_resources(), base_location).discover()
+        return
     __logger.exiting(class_name=_class_name, method_name=_method_name, result=model.get_model_resources())
-    return model
-
-
-def __persist_model(model, model_context):
-    """
-    Save the model to the specified model file name.
-    :param model: the model to save
-    :param model_context: the model context
-    :raises DiscoverException: if an error occurs while create a temporary file for the model
-                               or while adding it to the archive
-    :raises TranslateException: if an error occurs while serializing the model or writing it to disk
-    """
-    _method_name = '__persist_model'
-
-    __logger.entering(class_name=_class_name, method_name=_method_name)
-
-    global __wlst_mode
-
-    # add model comments to dictionary extracted from the Model object
-    model_dict = model.get_model()
-    message_1 = exception_helper.get_message('WLSDPLY-06039', WebLogicDeployToolingVersion.getVersion(), _program_name)
-    model_dict.addComment(DOMAIN_INFO, message_1)
-    if __wlst_mode == WlstModes.ONLINE:
-        remote_wls_version = model_context.get_remote_wls_version()
-        if remote_wls_version is None:
-            remote_wls_version = 'UNKNOWN'
-
-        message_2 = exception_helper.get_message('WLSDPLY-06043', model_context.get_local_wls_version(),
-                                                 WlstModes.from_value(__wlst_mode), remote_wls_version)
-    else:
-        message_2 = exception_helper.get_message('WLSDPLY-06040', WlstModes.from_value(__wlst_mode),
-                                                 model_context.get_local_wls_version())
-    model_dict.addComment(DOMAIN_INFO, message_2)
-    model_dict.addComment(DOMAIN_INFO, '')
-
-    #todo identify why model_context.get_archive_file is not set.
-    global init_argument_map
-    # model_file_name = model_context.get_archive_file()
-    model_file_name = init_argument_map[CommandLineArgUtil.ARCHIVE_FILE_SWITCH]
-
-    model_file = FileUtils.getCanonicalFile(File(model_file_name))
-    model_translator.PythonToFile(model_dict).write_to_file(model_file.getAbsolutePath())
-
-    __logger.exiting(class_name=_class_name, method_name=_method_name)
+    return
 
 def load_model(program_name, model_context, aliases, filter_type, wlst_mode, validate_crd_sections=True):
     """
@@ -360,23 +363,9 @@ def load_model(program_name, model_context, aliases, filter_type, wlst_mode, val
     """
     _method_name = 'load_model'
 
-    variable_map = {}
-    try:
-        if model_context.get_variable_file():
-            # callers of this method allow multiple variable files
-            variable_map = variables.load_variables(model_context.get_variable_file(), allow_multiple_files=True)
-    except VariableException, ex:
-        __logger.severe('WLSDPLY-20004', program_name, ex.getLocalizedMessage(), error=ex,
-                        class_name=_class_name, method_name=_method_name)
-        tool_exception = \
-            exception_helper.create_exception(aliases.get_exception_type(), 'WLSDPLY-20004', program_name,
-                                              ex.getLocalizedMessage(), error=ex)
-        __logger.throwing(tool_exception, class_name=_class_name, method_name=_method_name)
-        raise tool_exception
-
     model_file_value = model_context.get_model_file()
     try:
-        model_dictionary = cla_helper.merge_model_files(model_file_value, variable_map)
+        model_dictionary = cla_helper.merge_model_files(model_file_value)
     except TranslateException, te:
         __logger.severe('WLSDPLY-09014', program_name, model_file_value, te.getLocalizedMessage(), error=te,
                         class_name=_class_name, method_name=_method_name)
@@ -386,23 +375,7 @@ def load_model(program_name, model_context, aliases, filter_type, wlst_mode, val
         __logger.throwing(tool_exception, class_name=_class_name, method_name=_method_name)
         raise tool_exception
 
-    try:
-        variables.substitute(model_dictionary, variable_map, model_context)
-    except VariableException, ex:
-        __logger.severe('WLSDPLY-20004', program_name, ex.getLocalizedMessage(), error=ex,
-                        class_name=_class_name, method_name=_method_name)
-        tool_exception = \
-            exception_helper.create_exception(aliases.get_exception_type(), 'WLSDPLY-20004', program_name,
-                                              ex.getLocalizedMessage(), error=ex)
-        __logger.throwing(tool_exception, class_name=_class_name, method_name=_method_name)
-        raise tool_exception
-
     filter_helper.apply_filters(model_dictionary, filter_type, model_context)
-
-    # persist_model(model_context, model_dictionary)
-
-    # validate_model(program_name, model_dictionary, model_context, aliases, wlst_mode,
-    #                validate_crd_sections=validate_crd_sections)
 
     return model_dictionary
 
@@ -410,7 +383,7 @@ def load_model(program_name, model_context, aliases, filter_type, wlst_mode, val
 
 def main(model_context):
     """
-    The main entry point for the discoverDomain tool.
+    The main entry point for the archive WLS infra tool.
 
     :param model_context: the model context object
     :return: exit code
@@ -425,12 +398,12 @@ def main(model_context):
     try:
         aliases = Aliases(model_context, wlst_mode=__wlst_mode, exception_type=ExceptionType.DISCOVER)
         model_dictionary = load_model(_program_name, model_context, aliases, "discover", __wlst_mode,
-                                                 validate_crd_sections=False)
+                                      validate_crd_sections=False)
         # set domain home result in model context, for use by deployers and helpers
         model_context.set_domain_home(_get_domain_path(model_context, model_dictionary))
         model = Model(model_dictionary)
-        model_output = __discover(model, model_context, helper)
-        __persist_model(model_output, model_context)
+        __archive_directories(model, model_context, helper)
+
     except CLAException, ex:
         _exit_code = ex.getExitCode()
         __logger.severe('WLSDPLY-06011', _program_name, model_context.get_domain_name(),
@@ -454,4 +427,4 @@ def main(model_context):
 
 # def multi_discover():
 if __name__ == '__main__' or __name__ == 'main':
-    tool_main.run_tool(main, __process_args, sys.argv, _program_name, _class_name, __logger)
+    common.run_tool(main, __process_args, sys.argv, _program_name, _class_name, __logger)

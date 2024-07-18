@@ -10,7 +10,7 @@ import os
 import sys
 # import shutil
 # import io
-# import re
+import re
 # import platform
 
 import infra_constants
@@ -212,22 +212,4 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
             if not is_subfolder:
                 unique_paths.append(path)
         return unique_paths
-    # def __readExistingFile2(self):
-    #     from wlsdeploy.util.model_translator import FileToPython
-    #     from wlsdeploy.logging import platform_logger
-    #     from java.util.logging import Level
-    #     model = FileToPython(self._resources_dir + '/variables-test.yaml', self._use_ordering).parse()
-    #     variable_map = variables.load_variables(self._variables_file)
-    #     variables.substitute(model, variable_map, self.model_context)
-    #     config_dictionary = JsonToPython(target_file).parse()
-    #
-    # def __readExistingFile(self):
-    #     from wlsdeploy.util.model_translator import FileToPython
-    #     from wlsdeploy.logging import platform_logger
-    #     from java.util.logging import Level
-    #     model = FileToPython(self._resources_dir + '/variables-test.yaml', self._use_ordering).parse()
-    #     variable_map = variables.load_variables(self._variables_file)
-    #     variables.substitute(model, variable_map, self.model_context)
-    #     config_dictionary = JsonToPython(target_file).parse()
-
 
