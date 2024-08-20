@@ -71,14 +71,15 @@ variable "wlsserver_image_id" {
 }
 
 variable "wlsserver_image_type" {
-  default     = "platform"
-  description = "Whether to use a platform, Marketplace, or custom image for wlsserver nodes by default. When custom is set, the wlsserver_image_id must be specified."
   type        = string
+  description = "Type of image used for provisioning. Image type must be BYOL or UCM"
+  default     = "platform"
   validation {
-    condition     = contains(["custom", "marketplace", "platform"], var.wlsserver_image_type)
-    error_message = "Accepted values are custom, marketplace, platform"
+    condition     = contains(["platform", "suite-ucm", "ee-ucm", "custom"], var.wlsserver_image_type)
+    error_message = "WLSC-ERROR: wlsserver internal image type not a valid value."
   }
 }
+
 
 variable "wlsserver_image_os" {
   default     = "Oracle Linux"

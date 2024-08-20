@@ -6,6 +6,10 @@ output "joi_wlsserver_pools_with_defaults" {
   value = module.wlsservers[*].wlsserver_pools_with_defaults
 }
 
+output "joi_node_pool_images" {
+  value = local.node_pool_images
+}
+
 output "joi_parsed_images" {
   value = local.parsed_images
 }

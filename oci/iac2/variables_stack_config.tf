@@ -61,11 +61,6 @@
 #  }
 #}
 
-variable "image_mode" {
-  type        = string
-  description = "Type of image used for provisioning. Image type must be BYOL or UCM"
-  default     = "Oracle WebLogic Server BYOL Image"
-}
 
 variable "terms_and_conditions" {
   type        = bool

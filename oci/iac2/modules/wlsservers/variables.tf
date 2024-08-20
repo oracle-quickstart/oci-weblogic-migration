@@ -153,8 +153,8 @@ variable "image_type" {
   description = "Whether to use a platform, Weblogic, or custom image for wlsserver nodes by default when unspecified on a pool. When custom is set, the wlsserver_image_id must be specified."
   type        = string
   validation {
-    condition     = contains(["custom", "marketplace", "platform"], var.image_type)
-    error_message = "Accepted values are custom, marketplace, platform"
+    condition     = contains(["custom", "ucm", "platform"], var.image_type)
+    error_message = "Accepted values are custom, ucm, platform"
   }
 }
 

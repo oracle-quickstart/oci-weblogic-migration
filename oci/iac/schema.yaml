@@ -45,7 +45,7 @@ variableGroups:
       - wls_visibility
       - ssh_public_key
 
-  - title: "Loadbalancer "
+  - title: "Loadbalancer"
     variables:
       - load_balancer_shape
       - loadbalancer_authorized_cidrs_mgmt

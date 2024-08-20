@@ -3,92 +3,101 @@
 
 locals {
 wlsserver_image_id   = coalesce(var.wlsserver_image_custom_id, var.wlsserver_image_platform_id, "none")
-wlsserver_image_type = contains(["platform", "custom"], lower(var.wlsserver_image_type)) ? "custom" : "wls"
+wlsserver_image_type_map = {
+    "custom": "custom",
+    "Oracle WebLogic Server BYOL": "platform"
+    "Oracle Weblogic Suite UCM" : "suite-ucm"
+    "Oracle WebLogic Server Enterprise Edition UCM": "ee-ucm"
+}
+#wlsserver_image_type = contains(["custom"], lower(var.wlsserver_image_type)) ? "custom" : contains(["Oracle WebLogic Server BYOL"], lower(var.wlsserver_image_type)) ? "ucm-ee":"ucm-suite"
+  wlsserver_image_type = lookup(local.wlsserver_image_type_map,var.wlsserver_image_type,null)
 
-wlsserver_cloud_init = var.wlsserver_cloud_init_configure ? [{
+  wlsserver_cloud_init = var.wlsserver_cloud_init_configure ? [{
 content_type = "text/x-shellscript",
-content      = var.wlsserver_pool_mode == "Node Pool" ? var.wlsserver_cloud_init_wls : var.wlsserver_cloud_init_byon
+content      = var.wlsserver_cloud_init_byon
 }] : []
 }
 
+
+
 module "wls" {
-#source    = "github.com/oracle-terraform-modules/terraform-oci-wls.git?ref=5.x&depth=1"
-source = "../../../"
-providers = { oci.home = oci.home }
+  #source    = "github.com/oracle-terraform-modules/terraform-oci-wls.git?ref=5.x&depth=1"
+  source ="../../../../iac2"
+  providers = { oci.home = oci.home }
 
-# Identity
-tenancy_id     = var.tenancy_ocid
-compartment_id = var.compartment_ocid
+  # Identity
+  tenancy_id     = var.tenancy_ocid
+  compartment_id = var.compartment_ocid
 
-create_iam_resources         = true
-#create_iam_autoscaler_policy = var.create_iam_autoscaler_policy ? "always" : "never"  #never - future service
-create_iam_autoscaler_policy = "never"
-create_iam_wlsserver_policy     = var.create_iam_wlsserver_policy ? "always" : "never"
-create_bastion               = false
-create_operator              = false  #false - future service
-create_cluster               = false  #false - future service
+  create_iam_resources         = true
+  create_iam_autoscaler_policy = "never"
+  create_iam_wlsserver_policy     = var.create_iam_wlsserver_policy ? "always" : "never"
+  create_bastion               = false
+  #create_operator              = false
+  create_domain          = var.create_domain  #true
 
-# Network
-create_vcn     = false
-vcn_id         = var.vcn_id
-assign_dns     = var.assign_dns
-wlsserver_nsg_ids = compact([var.wlsserver_nsg_id])
-pod_nsg_ids    = compact([var.pod_nsg_id])
+  # Network
+  create_vcn     = false
+  vcn_id         = var.vcn_id
+  assign_dns     = var.assign_dns
+  wlsserver_nsg_ids = compact([var.wlsserver_nsg_id])
 
-subnets = {
-wlsservers = { create = "never", id = var.wlsserver_subnet_id }
-pods    = { create = "never", id = var.pod_subnet_id }
-}
 
-nsgs = {
-wlsservers = { create = "never", id = var.wlsserver_nsg_id }
-adminserver    = { create = "never", id = var.pod_nsg_id }
-}
+  subnets = {
+  wlsservers = { create = "never", id = var.wlsserver_subnet_id }
+  }
 
-# Cluster
-cluster_id              = var.cluster_id
-cni_type                = lower(var.cni_type)
-control_plane_is_public = false # wlsservers only need private
+  nsgs = {
+  wlsservers = { create = "never", id = var.wlsserver_nsg_id }
+  }
 
-# wlsservers
-ssh_public_key   = local.ssh_public_key
-wlsserver_pool_size = var.wlsserver_pool_size
-wlsserver_pool_mode = lookup({
-"Node Pool"       = "node-pool"
-"Instances"       = "instances"
-"Instance Pool"   = "instance-pool",
-"Cluster Network" = "cluster-network",
-}, var.wlsserver_pool_mode, "node-pool")
+# Loadbalancer
+  add_load_balancer=  var.add_load_balancer
 
-wlsserver_image_type       = lower(local.wlsserver_image_type)
-wlsserver_image_id         = local.wlsserver_image_id
-wlsserver_image_os         = var.wlsserver_image_os
-wlsserver_image_os_version = var.wlsserver_image_os_version
-wlsserver_cloud_init       = local.wlsserver_cloud_init
+# Weblogic Servers
+  ssh_public_key   = local.ssh_public_key
+#  ssh_public_key_path = var.ssh_public_key_path
+#wlsserver_pool_size = var.wlsserver_pool_size
+#wlsserver_pool_mode = lookup({
+#"Node Pool"       = "node-pool"
+#"Instances"       = "instances"
+#"Instance Pool"   = "instance-pool",
+#"Cluster Network" = "cluster-network",
+#}, var.wlsserver_pool_mode, "node-pool")
 
-wlsserver_shape = {
-shape            = var.wlsserver_shape
-ocpus            = var.wlsserver_ocpus
-memory           = var.wlsserver_memory
-boot_volume_size = var.wlsserver_boot_volume_size
-}
+  wlsserver_pools=var.wlsserver_pools
 
-wlsserver_pools = {
-format("%v", var.wlsserver_pool_name) = {
-description = lookup({
-"Node Pool"       = "WLS-managed Node Pool"
-"Instances"       = "Self-managed Instances"
-"Instance Pool"   = "Self-managed Instance Pool"
-"Cluster Network" = "Self-managed Cluster Network"
-}, var.wlsserver_pool_mode, "")
-}
-}
+  wlsserver_image_type       = lower(local.wlsserver_image_type)
+  wlsserver_image_id         = local.wlsserver_image_id
+  wlsserver_image_os         = var.wlsserver_image_os
+  wlsserver_image_os_version = var.wlsserver_image_os_version
+  wlsserver_cloud_init       = local.wlsserver_cloud_init
 
-freeform_tags = {
-wlsservers = lookup(var.wlsserver_tags, "freeformTags", {})
-}
+  wlsserver_shape = {
+  shape            = var.wlsserver_shape
+  ocpus            = var.wlsserver_ocpus
+  memory           = var.wlsserver_memory
+  boot_volume_size = var.wlsserver_boot_volume_size
+  }
 
-defined_tags = {
-wlsservers = lookup(var.wlsserver_tags, "definedTags", {})
-}
+  #archive
+  bucket_name = var.bucket_name
+#wlsserver_pools = {
+#format("%v", var.wlsserver_pool_name) = {
+#description = lookup({
+#"Node Pool"       = "WLS-managed Node Pool"
+#"Instances"       = "Self-managed Instances"
+#"Instance Pool"   = "Self-managed Instance Pool"
+#"Cluster Network" = "Self-managed Cluster Network"
+#}, var.wlsserver_pool_mode, "")
+#}
+#}
+
+  freeform_tags = {
+    wlsservers = lookup(var.wlsserver_tags, "freeformTags", {})
+  }
+
+  defined_tags = {
+    wlsservers = lookup(var.wlsserver_tags, "definedTags", {})
+  }
 }

@@ -95,3 +95,9 @@ output "wlsserver_pool_ips" {
   description = "Created wlsserver instance private IPs by pool for available modes ('node-pool', 'instance')."
   value       = local.wlsserver_count_expected > 0 ? try(one(module.wlsservers[*].wlsserver_pool_ips), null) : null
 }
+
+output "wls_domain_name" {
+  description = "Migrated Weblogic Domain name"
+  value       =  local.wls_domain_name
+}
+
