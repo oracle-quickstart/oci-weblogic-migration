@@ -37,3 +37,27 @@ export WLS_MIG_OUTPUT=$WLS_MIG_HOME/output
 #                               nodemanager/*.id
 #                               nodemanager/*.lck
 #                               tnsnames.ora
+
+
+#TODO:  Aug 13th
+#- Check block volume names
+# module.compute.module.middleware_volume_attach.oci_core_volume_attachment.these["-block-volume-attach-01"] will be created
+# + resource "oci_core_volume_attachment" "these" {
+# + attachment_type                     = "iscsi"
+# + availability_domain                 = (known after apply)
+# + chap_secret                         = (known after apply)
+# + chap_username                       = (known after apply)
+# + compartment_id                      = (known after apply)
+# + device                              = (known after apply)
+# + display_name                        = "-block-volume-attach-1"
+##########
+#- Check block volume mount points
+#- Update Loadbalancer IP addresses
+# Warning: Deprecated attribute
+# │
+# │   on modules/lb/loadbalancer/outputs.tf line 10, in output "wls_loadbalancer_ip_addresses":
+# │   10:   value       = oci_load_balancer_load_balancer.wls_loadbalancer.ip_addresses
+# │
+# │ The attribute "ip_addresses" is deprecated. Refer to the provider documentation for details.
+
+

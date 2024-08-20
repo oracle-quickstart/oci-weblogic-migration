@@ -177,6 +177,8 @@ class InfraDiscoverer(Discoverer):
         _logger.entering(class_name=_class_name, method_name=_method_name)
         #Todo get IP  # get Hostname
         result = self._cmd_helper.get_server_details()
+        hostname= self._cmd_helper.get_server_hostname()
+        result[infra_constants.HOSTING_SERVER_KEY]=hostname
         _logger.exiting(class_name=_class_name, method_name=_method_name)
         return  infra_constants.DETAILS_KEY,result
 

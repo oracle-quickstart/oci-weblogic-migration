@@ -94,6 +94,7 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
         return command,args
 
     def get_hostname(self):
+        # remote_host = self.getRemoteHostname()
         command = '/usr/bin/hostname'
         args = "| cat"
         return command, args

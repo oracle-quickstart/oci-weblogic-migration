@@ -411,3 +411,11 @@ class CommandHelper(object):
                 file_list.append(item)
         _logger.exiting(class_name=_class_name, method_name=_method_name, result=file_list)
         return file_list
+
+    def get_server_hostname(self):
+        hostname=""
+        if self.is_remote:
+            hostname=self.ssh_context._ssh_client.getRemoteHostname()
+        else:
+            hostname=self.cmd_builder.get_hostname()
+        return hostname
