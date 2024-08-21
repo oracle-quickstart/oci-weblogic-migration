@@ -6,7 +6,8 @@ output "state_id" { value = module.wls.state_id }
 
 # Network
 output "wlsserver_subnet_id" { value = var.wlsserver_subnet_id }
-output "wlsserver_nsg_id" { value = var.wlsserver_nsg_id }
+output "managedserver_nsg_id" { value = var.managedserver_nsg_id }
+output "adminserver_nsg_id" { value = var.adminserver_nsg_id }
 
 # Identity
 output "dynamic_group_ids" { value = module.wls.dynamic_group_ids }

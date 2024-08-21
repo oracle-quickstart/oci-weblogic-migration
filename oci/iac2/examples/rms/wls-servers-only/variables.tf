@@ -44,7 +44,8 @@ variable "vcn_id" {
   type    = string
 }
 variable "assign_dns" { default = true }
-variable "wlsserver_nsg_id" { default = "" }
+variable "managedserver_nsg_id" { default = "" }
+variable "adminserver_nsg_id" { default = "" }
 variable "wlsserver_subnet_id" { type = string }
 
 # Workers: instance

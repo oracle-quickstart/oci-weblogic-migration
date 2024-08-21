@@ -19,11 +19,17 @@ variable "wlsserver_is_public" {
   type        = bool
 }
 
-variable "wlsserver_nsg_ids" {
-  default     = []
-  description = "An additional list of network security group (NSG) IDs for node security. Combined with 'nsg_ids' specified on each pool."
-  type        = list(string)
-}
+#variable "managedserver_nsg_ids" {
+#  default     = []
+#  description = "An additional list of network security group (NSG) IDs for node security for every Weblogic Mananged Server. Combined with 'nsg_ids' specified on each pool."
+#  type        = list(string)
+#}
+#
+#variable "adminserver_nsg_ids" {
+#  default     = []
+#  description = "An additional list of network security group (NSG) IDs for node security for every Weblogic Admin Server. Combined with 'nsg_ids' specified on each pool."
+#  type        = list(string)
+#}
 
 #Pools is just a grouping of WLS Servers. Create either by pool definition for common attributes or per instance
 variable "wlsserver_pools" {

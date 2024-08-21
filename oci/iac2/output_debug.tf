@@ -30,3 +30,10 @@ output "joi_data_volume_ids" {
   value = module.wlsservers[*].oci_volumes
 }
 
+output "joi_adminserver_nsg_ids" {
+  value = coalescelist([module.network.adminserver_nsg_id])
+}
+
+output "joi_managedserver_nsg_ids" {
+  value = coalescelist([module.network.wlsserver_nsg_id])
+}

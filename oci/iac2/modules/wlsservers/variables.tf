@@ -102,7 +102,7 @@ variable "ssh_public_key" {
 
 variable "timezone" { type = string }
 
-variable "wlsserver_nsg_ids" {
+variable "managedserver_nsg_ids" {
   default     = []
   description = "An additional list of network security group (NSG) IDs for node security. Combined with 'nsg_ids' specified on each pool."
   type        = list(string)

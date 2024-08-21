@@ -70,8 +70,7 @@ locals {
     memory                     = local.memory
     mode                       = var.wlsserver_pool_mode
     node_labels                = var.node_labels
-    nsg_ids                    = { managedserver = var.wlsserver_nsg_ids, adminserver=var.adminserver_nsg_ids, both=compact(concat(var.wlsserver_nsg_ids,var.adminserver_nsg_ids)) }
-    adminserver_nsg_ids        = [] # empty pool-specific default
+    nsg_ids                    = { managedserver = var.managedserver_nsg_ids, adminserver=var.adminserver_nsg_ids, both=compact(concat(var.managedserver_nsg_ids,var.adminserver_nsg_ids)) }
     ocpus                      = local.ocpus
     os                         = var.image_os
     os_version                 = var.image_os_version

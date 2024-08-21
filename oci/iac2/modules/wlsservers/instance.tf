@@ -118,6 +118,7 @@ resource "oci_core_instance" "wlsservers" {
     assign_public_ip          = each.value.assign_public_ip
     nsg_ids                   = each.value.nsg_ids
     subnet_id                 = each.value.subnet_id
+    hostname_label = each.value.hostname
 #TODO: JOI: enable pre-release
 #    defined_tags              = each.value.defined_tags
 #    freeform_tags             = each.value.freeform_tags

@@ -40,15 +40,14 @@ module "wls" {
   create_vcn     = false
   vcn_id         = var.vcn_id
   assign_dns     = var.assign_dns
-  wlsserver_nsg_ids = compact([var.wlsserver_nsg_id])
-
 
   subnets = {
-  wlsservers = { create = "never", id = var.wlsserver_subnet_id }
+    wlsservers = { create = "never", id = var.wlsserver_subnet_id }
   }
 
   nsgs = {
-  wlsservers = { create = "never", id = var.wlsserver_nsg_id }
+    managedserver = { create = "never", id = var.managedserver_nsg_id }
+    adminserver = { create = "never", id = var.adminserver_nsg_id }
   }
 
 # Loadbalancer
