@@ -23,12 +23,12 @@ locals {
   inventory_file_name = format("%s/%s/%s", path.module, var.wls_discovery_folder, var.wls_discovery_filename)
   wls_data            = jsondecode(file(local.inventory_file_name))
   wls_topology        = try(local.wls_data["topology"], [])
-  wls_machines        = try(local.wls_data["resources"]["Machines"], [])
+  wls_machines        = try(local.wls_data["resources"]["Machines"], {})
   wls_servers         = try(local.wls_topology["Server"],[])
-  users = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.uname])
-  groups = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gname])
-  uid = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.uid])
-  gid = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gid])
+  os_users = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.uname])
+  os_groups = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gname])
+  os_uid = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.uid])
+  os_gid = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gid])
   jdk_home= distinct([for machine in local.wls_data.resources.Machines : machine.JavaPath])
   domain_path= local.wls_topology.DomainPath
   oracle_home= local.wls_topology.OraclePath
@@ -165,30 +165,62 @@ locals{
 #  display_name   = format("%s-%s",local.wls_domain_name,n)
 #  hostname_label =  ! can(regex(local.ValidIpAddressRegex,x.DETAILS.Hostname)) ? element(split(local.DOT,x.DETAILS.Hostname),0) : n
 #  oci_instances = [for machines in local.wls_machines : merge(item, {newProp = "XYZ"})]
+#  num_vm_instances = length(local.wls_machines)
+
   machine_placement = {for k,wls in local.wls_servers: wls.Machine => k ...}
-  indexed_machine_placement = sort(flatten([for k,v in local.machine_placement : k]))
-  machine_nsgs =  {for k,wls in local.machine_placement: k =>  contains(wls,local.wls_adminserver_name) && length(wls) > 1? concat(module.network.adminserver_nsg_id ,module.network.wlsserver_nsg_id) : ! contains(wls,local.wls_adminserver_name) ? module.network.wlsserver_nsg_id: module.network.adminserver_nsg_id }
-  oci_instances = {
-      for n, x in local.wls_machines : n => {
-
-        #      "managedserver1" : {
-        #    "Machine" : "machinename1",
-        #    "Cluster" : "testcluster",
-        # display_name = domain+cluster+n
-        availability_domain = index(local.indexed_machine_placement,n)
-        display_name   = format("%s-%s", local.wls_domain_name, n)
-        #TODO: JOI replace shape
-        shape          = startswith(x["DETAILS"]["OS_VERSION"], local.LINUX_8) ? local.LINUX_8 : startswith(x["DETAILS"]["OS_VERSION"], local.LINUX_9) ? local.LINUX_9 : local.LINUX_8
-        # defaulting to Linux 8 if nothing is set.
+  wls_machines_pivot      = try(local.wls_data.resources.Machines, {})
+  host_details              = [for k, wls in local.machine_placement : { hostlabel = lookup(local.wls_machines_pivot, k).DETAILS.Hostname, host_type = contains(wls, local.wls_adminserver_name) && length(wls) > 1 ? "both" : !contains(wls, local.wls_adminserver_name) ? local.MANAGED_SERVER_KEY : local.ADMINSERVER_KEY }]
 
 
-        #TODO: JOI hostname_label rules
-        #    if Hostname is FQDN. then if ! no VCN,  register private view.
-        #    else  IP will be replace with "hostname" + subnet
 
-        hostname_label  = try(x.DETAILS.Hostname, null) != null ?  !can(regex(local.ValidIpAddressRegex, x.DETAILS.Hostname)) ? element(split(local.DOT, x.DETAILS.Hostname), 0) : n : n
-        #TODO : JOI enable feature existing subnets and existing nsgs.
-        compute_nsg_ids =  local.machine_nsgs[n] # local.use_existing_subnets ? local.existing_compute_nsg_ids : local.machine_nsgs[n]
-      }
+  #  testdomain-vm-instance = {
+  #    description = "Testdomain Instance",
+  #    mode        = "instance",
+  #    size        = 3,
+  #    #    node_labels = {
+  #    #      "role" = "wlsserver",
+  #    #      "domain" = "testdomain",
+  #    #      "type" = "adminserver"
+  #    #    },
+  #    #      hostnames = [[{hostlabel="first", host_type="admin" }],[{hostlabel="second", host_type="managed"}],[{hostlabel="third", host_type="both"}]]
+  #    host_details = [{hostlabel="first", host_type="adminserver" },{hostlabel="second", host_type="managedserver"},{hostlabel="third", host_type="both"}]
+  #  },
+
+  wls_instance_params = {
+    "${local.wls_domain_name}-vms" = {
+      description  = "${local.wls_domain_name} Instances",
+      mode         = "instance",
+      size         = local.num_oci_instances,
+      host_details = local.host_details,
+      #    node_labels = {
+      #      "role" = "wlsserver",
+      #      "domain" = "testdomain",
+      #      "type" = "adminserver"
+      #    },
+    }
   }
+
+#  oci_instances = {
+#      for n, x in local.wls_machines : n => {
+#
+#        #      "managedserver1" : {
+#        #    "Machine" : "machinename1",
+#        #    "Cluster" : "testcluster",
+#        # display_name = domain+cluster+n
+##        availability_domain = index(local.indexed_machine_placement,n)
+#        display_name   = format("%s-%s", local.wls_domain_name, n)
+#        #TODO: JOI replace shape
+#        shape          = startswith(x["DETAILS"]["OS_VERSION"], local.LINUX_8) ? local.LINUX_8 : startswith(x["DETAILS"]["OS_VERSION"], local.LINUX_9) ? local.LINUX_9 : local.LINUX_8
+#        # defaulting to Linux 8 if nothing is set.
+#
+#
+#        #TODO: JOI hostname_label rules
+#        #    if Hostname is FQDN. then if ! no VCN,  register private view.
+#        #    else  IP will be replace with "hostname" + subnet
+#
+#        hostname_label  = try(x.DETAILS.Hostname, null) != null ?  !can(regex(local.ValidIpAddressRegex, x.DETAILS.Hostname)) ? element(split(local.DOT, x.DETAILS.Hostname), 0) : n : n
+#        #TODO : JOI enable feature existing subnets and existing nsgs.
+#        compute_nsg_ids =  local.machine_nsgs[n] # local.use_existing_subnets ? local.existing_compute_nsg_ids : local.machine_nsgs[n]
+#      }
+#  }
 }

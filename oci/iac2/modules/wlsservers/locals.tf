@@ -7,6 +7,7 @@ locals {
   memory           = lookup(var.shape, "memory", 4)
   ocpus            = max(1, lookup(var.shape, "ocpus", 1))
   shape            = lookup(var.shape, "shape", "VM.Standard.E4.Flex")
+  # TODO:  JOI: move sizes and file system to a map(any)
   block_volume_mw_size = 251
   block_volume_jdk_size = 102
   block_volume_domain_size = 253
@@ -21,7 +22,6 @@ locals {
   block_volume_jdk_mountpath="/opt/jdk"
 
 
-#TODO:  JOI init block volume sizes
   block_storage_devices_defaults = [
      {
       name = "middleware"
@@ -49,6 +49,7 @@ locals {
   }
 
   wlsserver_pool_defaults = {
+    hostname                   = ""
     allow_autoscaler           = false
     assign_public_ip           = var.assign_public_ip
     autoscale                  = false
@@ -69,7 +70,7 @@ locals {
     memory                     = local.memory
     mode                       = var.wlsserver_pool_mode
     node_labels                = var.node_labels
-    nsg_ids                    = [] # empty pool-specific default
+    nsg_ids                    = { managedserver = var.wlsserver_nsg_ids, adminserver=var.adminserver_nsg_ids, both=compact(concat(var.wlsserver_nsg_ids,var.adminserver_nsg_ids)) }
     adminserver_nsg_ids        = [] # empty pool-specific default
     ocpus                      = local.ocpus
     os                         = var.image_os
@@ -162,28 +163,16 @@ locals {
         lookup(pool, "freeform_tags", {})
       )
 
-      #TODO:  JOI - nsg_ids = managedserver or adminserver or both ?
-      # Combine global and pool-specific NSGs
-      nsg_ids      = compact(concat(var.wlsserver_nsg_ids, pool.nsg_ids))
-      adminserver_nsg_ids = compact(concat(var.adminserver_nsg_ids, pool.adminserver_nsg_ids))
-#      pods_nsg_ids = compact(concat(var.pod_nsg_ids, pool.pod_nsg_ids))
+#      #TODO:  JOI - nsg_ids = managedserver or adminserver or both ?
+#      # Combine global and pool-specific NSGs
+#      nsg_ids      = compact(concat(var.wlsserver_nsg_ids, pool.nsg_ids))
+#      adminserver_nsg_ids = compact(concat(var.adminserver_nsg_ids, pool.adminserver_nsg_ids))
 
-#      # Add a node label for cluster autoscaler where scheduling is supported
-#      node_labels = merge(
-#        {
-#          "wls.oraclecloud.com/tf.module"          = "terraform-oci-wls"
-#          "wls.oraclecloud.com/tf.state_id"        = var.state_id
-#          "wls.oraclecloud.com/tf.workspace"       = terraform.workspace
-#          "wls.oraclecloud.com/pool.name"          = pool_name
-#          "wls.oraclecloud.com/pool.mode"          = pool.mode
-#          "wls.oraclecloud.com/cluster_autoscaler" = pool.allow_autoscaler ? "allowed" : "disabled"
-#        },
-#        pool.autoscale ? { "wls.oraclecloud.com/cluster_autoscaler" = "managed" } : {},
-#        pool.node_labels,
-#      )
+
     }) if tobool(pool.create)
   }
 
+  # modes = instance or instance-pool.  Future version instance-pool
   enabled_modes = distinct([for w in values(local.enabled_wlsserver_pools) : w.mode])
 
   # Number of nodes expected from enabled wlsserver pools
@@ -196,33 +185,33 @@ locals {
 #    for k, v in local.enabled_wlsserver_pools : tobool(v.drain) ? lookup(v, "size", var.wlsserver_pool_size) : 0
 #  ])
 
-  # Enabled wlsserver_pool map entries for node pools
-  enabled_node_pools = {
-    for k, v in local.enabled_wlsserver_pools : k => v
-    if lookup(v, "mode", "") == "node-pool"
-  }
+#  # Enabled wlsserver_pool map entries for node pools
+#  enabled_node_pools = {
+#    for k, v in local.enabled_wlsserver_pools : k => v
+#    if lookup(v, "mode", "") == "node-pool"
+#  }
 
-  # Enabled wlsserver_pool map entries for virtual node pools
-  enabled_virtual_node_pools = {
-    for k, v in local.enabled_wlsserver_pools : k => v
-    if lookup(v, "mode", "") == "virtual-node-pool"
-  }
+#  # Enabled wlsserver_pool map entries for virtual node pools
+#  enabled_virtual_node_pools = {
+#    for k, v in local.enabled_wlsserver_pools : k => v
+#    if lookup(v, "mode", "") == "virtual-node-pool"
+#  }
 
-  # Enabled wlsserver_pool map entries for instance pools
-  enabled_instance_configs = {
-    for k, v in local.enabled_wlsserver_pools : k => v
-    if contains(["cluster-network", "instance-pool"], lookup(v, "mode", ""))
-  }
+#  # Enabled wlsserver_pool map entries for instance pools
+#  enabled_instance_configs = {
+#    for k, v in local.enabled_wlsserver_pools : k => v
+#    if contains(["cluster-network", "instance-pool"], lookup(v, "mode", ""))
+#  }
 
-  # Enabled wlsserver_pool map entries for instance pools
-  enabled_instance_pools = {
-    for k, v in local.enabled_wlsserver_pools : k => v if lookup(v, "mode", "") == "instance-pool"
-  }
+#  # Enabled wlsserver_pool map entries for instance pools
+#  enabled_instance_pools = {
+#    for k, v in local.enabled_wlsserver_pools : k => v if lookup(v, "mode", "") == "instance-pool"
+#  }
 
   # Enabled wlsserver_pool map entries for individual instances
   enabled_instances = { for e in concat([], [
     for k, v in local.enabled_wlsserver_pools : [
-      for i in range(0, lookup(v, "size", 0)) : merge(v, { "key" = k, "index" = i })
+      for i in range(0, lookup(v, "size", 0)) : merge(v, { "key" = k, "index" = i , "hostname"=v.host_details[i].hostlabel , "nsg_ids"=lookup(v.nsg_ids,v.host_details[i].host_type)  })
     ] if lookup(v, "mode", "") == "instance"
   ]...) : format("%v-%v", lookup(e, "key"), lookup(e, "index")) => e }
 

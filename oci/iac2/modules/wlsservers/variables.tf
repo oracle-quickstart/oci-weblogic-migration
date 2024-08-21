@@ -73,7 +73,7 @@ variable "wlsserver_pool_mode" {
   type        = string
   validation {
     condition     = contains(["instance", "instance-pool"], var.wlsserver_pool_mode)
-    error_message = "Accepted values are instnace.  Future Version include instance-pool"
+    error_message = "Accepted values are instance.  Future Version to include instance-pool"
   }
 }
 

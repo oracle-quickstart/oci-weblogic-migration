@@ -161,7 +161,8 @@
                     "OS_VERSION" : "8",
                     "Arch" : "x86_64",
                     "OS" : "oracle",
-                    "Kernel" : "206.153.7.el8uek.x86_64"
+                    "Kernel" : "206.153.7.el8uek.x86_64",
+                    "Hostname" : "second"
                 },
                 "Owner" : {
                     "uid" : "1001",

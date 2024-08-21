@@ -149,7 +149,7 @@ variable "add_load_balancer" {
 
 #Pools is just a grouping of WLS Servers. Create either by pool definition for common attributes or per instance
 variable "wlsserver_pools" {
-  #  default     = {}
+  default     = {}
   description = "Tuple of Weblogic Server definitions grouped as pools. where each key maps to the OCID of an OCI resource, and value contains its definition."
   type        = any
 }

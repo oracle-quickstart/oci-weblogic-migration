@@ -24,4 +24,6 @@ locals{
   #DISCOVERY
   FOLDER="discovered"
   WLS_DISCOVERY_FILE_NAME="wlsdomain.json"
+  ADMINSERVER_KEY="adminserver"
+  MANAGED_SERVER_KEY="managedserver"
 }

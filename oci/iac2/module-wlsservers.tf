@@ -18,6 +18,9 @@ locals {
 #    if tobool(lookup(v, "create", true)) && tobool(lookup(v, "allow_autoscaler", false))
 #  ]))
   create_domain_enabled = var.create_domain #|| coalesce(var.cluster_id, "none") != "none"
+  weblogic_server_instance_details =  length(try(var.wlsserver_pools,{}))>0 ? var.wlsserver_pools : local.wls_instance_params
+  #TODO : JOI replace oracle with schema input.
+  os_user =  try(one(local.os_users),"oracle")
 }
 
 # Default wlsservers sub-module implementation for OKE cluster
@@ -34,7 +37,7 @@ module "wlsservers" {
 
   # Domain-wide
   wlsdomain_dns            = var.custom_dns
-  wlsserver_pools     = var.wlsserver_pools
+  wlsserver_pools     = local.weblogic_server_instance_details
   resource_name_prefix = local.wls_domain_name
 
 
@@ -70,6 +73,14 @@ module "wlsservers" {
   defined_tags     = local.wlsservers_defined_tags
   freeform_tags    = local.wlsservers_freeform_tags
   use_defined_tags = var.use_defined_tags
+
+  #OS WLS
+  user = local.os_user
+  user_id = one(local.os_uid)
+  group = one(local.os_groups)
+  group_id = one(local.os_gid)
+
+  #OS Mount Points
 
   depends_on = [
     module.iam,

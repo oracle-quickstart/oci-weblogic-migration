@@ -21,13 +21,6 @@ data "oci_core_images" "cpe_compute_images" {
   sort_order               = "DESC"
 }
 
-# CPE Device Shapes per vendor
-data "oci_core_cpe_device_shapes" "cpe" {
-  filter {
-    name   = "cpe_device_info.vendor"
-    values = [var.cpe_vendor]
-  }
-}
 
 ## Latest Image for Example LDAP Compute Instance
 #data "oci_core_images" "ldap_compute_images" {
