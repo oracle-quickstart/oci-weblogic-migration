@@ -11,3 +11,14 @@ variable "await_node_readiness" {
     error_message = "Accepted values are 'none', 'one' or 'all'."
   }
 }
+
+variable "restore_wls_archives" {
+  default     = "none"
+  description = "Restore Weblogic Domain Archives to one, all or none instances."
+  type        = string
+
+  validation {
+    condition     = contains(["none", "one", "all"], var.restore_wls_archives)
+    error_message = "Accepted values are 'none', 'one' or 'all'."
+  }
+}

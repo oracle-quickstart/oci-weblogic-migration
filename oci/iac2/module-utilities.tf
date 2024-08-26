@@ -3,7 +3,7 @@
 
 
 module "utilities" {
-  count  = local.create_domain_enabled && local.operator_enabled ? 1 : 0
+  count  = local.create_domain_enabled && var.bastion_public_ip != null ? 1 : 0 #&& var.create_bastion
   source = "./modules/utilities"
   region = var.region
 
@@ -16,7 +16,15 @@ module "utilities" {
   ssh_private_key = sensitive(local.ssh_private_key)
   bastion_host    = local.bastion_public_ip
   bastion_user    = var.bastion_user
-  operator_host   = local.operator_private_ip
-  operator_user   = var.operator_user
+#  operator_host   = local.operator_private_ip
+#  operator_user   = var.operator_user
 
+#  bucket_name          = ""
+  resource_name_prefix = local.wls_domain_name
+  wlsserver_pools      = one(module.wlsservers[*].wlsserver_instance_changes)
+  restore_wls_archives     = var.restore_wls_archives
+  user = local.os_user
+  user_id = local.os_uid
+  group = local.os_groups
+  group_id = local.os_gid
 }

@@ -25,10 +25,10 @@ locals {
   wls_topology        = try(local.wls_data["topology"], [])
   wls_machines        = try(local.wls_data["resources"]["Machines"], {})
   wls_servers         = try(local.wls_topology["Server"], [])
-  os_users            = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.uname])
-  os_groups           = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gname])
-  os_uid              = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.uid])
-  os_gid              = distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gid])
+  os_users            = one(distinct([for owner in local.wls_data.resources.Machines : owner.Owner.uname]))
+  os_groups           = one(distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gname]))
+  os_uid              = one(distinct([for owner in local.wls_data.resources.Machines : owner.Owner.uid]))
+  os_gid              = one(distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gid]))
   jdk_home            = distinct([for machine in local.wls_data.resources.Machines : machine.JavaPath])
   domain_path         = local.wls_topology.DomainPath
   oracle_home         = local.wls_topology.OraclePath
@@ -146,7 +146,7 @@ locals {
 
   #  wls_dynamic_server_enabled = [for cluster in local.wls_topology["Cluster"] : cluster["DynamicServer"]["ServerTemplate"] if try(cluster["DynamicServer"], false)]
   wls_dynamic_server_ports = distinct(compact(flatten([
-    for name, dynserver in try(lookup(local.wls_topology, "ServerTemplate", null), {}) :
+    for name, dynserver in try(lookup(local.wls_topology, "ServerTemplate", {}), {}) :
     [try(dynserver["ListenPort"]), try(dynserver["AdministrationPort"], null), try(dynserver["SSL"]["ListenPort"], null)]
   ])))
 
@@ -171,7 +171,8 @@ locals {
   wls_machines_pivot = try(local.wls_data.resources.Machines, {})
   host_details = [for k, wls in local.machine_placement : {
     hostlabel = ! can(regex(local.ValidIpAddressRegex,lookup(local.wls_machines_pivot, k).DETAILS.Hostname)) ? element(split(local.DOT,lookup(local.wls_machines_pivot, k).DETAILS.Hostname),0) : local.ASSIGN_NEW ,
-    host_type = contains(wls, local.wls_adminserver_name) && length(wls) > 1 ? local.BOTH_KEY : !contains(wls, local.wls_adminserver_name) ? local.MANAGED_SERVER_KEY : local.ADMINSERVER_KEY
+    host_type = contains(wls, local.wls_adminserver_name) && length(wls) > 1 ? local.BOTH_KEY : !contains(wls, local.wls_adminserver_name) ? local.MANAGED_SERVER_KEY : local.ADMINSERVER_KEY ,
+    wls_machine_name = k
     }
   ]
 

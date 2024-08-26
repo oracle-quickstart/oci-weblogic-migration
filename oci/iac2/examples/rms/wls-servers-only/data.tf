@@ -5,6 +5,12 @@ variable "ssh_public_key" {
   default = null
   type    = string
 }
+
+variable "ssh_public_key_path" {
+  default = null
+  type    = string
+}
+
 variable "ssh_kms_vault_id" {
   default = null
   type    = string

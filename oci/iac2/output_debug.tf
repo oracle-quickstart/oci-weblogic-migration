@@ -1,5 +1,9 @@
 output "joi_enabled_instances" {
-  value = module.wlsservers[*].enabled_wlsserver_pools
+  value = module.wlsservers[*].enabled_instances
+}
+
+output "joi_instances_changes" {
+  value = module.wlsservers[*].wlsserver_instance_changes
 }
 
 output "joi_wlsserver_pools_with_defaults" {
@@ -20,6 +24,10 @@ output "joi_image_ids" {
 
 output "joi_wlsserver_instances" {
   value = module.wlsservers[*].wlsserver_instances
+}
+
+output "joi_wlsserver_instance_ips" {
+  value = module.wlsservers[*].wlsserver_pool_ips
 }
 
 output "joi_oci_volumes" {

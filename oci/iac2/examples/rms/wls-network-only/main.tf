@@ -120,4 +120,5 @@ module "wls-migration" {
     bastion = lookup(var.bastion_tags, "definedTags", {})
     vcn     = {}
   }
+  wlsserver_pools = {}
 }

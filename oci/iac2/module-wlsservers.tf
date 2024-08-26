@@ -20,7 +20,7 @@ locals {
   create_domain_enabled            = var.create_domain #|| coalesce(var.cluster_id, "none") != "none"
   weblogic_server_instance_details = length(try(var.wlsserver_pools, {})) > 0 ? var.wlsserver_pools : local.wls_instance_params
   #TODO : JOI replace oracle with schema input.
-  os_user = try(one(local.os_users), "oracle")
+  os_user = local.os_users
 }
 
 # Default wlsservers sub-module implementation for OKE cluster
@@ -79,9 +79,9 @@ module "wlsservers" {
 
   #OS WLS
   user     = local.os_user
-  user_id  = one(local.os_uid)
-  group    = one(local.os_groups)
-  group_id = one(local.os_gid)
+  user_id  = local.os_uid
+  group    = local.os_groups
+  group_id = local.os_gid
 
   #OS Mount Points
 

@@ -21,6 +21,8 @@ variableGroups:
       - create_domain
       - wlsserver_pools
       - create_iam_autoscaler_policy
+      - ssh_public_key_path
+      - ssh_private_key_path
 
   - title: "Identity"
     variables:

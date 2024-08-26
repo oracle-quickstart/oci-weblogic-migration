@@ -20,7 +20,7 @@ output "wlsserver_pool_mode" { value = var.wlsserver_pool_mode }
 output "wlsserver_shape" { value = var.wlsserver_shape }
 output "wlsserver_pool_size" { value = var.wlsserver_pool_size }
 output "wlsserver_image_id" { value = local.wlsserver_image_id }
-
+output "weblogic_instances_private_ips" { value = module.wls.wlsserver_pool_ips }
 
 output "wlsserver_pool_ids" {
   value = concat(
