@@ -98,19 +98,15 @@ variable "wlsserver_cloud_init_configure" {
   default = true
 }
 variable "wlsserver_cloud_init_wls" {
-  default = <<-EOT
-  #!/usr/bin/env bash
-  curl --fail -H "Authorization: Bearer Oracle" -L0 http://169.254.169.254/opc/v2/instance/metadata/wls_init_script | base64 --decode >/var/run/wls-init.sh
-  bash /etc/wls/wls-install.sh
-  EOT
+  default = ""
   type    = string
 }
 variable "wlsserver_cloud_init_byon" {
   default = <<-EOT
   #!/usr/bin/env bash
-  #apiserver_host="10.0.0.1"
-  #ca_base64="LS0tLS1...LS0tCg==" # kubectl config view --raw -o json | jq -rcM '.clusters[0].cluster["certificate-authority-data"]'
-  bash /etc/wls/wls-install.sh --apiserver-endpoint "$\{apiserver_host}" --kubelet-ca-cert "$\{ca_base64}"
+  # example
+  #adminserver_ip="10.0.0.1"
+  #ca_base64="LS0tLS1...LS0tCg=="
   EOT
   type    = string
 }
@@ -159,3 +155,5 @@ variable "bucket_name" {
   description = "Object Storage Bucket name where WLS archives are stored."
   type = string
 }
+
+variable "bastion_public_ip" {}

@@ -164,7 +164,7 @@ variable "nsgs" {
     bastion  = {}
     int_lb   = {}
     pub_lb   = {}
-    wlsservers  = {}
+    managedserver  = {}
     adminserver = {}
   }
   description = "Configuration for standard network security groups (NSGs).  The 'create' parameter of each entry defaults to 'auto', creating NSGs when other enabled components are expected to utilize them, and may be configured with 'never' or 'always' to force disabled/enabled."
@@ -189,10 +189,10 @@ variable "nsgs" {
   validation {
     condition = alltrue([
     for k, v in var.nsgs :
-    contains(["bastion", "int_lb", "pub_lb", "wlsservers", "adminserver", "fss"], k)
+    contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver", "fss"], k)
     ])
     error_message = format("Invalid NSG keys: %s", jsonencode([for k, v in var.nsgs : k
-    if !contains(["bastion", "int_lb", "pub_lb", "wlsservers", "adminserver","fss"], k)
+    if !contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver","fss"], k)
     ]))
   }
 }

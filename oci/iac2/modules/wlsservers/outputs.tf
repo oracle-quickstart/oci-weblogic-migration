@@ -21,6 +21,7 @@ output "wlsserver_count_expected" {
   value       = local.expected_node_count
 }
 
+
 #output "wlsserver_drain_expected" {
 #  description = "# of nodes expected to be draining in wlsserver pools"
 #  value       = local.expected_drain_count

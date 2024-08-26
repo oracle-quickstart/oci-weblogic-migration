@@ -31,7 +31,6 @@ resource "oci_core_instance" "wlsservers" {
     device = "/dev/oracleoci/oraclevdb"
     display_name = format("mw-%s-%s-%v",var.resource_name_prefix,each.key,var.state_id)
     is_agent_auto_iscsi_login_enabled=true
-#    device="oracle"
     launch_create_volume_details {
       volume_creation_type = "ATTRIBUTES"
       compartment_id = each.value.compartment_id
@@ -43,7 +42,6 @@ resource "oci_core_instance" "wlsservers" {
   // Create and attach a volume
   launch_volume_attachments {
     type = "iscsi"
-#    device="jvm"
     device = "/dev/oracleoci/oraclevdc"
     display_name = format("jdk-%s-%s-%v",var.resource_name_prefix,each.key,var.state_id)
     is_agent_auto_iscsi_login_enabled=true
@@ -58,7 +56,6 @@ resource "oci_core_instance" "wlsservers" {
   // Create and attach a volume
   launch_volume_attachments {
     type = "iscsi"
-#    device="dom"
     device = "/dev/oracleoci/oraclevdd"
     is_agent_auto_iscsi_login_enabled=true
     display_name = format("domain-%s-%s-%v",var.resource_name_prefix,each.key,var.state_id)
@@ -118,6 +115,7 @@ resource "oci_core_instance" "wlsservers" {
     assign_public_ip          = each.value.assign_public_ip
     nsg_ids                   = each.value.nsg_ids
     subnet_id                 = each.value.subnet_id
+    hostname_label = each.value.hostname
 #TODO: JOI: enable pre-release
 #    defined_tags              = each.value.defined_tags
 #    freeform_tags             = each.value.freeform_tags
@@ -135,7 +133,7 @@ resource "oci_core_instance" "wlsservers" {
       wls-initial-node-labels  = join(",", [for k, v in each.value.node_labels : format("%v=%v", k, v)])
       secondary_vnics          = jsonencode(lookup(each.value, "secondary_vnics", {}))
       ssh_authorized_keys      = var.ssh_public_key
-      user_data                = lookup(lookup(data.cloudinit_config.wlsservers, lookup(each.value, "key", ""), {}), "rendered", "")
+      user_data                = lookup(lookup(data.cloudinit_config.wlsservers, each.key, {}), "rendered", "")
     },
 
 #    # Only provide cluster DNS service address if set explicitly; determined automatically in practice.

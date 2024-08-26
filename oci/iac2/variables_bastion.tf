@@ -87,3 +87,10 @@ variable "bastion_upgrade" {
   description = "Whether to upgrade bastion packages after provisioning."
   type        = bool
 }
+
+###TODO: JOI  added on Aug 22nd.  Revisit.
+#variable "bastion_subnet_id" {
+#  default     = null
+#  description = "Whether to upgrade bastion packages after provisioning."
+#  type        = string
+#}

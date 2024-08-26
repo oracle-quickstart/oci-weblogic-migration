@@ -21,6 +21,8 @@ variableGroups:
       - create_domain
       - wlsserver_pools
       - create_iam_autoscaler_policy
+      - ssh_public_key_path
+      - ssh_private_key_path
 
   - title: "Identity"
     variables:
@@ -40,7 +42,7 @@ variableGroups:
       - assign_dns
       - vcn_dns_label
       - wlsserver_subnet_id
-      - wlsserver_nsg_id
+      - managedserver_nsg_id
       - adminserver_nsg_id
 
   - title: "SSH"
@@ -150,7 +152,7 @@ variables:
       hidePrivateSubnet: false
       hideRegionalSubnet: false
       hideAdSubnet: false
-  wlsserver_nsg_id:
+  managedserver_nsg_id:
     title: Weblogic Managed Server Network Security Group
     description: Network Security Groups for the created Weblogic Managed Server node(s), used to configure network access to instances. See <a href=https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengnetworkconfig.htm#securitylistconfig>Security Rule Configuration in ... Network Security Groups</a> for more information.
     type: oci:core:nsg:id
@@ -161,8 +163,8 @@ variables:
       compartmentId: ${compartment_ocid}
       vcnId: ${vcn_id}
   adminserver_nsg_id:
-    title: Admin Server Network Security Group
-    description: Network Security Groups for the created Admin Server node, used to configure network access to instances. See <a href=https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengnetworkconfig.htm#securitylistconfig>Security Rule Configuration in ... Network Security Groups</a> for more information.
+    title: Weblogic AdminServer Network Security Group
+    description: Network Security Groups for the created AdminServer node, used to configure network access to instances. See <a href=https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengnetworkconfig.htm#securitylistconfig>Security Rule Configuration in ... Network Security Groups</a> for more information.
     type: oci:core:nsg:id
     # additionalProps:
     #   allowMultiple: true
@@ -447,7 +449,7 @@ outputGroups:
   - title: Network
     outputs:
       - wlsserver_subnet_id
-      - wlsserver_nsg_id
+      - managedserver_nsg_id
       - adminserver_nsg_id
 #TODO: JOI: output Admin URL
   - title: Domain
@@ -493,7 +495,7 @@ outputs:
   wlsserver_subnet_id:
     title: Subnet
     type: ocid
-  wlsserver_nsg_id:
+  managedserver_nsg_id:
     title: Network Security Group
     type: ocid
   adminserver_nsg_id:

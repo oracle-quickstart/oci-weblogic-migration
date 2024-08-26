@@ -32,14 +32,20 @@ module "wls" {
   create_iam_resources         = true
   create_iam_autoscaler_policy = "never"
   create_iam_wlsserver_policy     = var.create_iam_wlsserver_policy ? "always" : "never"
-  create_bastion               = false
+
   #create_operator              = false
+  # WLS Domain
   create_domain          = var.create_domain  #true
+
+  # Bastion
+  create_bastion               =  false
+  bastion_public_ip =     var.bastion_public_ip
 
   # Network
   create_vcn     = false
   vcn_id         = var.vcn_id
   assign_dns     = var.assign_dns
+
 
   subnets = {
     wlsservers = { create = "never", id = var.wlsserver_subnet_id }
@@ -83,7 +89,6 @@ module "wls" {
   bucket_name = var.bucket_name
   restore_wls_archives = "all"
   await_node_readiness = "all"
-
 #wlsserver_pools = {
 #format("%v", var.wlsserver_pool_name) = {
 #description = lookup({

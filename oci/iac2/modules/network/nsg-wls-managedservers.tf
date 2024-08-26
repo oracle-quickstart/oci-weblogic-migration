@@ -2,7 +2,7 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
-  wlsserver_nsg_config = try(var.nsgs.wlsservers, { create = "never" })
+  wlsserver_nsg_config = try(var.nsgs.managedserver, { create = "never" })
   wlsserver_nsg_create = coalesce(lookup(local.wlsserver_nsg_config, "create", null), "auto")
   wlsserver_nsg_enabled = anytrue([
     local.wlsserver_nsg_create == "always",
@@ -12,7 +12,7 @@ locals {
     ]),
   ])
   # Return provided NSG when configured with an existing ID or created resource ID
-  wlsserver_nsg_id = one(compact([try(var.nsgs.wlsservers.id, null), one(oci_core_network_security_group.wlsservers[*].id)]))
+  wlsserver_nsg_id = one(compact([try(var.nsgs.managedserver.id, null), one(oci_core_network_security_group.wlsservers[*].id)]))
   wlsservers_rules = local.wlsserver_nsg_enabled ? merge(
     {
       "Allow TCP egress from wlsservers to OCI Services" : {

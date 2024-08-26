@@ -7,6 +7,7 @@ locals {
   memory           = lookup(var.shape, "memory", 4)
   ocpus            = max(1, lookup(var.shape, "ocpus", 1))
   shape            = lookup(var.shape, "shape", "VM.Standard.E4.Flex")
+  # TODO:  JOI: move sizes and file system to a map(any)
   block_volume_mw_size = 251
   block_volume_jdk_size = 102
   block_volume_domain_size = 253
@@ -21,7 +22,6 @@ locals {
   block_volume_jdk_mountpath="/opt/jdk"
 
 
-#TODO:  JOI init block volume sizes
   block_storage_devices_defaults = [
      {
       name = "middleware"
@@ -69,8 +69,7 @@ locals {
     memory                     = local.memory
     mode                       = var.wlsserver_pool_mode
     node_labels                = var.node_labels
-    nsg_ids                    = [] # empty pool-specific default
-    adminserver_nsg_ids        = [] # empty pool-specific default
+    nsg_ids                    = { managedserver = var.managedserver_nsg_ids, adminserver=var.adminserver_nsg_ids, both=compact(concat(var.managedserver_nsg_ids,var.adminserver_nsg_ids)) }
     ocpus                      = local.ocpus
     os                         = var.image_os
     os_version                 = var.image_os_version
@@ -82,6 +81,7 @@ locals {
     subnet_id                  = var.wlsserver_subnet_id
     taints                     = [] # empty pool-specific default
     volume_kms_key_id          = var.volume_kms_key_id
+    ports                      = { managedserver = var.wlsserver_ports, adminserver=var.adminserver_ports, both=compact(concat(var.wlsserver_ports,var.adminserver_ports)) }
   }
 
   # Merge desired pool configuration onto default values
@@ -162,28 +162,16 @@ locals {
         lookup(pool, "freeform_tags", {})
       )
 
-      #TODO:  JOI - nsg_ids = managedserver or adminserver or both ?
-      # Combine global and pool-specific NSGs
-      nsg_ids      = compact(concat(var.wlsserver_nsg_ids, pool.nsg_ids))
-      adminserver_nsg_ids = compact(concat(var.adminserver_nsg_ids, pool.adminserver_nsg_ids))
-#      pods_nsg_ids = compact(concat(var.pod_nsg_ids, pool.pod_nsg_ids))
+#      #TODO:  JOI - nsg_ids = managedserver or adminserver or both ?
+#      # Combine global and pool-specific NSGs
+#      nsg_ids      = compact(concat(var.wlsserver_nsg_ids, pool.nsg_ids))
+#      adminserver_nsg_ids = compact(concat(var.adminserver_nsg_ids, pool.adminserver_nsg_ids))
 
-#      # Add a node label for cluster autoscaler where scheduling is supported
-#      node_labels = merge(
-#        {
-#          "wls.oraclecloud.com/tf.module"          = "terraform-oci-wls"
-#          "wls.oraclecloud.com/tf.state_id"        = var.state_id
-#          "wls.oraclecloud.com/tf.workspace"       = terraform.workspace
-#          "wls.oraclecloud.com/pool.name"          = pool_name
-#          "wls.oraclecloud.com/pool.mode"          = pool.mode
-#          "wls.oraclecloud.com/cluster_autoscaler" = pool.allow_autoscaler ? "allowed" : "disabled"
-#        },
-#        pool.autoscale ? { "wls.oraclecloud.com/cluster_autoscaler" = "managed" } : {},
-#        pool.node_labels,
-#      )
+
     }) if tobool(pool.create)
   }
 
+  # modes = instance or instance-pool.  Future version instance-pool
   enabled_modes = distinct([for w in values(local.enabled_wlsserver_pools) : w.mode])
 
   # Number of nodes expected from enabled wlsserver pools
@@ -196,33 +184,38 @@ locals {
 #    for k, v in local.enabled_wlsserver_pools : tobool(v.drain) ? lookup(v, "size", var.wlsserver_pool_size) : 0
 #  ])
 
-  # Enabled wlsserver_pool map entries for node pools
-  enabled_node_pools = {
-    for k, v in local.enabled_wlsserver_pools : k => v
-    if lookup(v, "mode", "") == "node-pool"
-  }
+#  # Enabled wlsserver_pool map entries for node pools
+#  enabled_node_pools = {
+#    for k, v in local.enabled_wlsserver_pools : k => v
+#    if lookup(v, "mode", "") == "node-pool"
+#  }
 
-  # Enabled wlsserver_pool map entries for virtual node pools
-  enabled_virtual_node_pools = {
-    for k, v in local.enabled_wlsserver_pools : k => v
-    if lookup(v, "mode", "") == "virtual-node-pool"
-  }
+#  # Enabled wlsserver_pool map entries for virtual node pools
+#  enabled_virtual_node_pools = {
+#    for k, v in local.enabled_wlsserver_pools : k => v
+#    if lookup(v, "mode", "") == "virtual-node-pool"
+#  }
 
-  # Enabled wlsserver_pool map entries for instance pools
-  enabled_instance_configs = {
-    for k, v in local.enabled_wlsserver_pools : k => v
-    if contains(["cluster-network", "instance-pool"], lookup(v, "mode", ""))
-  }
+#  # Enabled wlsserver_pool map entries for instance pools
+#  enabled_instance_configs = {
+#    for k, v in local.enabled_wlsserver_pools : k => v
+#    if contains(["cluster-network", "instance-pool"], lookup(v, "mode", ""))
+#  }
 
-  # Enabled wlsserver_pool map entries for instance pools
-  enabled_instance_pools = {
-    for k, v in local.enabled_wlsserver_pools : k => v if lookup(v, "mode", "") == "instance-pool"
-  }
+#  # Enabled wlsserver_pool map entries for instance pools
+#  enabled_instance_pools = {
+#    for k, v in local.enabled_wlsserver_pools : k => v if lookup(v, "mode", "") == "instance-pool"
+#  }
 
   # Enabled wlsserver_pool map entries for individual instances
   enabled_instances = { for e in concat([], [
     for k, v in local.enabled_wlsserver_pools : [
-      for i in range(0, lookup(v, "size", 0)) : merge(v, { "key" = k, "index" = i })
+      for i in range(0, lookup(v, "size", 0)) : merge(v, {
+          "key" = k, "index" = i ,
+          "hostname"=v.host_details[i].hostlabel ,   # check attribute host_details by key index and get hostlabel value
+          "nsg_ids"=lookup(v.nsg_ids,v.host_details[i].host_type),  # lookup in pool defaults nsg_ids by host_type [index] and set admin,managed,or both nsgs
+          "wls_machine_name"=v.host_details[i].wls_machine_name,  # get host_details by index and get machine name as discovered by wls inventory file
+          "ports"=lookup(v.ports,v.host_details[i].host_type)}) # lookup in pool defaults ports by host_type [index] and set admin,managed,or both list of ports
     ] if lookup(v, "mode", "") == "instance"
   ]...) : format("%v-%v", lookup(e, "key"), lookup(e, "index")) => e }
 
@@ -248,6 +241,8 @@ locals {
 #  wlsserver_instance_pools     = { for k, v in oci_core_instance_pool.wlsservers : k => merge(v, lookup(local.wlsserver_pools_final, k, {})) }
 #  wlsserver_cluster_networks   = { for k, v in oci_core_cluster_network.wlsservers : k => merge(v, lookup(local.wlsserver_pools_final, k, {})) }
   wlsserver_instances          = { for k, v in oci_core_instance.wlsservers : k => merge(v, lookup(local.wlsserver_pools_final, k, {})) }
+
+
 #  wlsserver_instances = [for k, v in oci_core_instance.wlsservers :  ]
 
 #  # Combined map of outputs by pool name for all modes excluding 'instance' (output separately)
@@ -261,6 +256,7 @@ locals {
 #  # OCIDs of pool resources by pool name for modes: 'node-pool', 'virtual-node-pool', 'instance-pool', 'cluster-network'
 #  wlsserver_pool_ids = { for k, v in local.wlsserver_pools_output : k => v.id }
 
+  # TODO: JOI: DO NOT MODIFY.. USED OUTSIDE
   # Map of pool name to list of instance IP addresses for modes: 'instance'
   wlsserver_instance_ips = {
     for x, y in {
@@ -269,13 +265,42 @@ locals {
     } : x => merge(y...)
   }
 
+  # Map of pool name to list of changes on discovered instance vs oci_core_instances created.
+#  wlsserver_instance_changes = {
+##    for x, y in {
+##    for k, v in local.wlsserver_instances : replace(k, "/-[^-]*$/", "") => # remove index suffix
+##    { lookup(v, "id", "") = lookup(v, "private_ip", null),            # instances grouped by "pool"
+##      wls_machine_name = lookup(lookup(local.enabled_instances,replace(k, "/-[^-]*$/", "")),k).wls_machine_name
+##    }...
+##    } : x => merge(y...)
+#  }
+#  wlsserver_instance_changes = { for k, v in oci_core_instance.wlsservers : k => merge(v, lookup(local.enabled_instances, k, {})) }
+
+#  wlsserver_instance_changes = { for k, v in oci_core_instance.wlsservers : k => merge(v, lookup(local.enabled_instances, k, {})) }
+
+
 #  # Map of pool name to list of instance IP addresses for modes: 'node-pool'
 #  wlsserver_nodepool_ips = {
 #    for k, v in local.wlsserver_node_pools : k => {
 #      for n in lookup(v, "nodes", []) : lookup(n, "id", "") => lookup(n, "private_ip", null)
 #    }
 #  }
+#  wlsserver_instance_changes = { for e in concat([], [
+#  for k, v in local.enabled_wlsserver_pools : [
+#  for i in range(0, lookup(v, "size", 0)) : merge(v, { oci_core_instance.wlsservers[]
+#
+#  }) # lookup in pool defaults ports by host_type [index] and set admin,managed,or both list of ports
+#  ] if lookup(v, "mode", "") == "instance"
+#  ]...) : format("%v-%v", lookup(e, "key"), lookup(e, "index")) => e
+#  }
+    #TODO: for now only 1 pool.. change to multi pool in the future.
+  wlsserver_instance_changes = {
+  for key, instance in local.enabled_instances : key => merge(instance, {
+    private_ip = lookup(lookup(oci_core_instance.wlsservers, key, {}), "private_ip", null)
+  })
+  }
+
 
   # Yields {<pool name> = {<instance id> = <instance ip>}} for modes: 'node-pool', 'instance'
-    wlsserver_pool_ips = merge(local.wlsserver_instance_ips) #, local.wlsserver_nodepool_ips)
+  wlsserver_pool_ips = merge(local.wlsserver_instance_ips) #, local.wlsserver_nodepool_ips)
 }

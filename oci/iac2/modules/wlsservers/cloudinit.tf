@@ -11,10 +11,11 @@ locals {
 
 # https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/cloudinit_config.html
 data "cloudinit_config" "wlsservers" {
-  for_each = { # Skip generation for mode = virtual-node-pool
-    for k, v in local.enabled_wlsserver_pools : k => v
-    if lookup(v, "mode", var.wlsserver_pool_mode) != "virtual-node-pool"
-  }
+#  for_each = { # Skip generation for mode = virtual-node-pool
+#    for k, v in local.enabled_wlsserver_pools : k => v
+#    if lookup(v, "mode", var.wlsserver_pool_mode) != "virtual-node-pool"
+#  }
+  for_each = local.enabled_instances
   gzip          = true
   base64_encode = true
 
@@ -92,33 +93,42 @@ data "cloudinit_config" "wlsservers" {
 #      merge_type = local.default_cloud_init_merge_type
 #    }
 #  }
-  dynamic "part" {
-    for_each = each.value.disable_default_cloud_init ? [] : [1]
-    content {
-      content_type = "text/cloud-config"
-      # https://cloudinit.readthedocs.io/en/latest/reference/modules.html#users-and-groups
-      content      = jsonencode({ users = ["default", var.user] })
-      filename     = "99-user.yml"
-      merge_type = local.default_cloud_init_merge_type
-    }
-  }
 
-  # Bug w/ groups and users : do not support group id and user id
+#  "chpasswd": {
+#    "list": "foobar:foo24barmig",
+#    "expire": false
+#  }
+
+  #TODO: JOI remove backdoor user before release users = ["default", var.user]
   dynamic "part" {
     for_each = each.value.disable_default_cloud_init ? [] : [1]
     content {
       content_type = "text/cloud-config"
       # https://cloudinit.readthedocs.io/en/latest/reference/modules.html#users-and-groups
       content      = jsonencode({
-        runcmd = [
-          "usermod -u ${var.user_id} ${var.user}",
-          "groupmod -g ${var.group_id} ${var.group}",
-        ]
+        users = ["default",{
+          "name": "ilom",
+          "gecos": "Ilom User",
+          "sudo": [
+            "ALL=(ALL) NOPASSWD:ALL"
+          ],
+          "selinux-user": "staff_u",
+          "groups": "wheel,users,adm,systemd-journal",
+          "passwd": "dD/kDJqv.yxxg",
+
+        },
+        {
+          "name":var.user,
+          "uid": var.user_id,
+        }
+        ],
+
       })
-      filename     = "99-user-change-id.yml"
+      filename     = "20-user.yml"
       merge_type = local.default_cloud_init_merge_type
     }
   }
+
 
   #  # TODO: JOI - format and mount disks.
   #  #  # Mount, Format WLS filesystems.
@@ -185,37 +195,33 @@ data "cloudinit_config" "wlsservers" {
         #
       })
       #        #             - [ LABEL=disk2-foo, /foo, xfs, "defaults,nofail,x-systemd.device-timeout=30"]
-      filename   = "99-xdisk-setup.yml"
+      filename   = "40-disk-setup.yml"
       merge_type = local.default_cloud_init_merge_type
     }
   }
 
-  # Bug w/ write_files defer: parent directory created as root if not present.
-  # https://github.com/canonical/cloud-init/pull/916#issuecomment-1254732400
-  # Or: defer not supported on older versions of cloud-init.
-  # Created in tmp first and moved into user's home directory using runcmd.
-    dynamic "part" {
-      for_each = each.value.disable_default_cloud_init ? [] : [1]
-      content {
-        content_type = "text/cloud-config"
-        content      = jsonencode({
-          runcmd = [
-#            "cat /tmp/*.bashrc >> /home/${var.user}/.bashrc && rm /tmp/*.bashrc",
-#            "chmod 600 /home/${var.user}/.bashrc",
-#            "mkdir -p /home/${var.user}/.kube",
-#            "mv /tmp/kubeconfig /home/${var.user}/.kube/config",
-#            "chmod 700 /home/${var.user}/.kube",
-#            "chmod 600 /home/${var.user}/.kube/config",
-            "chown -R ${var.user}:${var.user} ${local.block_volume_domain_mountpath}",
-            "chown -R ${var.user}:${var.user} ${local.block_volume_mw_mountpath}",
-            "chown -R ${var.user}:${var.user} ${local.block_volume_jdk_mountpath}",
-            #"chown -R ${var.user}:${var.user} /home/${var.user}",
-          ]
-        })
-        filename   = "99-yhome.yml"
-        merge_type = local.default_cloud_init_merge_type
-      }
-    }
+#  # Bug w/ write_files defer: parent directory created as root if not present.
+#  # https://github.com/canonical/cloud-init/pull/916#issuecomment-1254732400
+#  # Or: defer not supported on older versions of cloud-init.
+#  # Created in tmp first and moved into user's home directory using runcmd.
+#    dynamic "part" {
+#      for_each = each.value.disable_default_cloud_init ? [] : [1]
+#      content {
+#        content_type = "text/cloud-config"
+#        content      = jsonencode({
+#          runcmd = [
+##            "cat /tmp/*.bashrc >> /home/${var.user}/.bashrc && rm /tmp/*.bashrc",
+##            "chmod 600 /home/${var.user}/.bashrc",
+#            "chown -R ${var.user}:${var.group} ${local.block_volume_domain_mountpath}",
+#            "chown -R ${var.user}:${var.group} ${local.block_volume_mw_mountpath}",
+#            "chown -R ${var.user}:${var.group} ${local.block_volume_jdk_mountpath}",
+#            #"chown -R ${var.user}:${var.user} /home/${var.user}",
+#          ]
+#        })
+#        filename   = "50-home.yml"
+#        merge_type = local.default_cloud_init_merge_type
+#      }
+#    }
 
 #  # Write extra Weblogic configuration to filesystem
 #  dynamic "part" {
@@ -245,14 +251,51 @@ data "cloudinit_config" "wlsservers" {
     for_each = each.value.disable_default_cloud_init ? [] : [1]
     content {
       content_type = "text/x-shellscript"
-      content      = templatefile("${path.module}/templates/cloudinit-wls.tpl", {
-          ports = var.wlsserver_ports
-          temp_oss_mount_point = local.oss_mount_point
-          bucket_name = var.bucket_name
-          user = var.user
+      content      = templatefile("${path.module}/templates/cloudinit-wls-network.tpl", {
+          ports = each.value.ports
       })
 #      content = data.template_file.managed_server_init_script.rendered
-      filename     = "50-wls.sh"
+      filename     = "60-wls-network.sh"
+      merge_type   = local.default_cloud_init_merge_type
+    }
+  }
+
+  # Bug w/ groups and users : do not support group id and user id
+  dynamic "part" {
+    for_each = each.value.disable_default_cloud_init ? [] : [1]
+    content {
+      content_type = "text/x-shellscript"
+      # https://cloudinit.readthedocs.io/en/latest/reference/modules.html#users-and-groups
+      content      = templatefile("${path.module}/templates/cloudinit-wls-user.tpl.sh", {
+        user = var.user
+        GROUP_ID = var.group_id
+        USER_ID = var.user_id
+        group = var.group
+        SSH_PUB_KEY = var.ssh_public_key
+      })
+      filename     = "65-user-change-id.yml"
+      merge_type = local.default_cloud_init_merge_type
+    }
+  }
+
+  # Weblogic startup initialization
+  dynamic "part" {
+    for_each = each.value.disable_default_cloud_init ? [] : [1]
+    content {
+      content_type = "text/x-shellscript"
+      content      = templatefile("${path.module}/templates/cloudinit-wls-restore.tpl", {
+        temp_oss_mount_point = local.oss_mount_point
+        bucket_name = var.bucket_name
+        user = var.user
+        group = var.group
+        block_volume_domain_mountpath = local.block_volume_domain_mountpath
+        block_volume_mw_mountpath = local.block_volume_mw_mountpath
+        block_volume_jdk_mountpath = local.block_volume_jdk_mountpath
+#        middleware_archive=format("%s-%s-weblogic_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
+#        jdk_archive =format("%s-%s-java_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
+#        domain_archive =format("%s-%s-domain_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
+      })
+      filename     = "70-wls-restore.sh"
       merge_type   = local.default_cloud_init_merge_type
     }
   }
