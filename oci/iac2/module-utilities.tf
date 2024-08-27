@@ -27,4 +27,6 @@ module "utilities" {
   user_id = local.os_uid
   group = local.os_groups
   group_id = local.os_gid
+  text_to_replace_in_config = local.wls_config_text_changes
+  wls_domain_path = local.domain_path
 }

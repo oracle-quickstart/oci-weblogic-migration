@@ -30,6 +30,14 @@ variable "await_node_readiness" { type = string }
 #variable "expected_drain_count" { type = number }
 variable "expected_node_count" { type = number }
 variable "restore_wls_archives" { type = string }
+variable "text_to_replace_in_config" {
+  type = any
+  default= {}
+}
+variable "wls_domain_path" {
+  type = string
+  default = "none"
+}
 #variable "wlsserver_instance_private_ips" { type = any }
 #variable "worker_drain_ignore_daemonsets" { type = bool }
 #variable "worker_drain_delete_local_data" { type = bool }

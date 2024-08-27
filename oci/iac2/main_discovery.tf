@@ -170,8 +170,9 @@ locals {
   machine_placement  = { for k, wls in local.wls_servers : wls.Machine => k... }
   wls_machines_pivot = try(local.wls_data.resources.Machines, {})
   host_details = [for k, wls in local.machine_placement : {
-    hostlabel = ! can(regex(local.ValidIpAddressRegex,lookup(local.wls_machines_pivot, k).DETAILS.Hostname)) ? element(split(local.DOT,lookup(local.wls_machines_pivot, k).DETAILS.Hostname),0) : local.ASSIGN_NEW ,
-    host_type = contains(wls, local.wls_adminserver_name) && length(wls) > 1 ? local.BOTH_KEY : !contains(wls, local.wls_adminserver_name) ? local.MANAGED_SERVER_KEY : local.ADMINSERVER_KEY ,
+    #TODO: JOI: If value is ip address, then should it be replaced with Machine hostanme ?  and not assign new hostname ?
+    hostlabel        = !can(regex(local.ValidIpAddressRegex, lookup(local.wls_machines_pivot, k).DETAILS.Hostname)) ? element(split(local.DOT, lookup(local.wls_machines_pivot, k).DETAILS.Hostname), 0) : local.ASSIGN_NEW,
+    host_type        = contains(wls, local.wls_adminserver_name) && length(wls) > 1 ? local.BOTH_KEY : !contains(wls, local.wls_adminserver_name) ? local.MANAGED_SERVER_KEY : local.ADMINSERVER_KEY,
     wls_machine_name = k
     }
   ]
@@ -206,27 +207,40 @@ locals {
     }
   }
 
-  #  oci_instances = {
-  #      for n, x in local.wls_machines : n => {
-  #
-  #        #      "managedserver1" : {
-  #        #    "Machine" : "machinename1",
-  #        #    "Cluster" : "testcluster",
-  #        # display_name = domain+cluster+n
-  ##        availability_domain = index(local.indexed_machine_placement,n)
-  #        display_name   = format("%s-%s", local.wls_domain_name, n)
-  #        #TODO: JOI replace shape
-  #        shape          = startswith(x["DETAILS"]["OS_VERSION"], local.LINUX_8) ? local.LINUX_8 : startswith(x["DETAILS"]["OS_VERSION"], local.LINUX_9) ? local.LINUX_9 : local.LINUX_8
-  #        # defaulting to Linux 8 if nothing is set.
-  #
-  #
-  #        #TODO: JOI hostname_label rules
-  #        #    if Hostname is FQDN. then if ! no VCN,  register private view.
-  #        #    else  IP will be replace with "hostname" + subnet
-  #
-  #        hostname_label  = try(x.DETAILS.Hostname, null) != null ?  !can(regex(local.ValidIpAddressRegex, x.DETAILS.Hostname)) ? element(split(local.DOT, x.DETAILS.Hostname), 0) : n : n
-  #        #TODO : JOI enable feature existing subnets and existing nsgs.
-  #        compute_nsg_ids =  local.machine_nsgs[n] # local.use_existing_subnets ? local.existing_compute_nsg_ids : local.machine_nsgs[n]
-  #      }
-  #  }
+}
+
+# Text to replace in Weblogic config files
+locals {
+  # Weblogic Servers Text to be replaced with new hosts
+  wls_config_text_changes_servers = {
+    for k, wls in local.wls_servers : lookup(wls, "ListenAddress", "") =>
+    lookup(wls, "ListenAddress", "") == local.LISTEN_ALL_IPS ? local.LISTEN_ALL_IPS :
+    lookup(wls, "ListenAddress", "") == local.LISTEN_127_0_0_1 ? local.LISTEN_127_0_0_1 :
+    lookup(wls, "ListenAddress", "") == local.LOCALHOST_KEY ? local.LOCALHOST_KEY :
+    element(split(local.DOT, lookup(local.wls_machines_pivot, wls.Machine).DETAILS.Hostname), 0) # Weblogic Servers
+  ...}
+
+
+  # # Machines Servers Text to be replaced with new hosts
+  wls_config_text_change_nodemgrs = {
+    for k, wls in try(local.wls_topology["Machine"], {}) : (wls["NodeManager"].ListenAddress) =>
+    (wls["NodeManager"].ListenAddress) == local.LISTEN_ALL_IPS ? local.LISTEN_ALL_IPS :
+    (wls["NodeManager"].ListenAddress) == local.LISTEN_127_0_0_1 ? local.LISTEN_127_0_0_1 :
+    (wls["NodeManager"].ListenAddress) == local.LOCALHOST_KEY ? local.LOCALHOST_KEY :
+    element(split(local.DOT, lookup(local.wls_machines_pivot, k).DETAILS.Hostname), 0) # Machines
+  }
+
+  # $DOMAIN_HOME/nodemanager/nodemanger.properties text to replaced with new hosts
+  wls_config_text_change_nmproperties = {
+    try(local.wls_topology["NMProperties"].ListenAddress, "") = (try(local.wls_topology["NMProperties"].ListenAddress, "") == local.LISTEN_ALL_IPS ? local.LISTEN_ALL_IPS :
+      try(local.wls_topology["NMProperties"].ListenAddress, "") == local.LISTEN_127_0_0_1 ? local.LISTEN_127_0_0_1 :
+      try(local.wls_topology["NMProperties"].ListenAddress, "") == local.LOCALHOST_KEY ? local.LOCALHOST_KEY :
+    element(split(local.DOT, lookup(local.wls_machines_pivot, local.wls_servers[local.wls_adminserver_name].Machine).DETAILS.Hostname), 0))
+  }
+
+  wls_config_text_changes = merge(local.wls_config_text_changes_servers, local.wls_config_text_change_nodemgrs, local.wls_config_text_change_nmproperties)
+}
+
+output "wls_config_text_changes" {
+  value = local.wls_config_text_changes
 }

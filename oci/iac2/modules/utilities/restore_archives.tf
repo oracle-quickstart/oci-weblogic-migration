@@ -46,11 +46,12 @@ resource "null_resource" "restore_wls_archives" {
   }
 
   provisioner "file" {
-    content      = templatefile("${path.module}/resources/node-wls-restore.tpl", {
+    content      = templatefile("${path.module}/resources/node_wls_restore.tpl", {
       temp_oss_mount_point = local.oss_mount_point
       middleware_archive=format("%s-%s-weblogic_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
       jdk_archive =format("%s-%s-java_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
       domain_archive =format("%s-%s-domain_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
+      user = var.user
     })
     destination = local.restore_archives_script
   }

@@ -28,4 +28,7 @@ locals{
   MANAGED_SERVER_KEY="managedserver"
   BOTH_KEY="both"
   ASSIGN_NEW="new"
+  LISTEN_ALL_IPS = "0.0.0.0"
+  LISTEN_127_0_0_1 = "127.0.0.1"
+  LOCALHOST_KEY = "localhost"
 }
