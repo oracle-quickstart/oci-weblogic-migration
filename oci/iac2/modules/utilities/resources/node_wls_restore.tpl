@@ -18,13 +18,13 @@ function log(){
 function restore_archives() {
     log "info" "Attemting to restore archives..."
     log "info" "Attemting to restore ${domain_archive}"
-    sudo su - domain -c '/usr/bin/tar -zxf ${temp_oss_mount_point}/${domain_archive} -C /'
+    sudo su - ${user} -c '/usr/bin/tar -zxf ${temp_oss_mount_point}/${domain_archive} -C /'
     log "info" "Completed restoring ${domain_archive}"
     log "info" "Attemting to restore ${jdk_archive}"
-    sudo su - domain -c '/usr/bin/tar -zxf ${temp_oss_mount_point}/${jdk_archive} -C /'
+    sudo su - ${user} -c '/usr/bin/tar -zxf ${temp_oss_mount_point}/${jdk_archive} -C /'
     log "info" "Completed restoring ${jdk_archive}"
     log "info" "Attemting to restore ${middleware_archive}"
-    sudo su - domain -c '/usr/bin/tar -zxf ${temp_oss_mount_point}/${middleware_archive} -C / '
+    sudo su - ${user} -c '/usr/bin/tar -zxf ${temp_oss_mount_point}/${middleware_archive} -C / '
     log "info" "Completed restoring ${middleware_archive}"
     log "info" "Restore completed"
 }

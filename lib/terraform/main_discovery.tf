@@ -14,12 +14,6 @@ variable "wls_discovery_folder" {
   default     = "inventory"
 }
 
-variable "wls_configured_datasource_text" {
-  type = any
-  default = {}
-  description = "Map with Datasource on-prem text and new oci value. "
-}
-
 #variable "inventory_file" {
 #  default=""
 #}
@@ -244,15 +238,7 @@ locals {
     element(split(local.DOT, lookup(local.wls_machines_pivot, local.wls_servers[local.wls_adminserver_name].Machine).DETAILS.Hostname), 0))
   }
 
-  # rules for datasource changes.
-  # on_prem != "" &&
-  # ds.on_prem != ds.oci
-  # ds.oci != ""
-  wls_config_text_change_datasources  = {
-       for k, ds in try(var.wls_configured_datasource_text,{}) : (ds.on_prem) =>
-        ds.oci if ds.on_prem != "" && ds.on_prem != ds.oci && ds.oci != ""
-  }
-  wls_config_text_changes = merge(local.wls_config_text_changes_servers, local.wls_config_text_change_nodemgrs, local.wls_config_text_change_nmproperties, local.wls_config_text_change_datasources)
+  wls_config_text_changes = merge(local.wls_config_text_changes_servers, local.wls_config_text_change_nodemgrs, local.wls_config_text_change_nmproperties)
 }
 
 output "wls_config_text_changes" {
