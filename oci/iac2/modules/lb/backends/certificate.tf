@@ -32,7 +32,7 @@ resource "oci_load_balancer_certificate" "demo_certificate" {
   count = local.use_https_listener_count
   #Required
   certificate_name = "${var.resource_name_prefix}_${var.lb_certificate_name}"
-  load_balancer_id = var.load_balancer_id
+  load_balancer_id = var.wls_load_balancer_id
 
   #Optional
   public_certificate = tls_self_signed_cert.demo_cert[count.index].cert_pem

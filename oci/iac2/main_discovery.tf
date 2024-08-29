@@ -97,12 +97,19 @@ locals {
   ####################################################################
   # Get all Listen Ports from Managed Servers and format it as  port = instance
   ####################################################################
-  wls_managed_server_listen_ports_by_instance = distinct(flatten([
-    for name, ms in local.wls_managed_server_details : {
-      port     = try(ms["ListenPort"], local.MS_DEFAULT_LISTEN_PORT)
-      instance = try(ms["Machine"], null)
-    }
-  ]))
+#  wls_managed_server_listen_ports_by_instance = distinct(flatten([
+#    for name, ms in local.wls_managed_server_details : {
+#      port     = try(ms["ListenPort"], local.MS_DEFAULT_LISTEN_PORT)
+#      instance = try(ms["Machine"], null)
+#    }
+#  ]))
+
+  wls_managed_server_listen_ports_by_instance = distinct(flatten(
+    [for pair in setproduct(local.oci_instance_ips, [for name,ms in local.wls_managed_server_details: try(ms["ListenPort"], local.MS_DEFAULT_LISTEN_PORT) ] ) : {
+      port = pair[1]
+      instance = pair[0]
+    }]
+  ))
 
   ###########################################################################
   # How to calculate Ports when Dynamic Server is enabled.?
@@ -130,10 +137,11 @@ locals {
   num_oci_instances = length(local.wls_machines)
 
   #TODO JOI: Change to OCI Instance private IPs
-  oci_instance_ips = flatten([for k, v in local.wls_machines : k])
-
+#  backend_ips= local.instance_private_ips
+#  oci_instance_ips = flatten([for k, v in local.wls_machines : k])
+  oci_instance_ips = local.instance_private_ips
   #############################################################################
-  # Find list of Dynamic Listen (only) Ports
+  # Builds a list of ports and instance IP to be used by Load Balancer Backend
   #############################################################################
   wls_dynamic_server_dynamic_ports_by_instance = distinct(flatten([
     for k, v in local.wls_merged_templates_details : [

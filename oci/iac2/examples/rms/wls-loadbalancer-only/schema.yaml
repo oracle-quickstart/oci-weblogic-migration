@@ -1,0 +1,626 @@
+# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
+
+title: "Weblogic Migration :  Public Load Balancer Stack"
+description: Creates a Public Load Balancer resource in a preexisting public regional subnet
+informationalText: Creates a Public Load Balancer resource in a preexisting public regional subnet
+schemaVersion: 1.1.0
+version: "20230304"
+locale: "en"
+
+variableGroups:
+  - title: "Hidden"
+    visible: false
+    variables:
+      - api_fingerprint
+      - config_file_profile
+      - current_user_ocid
+      - user_id
+      - tenancy_id
+      - tenancy_ocid
+      - region
+      - create_domain
+      - wlsserver_pools
+      - create_iam_autoscaler_policy
+      - create_iam_wlsserver_policy
+      - ssh_public_key_path
+      - ssh_private_key_path
+      - ssh_public_key
+      - ssh_kms_vault_id
+      - ssh_kms_secret_id
+      - wlsserver_image_type
+      - terms_and_conditions
+      - wlsserver_image_os
+      - wlsserver_image_os_version
+      - wlsserver_image_platform_id
+      - wlsserver_image_custom_id
+      - wlsserver_pool_mode
+      - wlsserver_shape
+      - wlsserver_pool_size
+      - wlsserver_ocpus
+      - wlsserver_memory
+      - wlsserver_boot_volume_size
+      - wlsserver_block_volume_type
+      - wlsserver_use_encryption
+      - wlsserver_volume_kms_vault_id
+      - wlsserver_volume_kms_key_id
+      - wlsserver_pv_transit_encryption
+      - wlsserver_cloud_init_configure
+      - wlsserver_cloud_init
+      #      - wlsserver_cloud_init_byon
+      #      - wlsserver_cloud_init_wls
+      - wlsserver_tags
+      - bucket_name
+      - pub_lb_subnet_create
+      - assign_dns
+      - vcn_dns_label
+      - managedserver_nsg_id
+      - adminserver_nsg_id
+      - wlsserver_subnet_id
+
+  - title: "Identity"
+    variables:
+      - compartment_ocid
+      - use_defined_tags
+      - tag_namespace
+
+  - title: "Weblogic Domain Common"
+    variables:
+      - wlsserver_node_labels
+      - ${add_load_balancer}
+      - existing_load_balancer_id
+      - ${create_nsgs}
+
+  - title: "Load Balancer Network"
+    variables:
+      - ${create_vcn}
+      - vcn_id
+      - pub_lb_subnet_id
+      - pub_lb_nsg_id
+
+
+  - title: "Load Balancer"
+    variables:
+      - load_balancers
+      - load_balancer_shape
+      - lb_max_bandwidth
+      - lb_min_bandwidth
+      - allow_rules_public_lb
+      - loadbalancer_authorized_cidrs_mgmt
+      - loadbalancer_authorized_cidrs_service
+      - custom_backends
+
+  - title: "Security"
+    variables:
+      - lockdown_default_seclist
+      - create_demo_certificate
+
+variables:
+  # Security
+  create_demo_certificate:
+    title: Create and Install a Demo Certificate?
+    description: Demo Certificate will be install on Load Balancer listen port 443.
+    default: false
+    type: boolean
+    visible: ${add_load_balancer}
+  # Identity
+  current_user_ocid:
+    title: User
+    type: ocid
+    required: true
+  tenancy_ocid:
+    title: Tenancy
+    type: oci:identity:compartment:id
+    required: true
+  compartment_ocid:
+    title: Compartment
+    description: The default compartment for created resources.
+    type: oci:identity:compartment:id
+    required: true
+  region:
+    required: true
+    title: Region
+    type: oci:identity:region:name
+#  create_iam_wlsserver_policy:
+#    title: Authorize instance(s) to join the target cluster
+#    description: |
+#      Create the required Identity policy with a dynamic group to authorize self-managed wlsserver node membership for an OKE cluster, e.g. `Allow dynamic-group ... to {CLUSTER_JOIN} in compartment id ... where { target.cluster.id = '...' }`. See <a href=https://docs.oracle.com/en-us/iaas/Content/Identity/policyreference/contengpolicyreference.htm#Details_for_Container_Engine_for_Kubernetes>Container Engine for Kubernetes Self-managed nodes</a> for more information.
+#    type: boolean
+#    default: false
+#    required: true
+#    visible:
+#      not:
+#        - eq:
+#            - wlsserver_pool_mode
+#            - Node Pool
+  use_defined_tags:
+    title: Use defined tags
+    default: false
+    type: boolean
+  tag_namespace:
+    title: Tag namespace
+    visible: ${use_defined_tags}
+
+  # VCN
+  create_vcn:
+    title: Create VCN
+    type: boolean
+    default: false
+    visible: false
+  vcn_id:
+    title: Virtual Cloud Network
+    type: oci:core:vcn:id
+    required: true
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+    visible: ${add_load_balancer}
+  assign_dns:
+    title: Assign DNS records
+    type: boolean
+    default: false
+    required: true
+    visible: ${add_load_balancer}
+  lockdown_default_seclist:
+    title: Secure default security list
+    type: boolean
+    required: true
+    visible: ${create_vcn}
+  # NSGs
+  create_nsgs:
+    title: Create NSGs
+    description: Create standard network security groups and traffic rules. Additional configuration may be required when disabled, e.g. providing existing NSGs, subnet security lists, etc.
+    type: boolean
+    default: false
+    required: true
+    visible: false
+  managedserver_nsg_id:
+    title: Weblogic Managed Server Network Security Group
+    description: Network Security Groups for the created Weblogic Managed Server node(s), used to configure network access to instances. See <a href=https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengnetworkconfig.htm#securitylistconfig>Security Rule Configuration in ... Network Security Groups</a> for more information.
+    type: oci:core:nsg:id
+    # additionalProps:
+    #   allowMultiple: true
+    required: false
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+      vcnId: ${vcn_id}
+    visible: false
+  adminserver_nsg_id:
+    title: Weblogic AdminServer Network Security Group
+    description: Network Security Groups for the created AdminServer node, used to configure network access to instances. See <a href=https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengnetworkconfig.htm#securitylistconfig>Security Rule Configuration in ... Network Security Groups</a> for more information.
+    type: oci:core:nsg:id
+    # additionalProps:
+    #   allowMultiple: true
+    required: false
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+      vcnId: ${vcn_id}
+    visible: false
+  pub_lb_nsg_id:
+    title: Public Load Balancer NSG
+    description: Network Security Groups for the created Public Load Balancer resource, used to configure network access to instances. See <a href=https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengnetworkconfig.htm#securitylistconfig>Security Rule Configuration in ... Network Security Groups</a> for more information.
+    type: oci:core:nsg:id
+    # additionalProps:
+    #   allowMultiple: true
+    required: true
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+      vcnId: ${vcn_id}
+    visible: ${add_load_balancer}
+  # Weblogic Domain
+  create_domain:
+    title: Create Weblogic Managed Servers.
+    description: Create Weblogic Managed servers and restore them from archive stored in Object Storage Bucket.
+    default : false
+    required : false
+    visible : false
+    type: bool
+
+  ######################################
+  #Section: LoadBalancer Configuration
+  ######################
+
+  add_load_balancer:
+    title: Create Loadbalancer
+    description: Create a Public OCI Loadbalancer.
+    default: true
+    type: boolean
+    visible: true
+  load_balancer_shape:
+    type: enum
+    title: "Select a shape for the load balancer"
+    description: "Note: flexible loadbalancer shape will be the only shape supported for production environments. "
+    default: "flexible"
+    required: false
+    enum:
+      - "flexible"
+      - "100Mbps"
+      - "10Mbps"
+      - "10Mbps-Micro"
+      - "400Mbps"
+      - "8000Mbps"
+    visible: ${add_load_balancer}
+
+  lb_max_bandwidth:
+    title: Flexible Public Load Balancer Max Bandwith
+    description: "Choose Maximum Shape for Flex Load Balancer."
+    required: false
+    type: enum
+    default: "100"
+    enum:
+      - "10"
+      - "100"
+      - "1000"
+      - "400"
+      - "8000"
+    visible:
+      and:
+        - ${add_load_balancer}
+        - eq:
+          - load_balancer_shape
+          - "flexible"
+
+  lb_min_bandwidth:
+    title: Public Load Balancer Min Bandwith
+    description: "Choose Minimum Shape for Flex Load Balancer."
+    required: false
+    type: enum
+    default: "100"
+    enum:
+      - "10"
+      - "100"
+      - "1000"
+      - "400"
+      - "8000"
+    visible:
+      and:
+        - ${add_load_balancer}
+        - eq:
+            - load_balancer_shape
+            - "flexible"
+
+  loadbalancer_authorized_cidrs_service:
+    type: array
+    title: "Authorized list of Network Addresses to connect Loadbalancer Application Ports"
+    required: false
+    description: "Type each network address in cidr format Y.Y.Y.Y/XX. Click after each type to be registered in the text area. Example Format: Network 192.168.1.0/24 or individual host by IP/32 . ex X.X.X.X/32"
+    items:
+      type: string
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
+    uniqueItems: true
+    default: [0.0.0.0/0]
+    visible: ${add_load_balancer}
+
+  loadbalancer_authorized_cidrs_mgmt:
+    type: array
+    title: "Authorized list of Network Addresses to connect to Weblogic Console and Admin Ports exposed on the Loadbalancer"
+    required: false
+    description: "Type each network address in cidr format Y.Y.Y.Y/XX. Click after each type to be registered in the text area. Example Format: Network 192.168.1.0/24 or individual host by IP/32 . ex X.X.X.X/32"
+    items:
+      type: string
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
+    uniqueItems: true
+    visible: ${add_load_balancer}
+
+  custom_backends:
+    type: array
+    title: "Custom list of LB Backend IPs"
+    required: false
+    description: "Type an IP address followed by <Enter> to add it to the list of overriding Load Balancer backends."
+    items:
+      type: string
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
+    uniqueItems: true
+    visible: ${add_load_balancer}
+
+  allow_rules_public_lb:
+    title: Additional public load balancer rules
+    additionalProps:
+      allowMultiple: true
+    required: false
+    visible: ${create_nsgs}
+
+  pub_lb_subnet_create:
+    title: Create public load balancer subnet
+    type: boolean
+    required: true
+    visible: false
+    default: false
+
+  pub_lb_subnet_id:
+    title: Public Load Balancer subnet
+    type: oci:core:subnet:id
+    required: false
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+      vcnId: ${vcn_id}
+      hidePublicSubnet: false
+      hidePrivateSubnet: true
+      hideRegionalSubnet: false
+      hideAdSubnet: true
+    visible: ${add_load_balancer}
+
+  existing_load_balancer_id:
+    type: oci:loadbalancer:loadbalancer:id
+#    pattern: ^(10)Mbps.*$
+    title: Existing Load Balancer for "Weblogic Domain" migration Evaluation
+    required: true
+    default: ""
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+    visible:
+      and:
+        - not :
+            - ${add_load_balancer}
+
+  #########################
+  ### End: LoadBalancer Configuration
+  #######################################
+
+  # Weblogic Servers
+  wlsserver_pool_mode:
+    title: Resource type
+    description: Type of Oracle Cloud Compute resources for the created Weblogic Servers. Note Other options in future releases
+    type: enum
+    default: Instances
+    enum: [Instances] # Instance Pool
+    required: true
+  wlsserver_pool_size:
+    title: Number of wlsserver nodes
+    type: number
+    default: 1
+    required: true
+    visible: false
+  wlsserver_shape:
+    title: Shape
+    # type: oci:core:instanceshapewithflex:name
+    type: oci:core:instanceshape:name
+    default: "VM.Standard.E4.Flex"
+    required: true
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+  wlsserver_ocpus:
+    title: OCPUs
+    type: number
+    default: 2
+    required: false
+  wlsserver_memory:
+    title: Memory (GB)
+    type: number
+    default: 16
+    required: false
+  wlsserver_boot_volume_size:
+    title: Boot volume size (GB)
+    type: number
+    required: false
+  wlsserver_image_type:
+    title: Image type
+    description: Whether to use a Platform, UCM, or Custom image for Weblogic Server instances.
+    type: enum
+    default: "Oracle Weblogic Suite UCM"
+    enum: ["Oracle WebLogic Server BYOL", "Oracle Weblogic Suite UCM", "Oracle WebLogic Server Enterprise Edition UCM", "Custom"]
+    required: true
+  wlsserver_image_os:
+    title: Operating system
+    type: enum
+    default: "Oracle Linux"
+    enum: ["Oracle Linux"]
+    required: true
+    visible:
+      not:
+        - eq:
+            - wlsserver_image_type
+            - "Custom"
+  wlsserver_image_os_version:
+    title: Operating system version
+    type: enum
+    default: "8"
+    enum: ["7.9", "8"]
+    required: true
+    visible:
+      not:
+        - eq:
+            - wlsserver_image_type
+            - "Custom"
+  wlsserver_image_id:
+    visible: false
+  wlsserver_image_custom_id:
+    title: Image ID
+    type: ocid
+    required: true
+    pattern: ^ocid1.image.*$
+    visible:
+      eq:
+        - wlsserver_image_type
+        - "Custom"
+  wlsserver_image_platform_id:
+    title: Image
+    type: oci:core:image:id
+    required: true
+    pattern: ^ocid1.image.*$
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+      operatingSystem: ${wlsserver_image_os}
+      operatingSystemVersion: ${wlsserver_image_os_version}
+      shape: ${wlsserver_shape}
+    visible:
+      eq:
+        - wlsserver_image_type
+        - "Oracle WebLogic Server BYOL"
+  terms_and_conditions:
+    visible:
+      and:
+        - not:
+            - eq:
+                - wlsserver_image_type
+                - "Oracle WebLogic Server BYOL"
+        - not:
+            - eq:
+                - wlsserver_image_type
+                - "Custom"
+    type: boolean
+    default: false
+    title: "UCM Image type selected. Do you accept the Terms of use ?"
+    description: "I have reviewed and accept the <a target=\"_blank\" href=\"https://objectstorage.us-phoenix-1.oraclecloud.com/n/axxu7cichsnt/b/terms/o/wlsoci_ee_terms_and_conditions.txt\">Oracle terms of use</a>"
+    required: true
+  wlsserver_cloud_init:
+    visible: false
+  wlsserver_cloud_init_configure:
+    type: boolean
+    title: Custom cloud-init
+    description: Override cloud-init for all instances.
+    default : false
+    visible : false
+  wlsserver_cloud_init_byon:
+    title: Cloud-init script
+    type: text
+    multiline: true
+    required: false
+    description: |
+      Custom cloud-init script for wlsserver node startup configuration. Must include the default Weblogic initialization call to join the cluster and begin operation.
+    visible:
+      and:
+        - wlsserver_cloud_init_configure
+        - not:
+            - eq:
+                - wlsserver_pool_mode
+                - Node Pool
+  wlsserver_cloud_init_wls:
+    title: Cloud-init script
+    type: text
+    multiline: true
+    required: false
+    description: |
+      Custom cloud-init script for self-managed wlsserver node startup configuration. Must uncomment and define the two required parameters and include the default WLS initialization call to join the cluster and begin operation.
+    visible:
+      and:
+        - wlsserver_cloud_init_configure
+        - eq:
+            - wlsserver_pool_mode
+            - Node Pool
+  wlsserver_block_volume_type:
+    title: Block volume type
+    type: enum
+    enum: [Paravirtualized, iSCSI]
+    default: iSCSI
+    required: true
+  wlsserver_node_labels:
+    title: Node labels
+    type: map
+    required: false
+    visible: false
+  wlsserver_use_encryption:
+    title: KMS volume encryption
+    type: boolean
+    default: false
+    required: true
+  wlsserver_volume_kms_vault_id:
+    title: KMS volume encryption vault
+    description: Vault containing operator volume encryption keys.
+    type: oci:kms:vault:id
+    required: false
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+    visible: wlsserver_use_encryption
+  wlsserver_volume_kms_key_id:
+    title: KMS volume encryption key
+    type: oci:kms:key:id
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+      vaultId: ${wlsserver_volume_kms_vault_id}
+    required: false
+    visible: wlsserver_use_encryption
+  wlsserver_pv_transit_encryption:
+    title: In-transit volume encryption
+    type: boolean
+    default: false
+    visible:
+      eq:
+        - wlsserver_block_volume_type
+        - Paravirtualized
+  wlsserver_tags:
+    title: Tagging
+    type: oci:identity:tag:value
+    required: false
+    description: Tag values for created resources.
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+  bucket_name:
+    title: Object Storage Bucket name
+    type: string
+    required: true
+    description: OCI Object Storage Bucket name where on-premise Weblogic archives are stored.    
+
+outputGroups:
+  - title: Identity
+    outputs:
+      - state_id
+      #- create_iam_wlsserver_policy
+      - dynamic_group_ids
+      - policy_statements
+  - title: Network
+    outputs:
+      - wlsserver_subnet_id
+      - managedserver_nsg_id
+      - adminserver_nsg_id
+#TODO: JOI: output Admin URL
+  - title: Domain
+    outputs:
+      - wls_domain_name
+  - title: Weblogic Servers
+    outputs:
+      - wlsserver_pool_ids
+      - wlsserver_pool_mode
+      - wlsserver_pool_size
+      - wlsserver_shape
+      - wlsserver_image_id
+
+
+outputs:
+  state_id:
+    title: Terraform state ID
+    type: copyableString
+  wlsserver_pool_mode:
+    title: Resource type
+    type: string
+#  wlsserver_pool_name:
+#    title: Pool name
+#    type: string
+  wlsserver_pool_size:
+    title: Size
+    type: number
+  wls_domain_name:
+    title: Weblogic Domain
+    type: string
+#  cluster_id:
+#    title: Cluster
+#    type: ocid
+#  apiserver_private_host:
+#    title: Cluster private endpoint IP
+#    type: copyableString
+  dynamic_group_ids:
+    title: Dynamic groups
+    type: list
+  policy_statements:
+    title: Policy statements
+    type: list
+  wlsserver_subnet_id:
+    title: Subnet
+    type: ocid
+  managedserver_nsg_id:
+    title: Network Security Group
+    type: ocid
+  adminserver_nsg_id:
+    title: Network Security Group
+    type: ocid
+  wlsserver_pool_ids:
+    title: Pool
+    type: list
+  wlsserver_image_id:
+    title: Image
+    type: ocid
+  wlsserver_shape:
+    title: Shape
+    type: string
+  create_iam_wlsserver_policy:
+    title: Create self-managed wlsserver policy
+    type: string
