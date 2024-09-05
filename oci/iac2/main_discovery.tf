@@ -139,7 +139,7 @@ locals {
   #TODO JOI: Change to OCI Instance private IPs
 #  backend_ips= local.instance_private_ips
 #  oci_instance_ips = flatten([for k, v in local.wls_machines : k])
-  oci_instance_ips = local.instance_private_ips
+  oci_instance_ips = local.instance_private_ips == null ? [] : local.instance_private_ips
   #############################################################################
   # Builds a list of ports and instance IP to be used by Load Balancer Backend
   #############################################################################

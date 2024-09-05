@@ -3,7 +3,7 @@
 
 module "wls-migration" {
 #  source         = "github.com/oracle-terraform-modules/terraform-oci-oke.git?ref=5.x&depth=1"
-  source = "../../../"
+  source = "../../../../iac2"
   providers      = { oci.home = oci.home }
   tenancy_id     = var.tenancy_ocid
   compartment_id = var.compartment_ocid
