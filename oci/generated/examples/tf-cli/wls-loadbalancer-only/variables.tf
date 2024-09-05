@@ -1,0 +1,173 @@
+# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
+
+# Identity
+
+# Automatically populated by Resource Manager
+variable "tenancy_ocid" { type = string }
+variable "current_user_ocid" { type = string }
+variable "compartment_ocid" { type = string }
+variable "region" { type = string }
+variable "use_defined_tags" {
+  default     = false
+  description = "Add existing tags in the configured namespace to created resources when applicable."
+  type        = bool
+}
+
+variable "tag_namespace" {
+  default     = "wls"
+  description = "Tag namespace containing standard tags for resources created by the module: [state_id, role, pool, cluster_autoscaler]."
+  type        = string
+}
+
+variable "create_iam_wlsserver_policy" { default = false }
+
+
+# Worker pools
+variable "wlsserver_pool_mode" {
+  default = "Instances"
+  type    = string
+  validation {
+    condition     = contains(["Instances", "Instance Pool"], var.wlsserver_pool_mode)
+    error_message = "Accepted values are Instances. Instance Pool may be included in a future release"
+  }
+}
+variable "wlsserver_pool_size" {
+  default = 1
+  type    = number
+}
+
+# Workers: network
+
+variable "vcn_id" {
+  default = null
+  type    = string
+}
+variable "assign_dns" { default = true }
+variable "managedserver_nsg_id" { default = "" }
+variable "adminserver_nsg_id" { default = "" }
+variable "wlsserver_subnet_id" { type = string }
+
+# Workers: instance
+
+variable "wlsserver_block_volume_type" { type = string }
+variable "wlsserver_node_labels" {
+  default = {}
+  type    = map(string)
+}
+
+#TODO: Change to Oracle Weblogic Suite UCM Image as default on release
+variable "wlsserver_image_type" {
+  type        = string
+  description = "Type of image used for provisioning. Image type must be BYOL or UCM"
+  default     = "Oracle WebLogic Server BYOL"
+  validation {
+    condition     = contains(["Oracle WebLogic Server BYOL", "Oracle Weblogic Suite UCM", "Oracle WebLogic Server Enterprise Edition UCM", "Custom"], var.wlsserver_image_type)
+    error_message = "WLSC-ERROR: Allowed values for Weblogic Edition are 'Oracle WebLogic Server BYOL' or 'Oracle Weblogic Suite UCM' or 'Oracle WebLogic Server Enterprise Edition UCM' or 'Custom' "
+  }
+}
+
+variable "terms_and_conditions" {
+  type        = bool
+  description = "Terms and conditions for user to accept Oracle WebLogic Server Enterprise Edition UCM or Oracle WebLogic Suite UCM license agreement"
+  default     = false
+}
+
+variable "wlsserver_image_id" {
+  default = null
+  type    = string
+}
+variable "wlsserver_image_os" {
+  default = "Oracle Linux"
+  type    = string
+}
+variable "wlsserver_image_os_version" {
+  default = "8"
+  type    = string
+}
+
+
+variable "wlsserver_shape" { default = "VM.Standard.E4.Flex" }
+variable "wlsserver_ocpus" { default = 2 }
+variable "wlsserver_memory" { default = 16 }
+variable "wlsserver_boot_volume_size" { default = 50 }
+variable "wlsserver_pv_transit_encryption" { default = false }
+
+variable "wlsserver_cloud_init_configure" {
+  type = bool
+  default = true
+}
+variable "wlsserver_cloud_init_wls" {
+  default = <<-EOT
+  #!/usr/bin/env bash
+  curl --fail -H "Authorization: Bearer Oracle" -L0 http://169.254.169.254/opc/v2/instance/metadata/wls_init_script | base64 --decode >/var/run/wls-init.sh
+  bash /etc/wls/wls-install.sh
+  EOT
+  type    = string
+}
+variable "wlsserver_cloud_init_byon" {
+  default = <<-EOT
+  #!/usr/bin/env bash
+  #apiserver_host="10.0.0.1"
+  #ca_base64="LS0tLS1...LS0tCg==" # kubectl config view --raw -o json | jq -rcM '.clusters[0].cluster["certificate-authority-data"]'
+  bash /etc/wls/wls-install.sh --apiserver-endpoint "$\{apiserver_host}" --kubelet-ca-cert "$\{ca_base64}"
+  EOT
+  type    = string
+}
+
+variable "wlsserver_volume_kms_key_id" {
+  default = null
+  type    = string
+}
+variable "wlsserver_volume_kms_vault_id" {
+  default = null
+  type    = string
+}
+
+variable "wlsserver_image_platform_id" {
+  default = null
+  type    = string
+}
+variable "wlsserver_image_custom_id" {
+  default = null
+  type    = string
+}
+
+variable "wlsserver_tags" {
+  default = {}
+  type    = map(any)
+}
+
+variable "create_domain" {
+  default = true
+  type = bool
+}
+
+variable "add_load_balancer" {
+   default = true
+   type = bool
+}
+
+#Pools is just a grouping of WLS Servers. Create either by pool definition for common attributes or per instance
+variable "wlsserver_pools" {
+  default     = {}
+  description = "Tuple of Weblogic Server definitions grouped as pools. where each key maps to the OCID of an OCI resource, and value contains its definition."
+  type        = any
+}
+
+variable "bucket_name" {
+  description = "Object Storage Bucket name where WLS archives are stored."
+  type = string
+}
+
+
+# LoadBalancer
+variable "create_nsgs" { default = true }
+variable "pub_lb_nsg_id" { type=string}
+variable "pub_lb_subnet_id" { type=string}
+variable "create_demo_certificate" {default = false}
+variable "load_balancer_shape" {}
+variable "lb_max_bandwidth" {type = number}
+variable "lb_min_bandwidth" {type = number}
+variable "existing_load_balancer_id" {type= string}
+variable "custom_backends" {type=list(string)}

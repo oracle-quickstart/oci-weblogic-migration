@@ -12,7 +12,7 @@ resource "oci_load_balancer_backend_set" "wls_lb_backendset" {
   count = var.use_existing_lb ? 0 : 1
 
   name             = var.lb_backendset_name
-  load_balancer_id = var.load_balancer_id
+  load_balancer_id = var.wls_load_balancer_id
   policy           = var.lb_policy
 
   health_checker {
@@ -31,7 +31,7 @@ resource "oci_load_balancer_backend_set" "wls_lb_backendset" {
 
 resource "oci_load_balancer_listener" "wls_lb_listener_https" {
   count                    = local.use_https_listener_count
-  load_balancer_id         = var.load_balancer_id
+  load_balancer_id         = var.wls_load_balancer_id
   name                     = format("%s-%v_https", var.resource_name_prefix, var.state_id)
   default_backend_set_name = var.use_existing_lb ? var.lb_backendset_name : oci_load_balancer_backend_set.wls_lb_backendset[count.index].name
   port                     = var.lb_https_lstr_port
@@ -55,7 +55,7 @@ resource "oci_load_balancer_listener" "wls_lb_listener_https" {
 resource "oci_load_balancer_backend" "wls_lb_backend" {
 #  count = var.use_existing_lb || (length(oci_load_balancer_backend_set.wls_lb_backendset) > 0) ? var.num_vm_instances : 0
   for_each = var.backend_instance_ports
-  load_balancer_id = var.load_balancer_id #oci_load_balancer.wls_lb.id
+  load_balancer_id = var.wls_load_balancer_id #oci_load_balancer.wls_lb.id
   backendset_name  = var.use_existing_lb ? var.lb_backendset_name : oci_load_balancer_backend_set.wls_lb_backendset[0].name
   ip_address       = each.value[0].instance #var.instance_private_ips[count.index]
   port             = each.value[0].port #var.backend_port
@@ -72,7 +72,7 @@ resource "oci_load_balancer_backend" "wls_lb_backend" {
 resource "oci_load_balancer_rule_set" "SSL_headers" {
   count = local.use_https_listener_count
 
-  load_balancer_id = var.load_balancer_id
+  load_balancer_id = var.wls_load_balancer_id
   name             = "${var.resource_name_prefix}_SSLHeaders"
   items {
     action = "ADD_HTTP_REQUEST_HEADER"

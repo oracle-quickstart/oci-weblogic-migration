@@ -65,3 +65,52 @@ variable "backendset_name_for_existing_load_balancer" {
   description = "The name of an existing backend set in an existing load balancer. The backend set should not have any backend. The WebLogic VMs will be added as backends to this backend set"
   default = null
 }
+
+variable "lb_shape" {
+  default = {
+    int_lb = { shape="10Mbps", min = 100,max=100}
+    pub_lb = { shape="100Mbps",min = 100,max=100}
+  }
+  description = "Default shape of the created Load Balancer resource."
+  type        = map(object({
+    min = optional(number)
+    max = optional(number)
+    shape = optional(string)
+  }))
+}
+
+variable "lbs" {
+  default = {
+    int_lb = {}
+    pub_lb = {}
+  }
+  type = map(object({
+    create = optional(string)
+    id = optional(string)
+    backends = optional(list(string))
+}))
+}
+  # TODO: JOI : set validations back
+#  validation {
+#    condition = alltrue([
+#    for k, v in values(var.nsgs) : contains(["never", "auto", "always"], coalesce(v.create, "auto"))
+#    ])
+#    error_message = "Accepted values for 'create' are 'never', 'auto', or 'always'."
+#  }
+#  validation {
+#    condition = alltrue([
+#    for v in flatten([for k, v in var.nsgs : keys(v)]) : contains(["create", "id"], v)
+#    ])
+#    error_message = format("Invalid NSG configuration keys: %s", jsonencode(distinct([
+#    for v in flatten([for k, v in var.nsgs : keys(v)]) : v if !contains(["create", "id"], v)
+#    ])))
+#  }
+#  validation {
+#    condition = alltrue([
+#    for k, v in var.nsgs :
+#    contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver", "fss"], k)
+#    ])
+#    error_message = format("Invalid NSG keys: %s", jsonencode([for k, v in var.nsgs : k
+#    if !contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver","fss"], k)
+#    ]))
+#  }

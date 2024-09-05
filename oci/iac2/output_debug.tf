@@ -45,3 +45,23 @@ output "joi_adminserver_nsg_ids" {
 output "joi_managedserver_nsg_ids" {
   value = coalescelist([module.network.wlsserver_nsg_id])
 }
+
+output "joi_pub_lb_config" {
+  value = local.pub_lb_config
+}
+
+output "joi_pub_lb_create" {
+  value = local.pub_lb_create
+}
+
+output "joi_pub_lb_enabled" {
+ value= local.pub_lb_enabled
+}
+
+output "joi_lb_backends_to_map" {
+  value = local.lb_backends_to_map
+}
+
+output "joi_instance_private_ips" {
+  value = local.instance_private_ips
+}

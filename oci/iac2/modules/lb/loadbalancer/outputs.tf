@@ -7,6 +7,6 @@ output "wls_loadbalancer_id" {
 }
 
 output "wls_loadbalancer_ip_addresses" {
-  value       = oci_load_balancer_load_balancer.wls_loadbalancer.ip_addresses
+  value       = oci_load_balancer_load_balancer.wls_loadbalancer.ip_address_details
   description = "The list of IP addresses of the load balancer"
 }

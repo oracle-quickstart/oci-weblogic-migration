@@ -7,10 +7,10 @@ variable "state_id" {
   type        = string
 }
 
-variable "instance_private_ips" {
-  type        = list(any)
-  description = "The list of private IP addresses of the instances for the backend servers"
-}
+#variable "instance_private_ips" {
+#  type        = list(any)
+#  description = "The list of private IP addresses of the instances for the backend servers"
+#}
 
 variable "backend_port" {
   type        = number
@@ -70,7 +70,7 @@ variable "lb_certificate_name" {
   default     = "demo_cert"
 }
 
-variable "load_balancer_id" {
+variable "wls_load_balancer_id" {
   type        = string
   description = "The OCID of the load balancer that was created as part of the WebLogic for OCI stack, or a load balancer created manually"
 }
@@ -86,4 +86,7 @@ variable "resource_name_prefix" {
   description = "Prefix used by the WebLogic for OCI instance of which this compute is part"
 }
 
-variable "backend_instance_ports" {}
+variable "backend_instance_ports" {
+  type = any
+  description = "The list of private IP addresses and Ports of the instances for the backend servers"
+}
