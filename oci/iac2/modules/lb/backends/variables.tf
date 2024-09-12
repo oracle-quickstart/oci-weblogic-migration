@@ -12,10 +12,10 @@ variable "state_id" {
 #  description = "The list of private IP addresses of the instances for the backend servers"
 #}
 
-variable "backend_port" {
+variable "health_check_backend_port" {
   type        = number
   description = "Port for backends in the load balancer"
-  default = -1
+  default = 0
 }
 
 variable "health_check_url" {
@@ -86,7 +86,17 @@ variable "resource_name_prefix" {
   description = "Prefix used by the WebLogic for OCI instance of which this compute is part"
 }
 
-variable "backend_instance_ports" {
-  type = any
+variable "backend_instances" {
+  type = list(string)
   description = "The list of private IP addresses and Ports of the instances for the backend servers"
+}
+variable "backend_ports" {
+  type = list(number)
+  description = "The list of private IP addresses and Ports of the instances for the backend servers"
+}
+
+variable "number_backends" {
+  type= number
+  description = "Total number of backends."
+  default = 0
 }

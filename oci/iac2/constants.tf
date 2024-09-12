@@ -14,7 +14,7 @@ locals{
   MS_DEFAULT_SSL_LISTEN_PORT=7003
   MS_DEFAULT_ADMINISTRATIVE_PORT=9002
   COHERENCE_DEFAULT_UNICAST_PORT=8876
-
+  MS_LISTEN_PORT_NOT_SET=-1
   #Utils
   DOT="."
   ValidIpAddressRegex = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
@@ -31,4 +31,7 @@ locals{
   LISTEN_ALL_IPS = "0.0.0.0"
   LISTEN_127_0_0_1 = "127.0.0.1"
   LOCALHOST_KEY = "localhost"
+
+  #OCI Defaults
+  OCI_LB_HEALTH_CHECK_PORT_DEFAULT=0
 }

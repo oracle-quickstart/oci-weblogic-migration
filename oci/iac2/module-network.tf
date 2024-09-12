@@ -121,6 +121,7 @@ module "network" {
   allow_adminserver_ssh_access      = var.allow_adminserver_ssh_access
   allow_wlsserver_internet_access = var.allow_wlsservers_internet_access
   allow_wlsserver_ssh_access      = var.allow_wlsservers_ssh_access
+  #TODO: JOI Surface these flags.
   allow_bastion_domain_access = var.allow_bastion_domain_access
   allow_bastion_adminserver_access = var.allow_bastion_adminserver_access
   assign_dns                   = var.assign_dns
@@ -138,7 +139,7 @@ module "network" {
   vcn_cidrs                    = local.vcn_cidrs
   vcn_id                       = local.vcn_id
   wlsserver_is_public             = var.wlsserver_is_public
-  wlsserver_ports = local.wls_managed_server_ports
+  wlsserver_ports = local.wls_domain_all_discovered_ports
   adminserver_ports = local.wls_admin_server_ports
   resource_name_prefix = local.wls_domain_name
 }
@@ -204,10 +205,7 @@ output "bastion_nsg_id" {
 #  description = "Network Security Group for operator host(s)."
 #  value       = try(module.network.operator_nsg_id, null)
 #}
-#output "control_plane_nsg_id" {
-#  description = "Network Security Group for Kubernetes control plane(s)."
-#  value       = try(module.network.control_plane_nsg_id, null)
-#}
+
 output "int_lb_nsg_id" {
   description = "Network Security Group for internal load balancers."
   value       = try(module.network.int_lb_nsg_id, null)

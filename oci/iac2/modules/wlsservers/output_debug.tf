@@ -27,3 +27,6 @@ output "wlsserver_instance_changes" {
 }
 
 
+output "wlsserver_pool_size" {
+  value = var.wlsserver_pool_size
+}

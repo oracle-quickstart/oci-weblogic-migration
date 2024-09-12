@@ -62,13 +62,6 @@ module "wls" {
 # Weblogic Servers
   ssh_public_key   = local.ssh_public_key
   ssh_public_key_path = var.ssh_public_key_path
-#wlsserver_pool_size = var.wlsserver_pool_size
-#wlsserver_pool_mode = lookup({
-#"Node Pool"       = "node-pool"
-#"Instances"       = "instances"
-#"Instance Pool"   = "instance-pool",
-#"Cluster Network" = "cluster-network",
-#}, var.wlsserver_pool_mode, "node-pool")
 
   wlsserver_pools=var.wlsserver_pools
 
@@ -89,16 +82,6 @@ module "wls" {
   bucket_name = var.bucket_name
   restore_wls_archives = "all"
   await_node_readiness = "all"
-#wlsserver_pools = {
-#format("%v", var.wlsserver_pool_name) = {
-#description = lookup({
-#"Node Pool"       = "WLS-managed Node Pool"
-#"Instances"       = "Self-managed Instances"
-#"Instance Pool"   = "Self-managed Instance Pool"
-#"Cluster Network" = "Self-managed Cluster Network"
-#}, var.wlsserver_pool_mode, "")
-#}
-#}
 
   freeform_tags = {
     wlsservers = lookup(var.wlsserver_tags, "freeformTags", {})

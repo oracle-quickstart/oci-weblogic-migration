@@ -29,3 +29,6 @@
 #  value = module.wls.joi_node_pool_images
 #}
 
+#output "joi_wls_dynamic_server_dynamic_ports_by_instance" {
+#  value = module.wls.joi_wls_dynamic_server_dynamic_ports_by_instance
+#}

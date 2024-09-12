@@ -22,8 +22,11 @@ output "wlsserver_count_expected" {
 }
 
 
-#output "wlsserver_drain_expected" {
-#  description = "# of nodes expected to be draining in wlsserver pools"
-#  value       = local.expected_drain_count
-#}
+output "wlsserver_instance_ips" {
+  description = "Created wlsserver instance private IPs by instance pool"
+  value = lookup(local.wlsserver_instance_ips,"instance",{})
+}
 
+output "wlsserver_private_ips" {
+  value = local.wlsserver_private_ips_list
+}

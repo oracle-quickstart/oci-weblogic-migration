@@ -19,7 +19,6 @@ locals {
 }
 
 
-
 module "wls" {
   #source    = "github.com/oracle-terraform-modules/terraform-oci-wls.git?ref=5.x&depth=1"
   source ="../../../../iac2"
@@ -108,6 +107,7 @@ module "wls" {
   allow_node_port_access       = var.allow_node_port_access
   allow_wlsservers_ssh_access      = var.allow_wlsserver_ssh_access
   allow_wlsservers_internet_access = var.allow_wlsserver_internet_access
+  allow_adminserver_ssh_access = var.allow_adminserver_ssh_access
   enable_waf                   = var.enable_waf #TODO: JOI - Future release
 
 

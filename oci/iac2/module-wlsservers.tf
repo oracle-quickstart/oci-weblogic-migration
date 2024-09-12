@@ -66,7 +66,7 @@ module "wlsservers" {
 #  adminserver_nsg_ids        = concat(var.adminserver_nsg_ids, [try(module.network.adminserver_nsg_id, null)])
   adminserver_nsg_ids         = coalescelist([module.network.adminserver_nsg_id])
   wlsserver_subnet_id        = try(module.network.wlsserver_subnet_id, "") # safe destroy; validated in submodule
-  wlsserver_ports            = local.wls_managed_server_ports
+  wlsserver_ports            = local.wls_domain_all_discovered_ports
   adminserver_ports          = local.wls_admin_server_ports
 
   # backups

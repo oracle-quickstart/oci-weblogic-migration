@@ -61,3 +61,7 @@ export WLS_MIG_OUTPUT=$WLS_MIG_HOME/output
 # │ The attribute "ip_addresses" is deprecated. Refer to the provider documentation for details.
 
 
+#TODO: Sept 11
+# Configure only domain volume
+# Add input to define volume size in schema.yaml
+# Restore all other archives in /   . Analyze if tree path depends on each other archive to restore to determine order.
