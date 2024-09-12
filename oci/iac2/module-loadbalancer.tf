@@ -42,8 +42,6 @@ locals{
     ])
     # Return provided Public Ids when configured with an existing ID or created resource ID
     pub_lb_id = one(compact([lookup(var.lbs.pub_lb,"id", null), one(module.load-balancer[*].wls_loadbalancer_id)]))
-    instance_private_ips = try(lookup(var.lbs.pub_lb,"backends", null),[one(module.wlsservers[*].wlsserver_pool_ips)])
-
 }
 
 
@@ -60,7 +58,7 @@ module "load-balancer" {
   lb_max_bandwidth         = var.lb_shape.pub_lb.max
   lb_min_bandwidth         = var.lb_shape.pub_lb.min
   lb_name                  = format("%s-%v-lb",local.wls_domain_name,local.state_id)
-  lb_subnet_id             = compact(flatten([lookup(var.subnets.pub_lb,"id",null)])) #compact(flatten([lookup(var.subnets.pub_lb,"id",null), try(module.network.pub_lb_subnet_id, null)])) #[module.network.pub_lb_subnet_id]
+  lb_subnet_id             = compact(flatten([lookup(var.subnets.pub_lb,"id",null),try(module.network.pub_lb_subnet_id, null)])) #compact(flatten([lookup(var.subnets.pub_lb,"id",null), try(module.network.pub_lb_subnet_id, null)])) #[module.network.pub_lb_subnet_id]
   state_id            = local.state_id
   lb_shape = var.lb_shape.pub_lb.shape
   # Tagging
@@ -70,21 +68,38 @@ module "load-balancer" {
   freeform_tags = local.service_lb_freeform_tags
 }
 
-module "load-balancer-backends" {
+module "load-balancer-managed_server-backends" {
   #depends_on = [module.network-validation]
+  depends_on = [module.wlsservers]
   source = "./modules/lb/backends"
   count  = local.add_load_balancer ? 1 : 0
   state_id            = local.state_id
   wls_load_balancer_id     = local.pub_lb_id #local.add_load_balancer ? (! local.existent_load_balancer ? var.existing_load_balancer_id : one(coalescelist(module.load-balancer[*].wls_loadbalancer_id, [""]))) : null
   use_existing_lb      = local.use_existing_lb
   lb_backendset_name   = local.lb_backendset_name
-  #TODO: JOI remove
-  #  num_vm_instances     = var.wls_node_count
-  #  num_vm_instances     = 0
-  #instance_private_ips = local.instance_private_ips
   health_check_url     = "/"
   resource_name_prefix = local.wls_domain_name
-  backend_instance_ports = local.lb_backends_to_map
-  #Health check can only use one port.Assuming all Managed Servers are listening on the same listen port.
-  backend_port = try(local.wls_managed_server_listen_ports_by_instance[0].port,-1)
+  number_backends =  length(one(module.wlsservers[*].wlsserver_private_ips ))
+  backend_instances = one(module.wlsservers[*].wlsserver_private_ips )
+  backend_ports = local.wls_all_ports_application_traffic_servers
+  #If WLS Servers (static or dynamic) has multiple listen ports, setting LB backend port to 0 to force health check to validate each instance ip+port availability. Else defaults to Managed Server Static listen Port
+  health_check_backend_port = try(one(local.wls_dynamic_server_app_traffic_port),0) != try(one(local.wls_managed_server_listen_ports),0) ? local.OCI_LB_HEALTH_CHECK_PORT_DEFAULT : try(one(local.wls_managed_server_listen_ports),local.OCI_LB_HEALTH_CHECK_PORT_DEFAULT)
 }
+
+#module "load-balancer-dynamic_servers-backends" {
+#  #depends_on = [module.network-validation]
+#  source = "./modules/lb/backends"
+#  for_each= local.add_load_balancer ? tomap(local.wls_merged_templates_details ): {}
+#
+##  count  = local.add_load_balancer ? 1 : 0
+#  state_id            = local.state_id
+#  wls_load_balancer_id     = local.pub_lb_id #local.add_load_balancer ? (! local.existent_load_balancer ? var.existing_load_balancer_id : one(coalescelist(module.load-balancer[*].wls_loadbalancer_id, [""]))) : null
+#  use_existing_lb      = local.use_existing_lb
+#  lb_backendset_name   = format("%s-%v-dynamicserver",each.value.DynamicServers.ServerNamePrefix,local.state_id)
+#  health_check_url     = "/"
+#  resource_name_prefix = local.wls_domain_name
+#  backend_instance_ports = local.lb_backends_to_map
+#  #Health check can only use one port.Assuming all Dynamic Servers Templates are listening on the same listen port.
+##  backend_port = try(one(local.wls_merged_templates_details).port, local.MS_LISTEN_PORT_NOT_SET)
+#  backend_port =  each.value.ListenPort
+#}

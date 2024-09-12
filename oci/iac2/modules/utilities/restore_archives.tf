@@ -51,6 +51,7 @@ resource "null_resource" "restore_wls_archives" {
       middleware_archive=format("%s-%s-weblogic_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
       jdk_archive =format("%s-%s-java_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
       domain_archive =format("%s-%s-domain_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
+      custom_archive =format("%s-%s-custom_dirs.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
       user = var.user
     })
     destination = local.restore_archives_script

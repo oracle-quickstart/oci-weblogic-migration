@@ -265,17 +265,6 @@ variables:
     type: string
     required: false
     visible: ${create_nsgs}
-#  control_plane_allowed_cidrs:
-#    title: Comma-separated list of CIDR blocks allowed access to the OKE control plane.
-#    type: string
-#    required: false
-#    visible: ${create_nsgs}
-#  control_plane_is_public:
-#    title: Public Kubernetes control plane
-#    type: boolean
-#    default: false
-#    required: true
-#    visible: ${create_nsgs}
   preferred_load_balancer:
     title: Preferred load balancer
     type: enum
@@ -547,29 +536,7 @@ variables:
 #      hideAdSubnet: false
 #    visible:
 #      not: ${operator_subnet_create}
-#  control_plane_subnet_create:
-#    title: Create control plane subnet
-#    type: boolean
-#    required: false
-#    visible: false
-#  control_plane_subnet_newbits:
-#    title: Control plane subnet size
-#    description: The number of network prefix bits added to the VCN CIDR block for the created subnet address range (i.e. a higher value is smaller). Refer to the Terraform <a href=https://developer.hashicorp.com/terraform/language/functions/cidrsubnets>cidrsubnets</a> function for more information.
-#    type: number
-#    visible: ${control_plane_subnet_create}
-#  control_plane_subnet_id:
-#    title: Control plane subnet
-#    type: oci:core:subnet:id
-#    required: false
-#    dependsOn:
-#      compartmentId: ${compartment_ocid}
-#      vcnId: ${vcn_id}
-#      hidePublicSubnet: { not: [control_plane_is_public] }
-#      hidePrivateSubnet: ${control_plane_is_public}
-#      hideRegionalSubnet: false
-#      hideAdSubnet: true
-#    visible:
-#      not: ${control_plane_subnet_create}
+
   int_lb_subnet_create:
     title: Create internal load balancer subnet
     type: boolean

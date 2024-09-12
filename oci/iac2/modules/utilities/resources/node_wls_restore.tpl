@@ -26,8 +26,13 @@ function restore_archives() {
     log "info" "Attemting to restore ${middleware_archive}"
     sudo su - ${user} -c '/usr/bin/tar -zxf ${temp_oss_mount_point}/${middleware_archive} -C / '
     log "info" "Completed restoring ${middleware_archive}"
+    # Restore Custom Archives. Check first if exists.
+    sudo su - ${user} -c 'if [ -f ${temp_oss_mount_point}/${custom_archive} ]; then /usr/bin/tar -zxf ${temp_oss_mount_point}/${custom_archive} -C / ;fi '
+    log "info" "Completed restoring ${custom_archive}"
     log "info" "Restore completed"
 }
 
 
 time restore_archives || { echo "Error restoring wls archives during startup" 1>&2; exit 1; }
+
+

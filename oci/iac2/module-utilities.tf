@@ -3,7 +3,7 @@
 
 
 module "utilities" {
-  count  = local.create_domain_enabled && var.bastion_public_ip != null ? 1 : 0 #&& var.create_bastion
+  count  = local.create_domain_enabled && ( var.bastion_public_ip != null || var.create_bastion ) ? 1 : 0 #&&
   source = "./modules/utilities"
   region = var.region
 

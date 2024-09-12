@@ -162,12 +162,6 @@ locals {
         lookup(pool, "freeform_tags", {})
       )
 
-#      #TODO:  JOI - nsg_ids = managedserver or adminserver or both ?
-#      # Combine global and pool-specific NSGs
-#      nsg_ids      = compact(concat(var.wlsserver_nsg_ids, pool.nsg_ids))
-#      adminserver_nsg_ids = compact(concat(var.adminserver_nsg_ids, pool.adminserver_nsg_ids))
-
-
     }) if tobool(pool.create)
   }
 
@@ -212,10 +206,10 @@ locals {
     for k, v in local.enabled_wlsserver_pools : [
       for i in range(0, lookup(v, "size", 0)) : merge(v, {
           "key" = k, "index" = i ,
-          "hostname"=v.host_details[i].hostlabel ,   # check attribute host_details by key index and get hostlabel value
-          "nsg_ids"=lookup(v.nsg_ids,v.host_details[i].host_type),  # lookup in pool defaults nsg_ids by host_type [index] and set admin,managed,or both nsgs
-          "wls_machine_name"=v.host_details[i].wls_machine_name,  # get host_details by index and get machine name as discovered by wls inventory file
-          "ports"=lookup(v.ports,v.host_details[i].host_type)}) # lookup in pool defaults ports by host_type [index] and set admin,managed,or both list of ports
+          "hostname"=element(v.host_details,i).hostlabel ,   # check attribute host_details by key index and get hostlabel value
+          "nsg_ids"=lookup(v.nsg_ids,element(v.host_details,i).host_type),  # lookup in pool defaults nsg_ids by host_type [index] and set admin,managed,or both nsgs
+          "wls_machine_name"=element(v.host_details,i).wls_machine_name,  # get host_details by index and get machine name as discovered by wls inventory file
+          "ports"=lookup(v.ports,element(v.host_details,i).host_type)}) # lookup in pool defaults ports by host_type [index] and set admin,managed,or both list of ports
     ] if lookup(v, "mode", "") == "instance"
   ]...) : format("%v-%v", lookup(e, "key"), lookup(e, "index")) => e }
 
@@ -300,7 +294,12 @@ locals {
   })
   }
 
+  wlsserver_private_ips_list = flatten([
+    for key, instance in local.wlsserver_instance_changes :  lookup(instance,"private_ip")
+  ])
+
 
   # Yields {<pool name> = {<instance id> = <instance ip>}} for modes: 'node-pool', 'instance'
-  wlsserver_pool_ips = merge(local.wlsserver_instance_ips) #, local.wlsserver_nodepool_ips)
+#  wlsserver_pool_ips = merge(local.wlsserver_instance_ips) #, local.wlsserver_nodepool_ips)
+  wlsserver_pool_ips = local.wlsserver_instance_ips
 }

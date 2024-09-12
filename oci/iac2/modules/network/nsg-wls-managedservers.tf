@@ -68,7 +68,7 @@ locals {
         protocol = local.tcp_protocol, port = local.health_check_port, source = local.pub_lb_nsg_id, source_type = local.rule_type_nsg,
       },
     } : {},
-
+    # Allow Bastion ssh access to Managed Server
     local.bastion_nsg_enabled && var.allow_wlsserver_ssh_access ? {
       "Allow SSH ingress to wlsservers from bastion" : {
         protocol = local.tcp_protocol, port = local.ssh_port, source = local.bastion_nsg_id, source_type = local.rule_type_nsg,

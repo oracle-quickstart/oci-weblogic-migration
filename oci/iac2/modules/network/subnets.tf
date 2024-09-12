@@ -1,11 +1,11 @@
-# Copyright (c) 2017, 2023 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
   # VCN subnet configuration
   # See https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengnetworkconfig.htm#vcnconfig
-  # May be undefined when VCN is neither created nor required, e.g. when creating only wlsservers for
-  # an existing cluster. Fallback value is unused.
+  # May be undefined when VCN is neither created nor required, e.g. when creating only wlsservers.
+  # Fallback value is unused.
   vcn_cidr = length(var.vcn_cidrs) > 0 ? element(var.vcn_cidrs, 0) : "0.0.0.0/16"
 
   # Filter configured subnets eligible for resource creation
