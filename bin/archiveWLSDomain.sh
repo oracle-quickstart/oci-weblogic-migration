@@ -1,126 +1,86 @@
-#!/bin/sh
-# *****************************************************************************
-# archiveWLSDomain.sh
-#
-# Copyright (c) 2023, Oracle and/or its affiliates.
-# Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
-#
-#     NAME
-#       archiveWLSDomain.sh - Tool to package local or remote java_home, WLS_HOME, DOMAIN_HOME and custom directories
-#
-#     DESCRIPTION
-#       This script attempts to establish an SSH connection to every machine found in a Weblogic discovered Domain
-#       with the provided configuration.
-#
-#
-# This script uses the following variables:
-#
-# JAVA_HOME             - The path to the Java Home directory used by the ORACLE HOME.
-#                         This overrides the JAVA_HOME value when locating attributes
-#                         which will be replaced with the java home global token in the model
-#
-# WLSDEPLOY_PROPERTIES  - Extra system properties to pass to WLST.  The caller
-#                         can use this environment variable to add additional
-#                         system properties to the WLST environment.
-#
+#!/usr/bin/env bash
+# Copyright (c) 2024 Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-usage() {
- echo ""
-  echo "Usage: $1 [-help]"
-  echo "          [-oracle_home <oracle_home>]"
-  echo "          -ssh_host <ssh_host> [-ssh_port <ssh_port>]"
-  echo "          [-ssh_user <ssh_user>]"
-  echo "          ["
-  echo "           -ssh_pass_env <ssh_pass_env> |"
-  echo "           -ssh_pass_file <ssh_pass_file> |"
-  echo "           -ssh_pass_prompt"
-  echo "          ]"
-  echo "          [-ssh_private_key <ssh_private_key>]"
-  echo "          ["
-  echo "           -ssh_private_key_pass_env <ssh_private_key_pass_env> |"
-  echo "           -ssh_private_key_pass_file <ssh_private_key_pass_file> |"
-  echo "           -ssh_private_key_pass_prompt"
-  echo "          ]"
-  echo "          [-remote_test_file <remote_test_file> -local_output_dir <local_output_dir>]"
-  echo "          [-local_test_file <local_test_file> -remote_output_dir <remote_output_dir>]"
-  echo "          [-wlst_path <wlst_path>]"
-  echo ""
-  echo "    where:"
-  echo "        oracle_home     - the existing Oracle Home directory for the domain."
-  echo "                          This argument is required unless the ORACLE_HOME"
-  echo "                          environment variable is set."
-  echo "        ssh_host        - the hostname or IP address of the remote machine.  This"
-  echo "                          argument is required."
-  echo ""
-  echo "        ssh_port        - the port number to use to connect to the remote machine."
-  echo "                          This argument is optional and defaults to 22, if not"
-  echo "                          specified."
-  echo ""
-  echo "        ssh_user        - the SSH user name on the remote machine.  This argument"
-  echo "                          is optional and defaults to the current user on the"
-  echo "                          local machine, as determined by the user.name Java"
-  echo "                          system property."
-  echo ""
-  echo "        ssh_pass_env    - An alternative to entering the SSH user's password"
-  echo "                          at a prompt. The value is an ENVIRONMENT VARIABLE"
-  echo "                          name that WDT will use to retrieve the password."
-  echo "                          This argument should only be used when using"
-  echo "                          username/password-based authentication."
-  echo ""
-  echo "        ssh_pass_file   - An alternative to entering SSH user's password"
-  echo "                          at a prompt. The value is the name of a file with a"
-  echo "                          string value which WDT will read to retrieve the"
-  echo "                          password.  This argument should only be used"
-  echo "                          when using username/password-based authentication."
-  echo ""
-  echo "        ssh_private_key - the path to the private key to use for SSH"
-  echo "                          authentication.  This argument is optional and defaults"
-  echo "                          to the normal default SSH key (e.g., ~/.ssh/id_rsa)."
-  echo "                          This argument should only be used when using"
-  echo "                          public key-based authentication."
-  echo ""
-  echo "        ssh_private_key_pass_env - An alternative to entering the private key"
-  echo "                          passphrase at a prompt. The value is an ENVIRONMENT"
-  echo "                          VARIABLE name that WDT will use to retrieve the"
-  echo "                          password.  This argument should only be used when"
-  echo "                          using public key-based authentication and the"
-  echo "                          private key is encrypted with a passphrase."
-  echo ""
-  echo "        ssh_private_key_pass_file - An alternative to entering SSH private key"
-  echo "                          passphrase at a prompt. The value is the name of a"
-  echo "                          file with a string value which WDT will read to"
-  echo "                          retrieve the password.  This argument should only be"
-  echo "                          used when using username/password-based"
-  echo "                          authentication and the private key is encrypted with"
-  echo "                          a passphrase."
-  echo "    The -ssh_pass_prompt argument tells WDT to prompt for the SSH user's"
-  echo "    password and read it from standard input.  This is also useful for"
-  echo "    scripts that want to pipe the value into the tool's standard input."
-  echo ""
-  echo "    The -ssh_private_key_pass_prompt argument tells WDT to prompt for the"
-  echo "    private key passphrase and read it from standard input. This is also"
-  echo "    useful for scripts that want to pipe the value into the tool's"
-  echo "    standard input."
-  echo ""
-}
+#############################################################################################################################
+# Name                 : install_dependencies.sh
+# Description          : Install all required dependencies needed to run OCI Weblogic Migration Tool
+# Dependencies         : $DEPS_WDT_HOME set in common.sh
+#############################################################################################################################
 
-WLSDEPLOY_PROGRAM_NAME="verifySSH"; export WLSDEPLOY_PROGRAM_NAME
 
 scriptName=$(basename "$0")
 scriptPath=$(dirname "$0")
+toolHome=$(builtin cd "$scriptPath/.." || exit; pwd)
+LOG_FILE_NAME='owm_upload_archive_to_oci.log'
 
-. "$scriptPath/common.sh"
 
-umask 27
+[ "$user_functions_loaded" ] || source ./shared.sh
 
-checkArgs "$@"
+WLS_HOST=""
 
-minJdkVersion=7
-if [ "$USE_ENCRYPTION" == "true" ]; then
-  minJdkVersion=8
-fi
 
-# required Java version is dependent on use of encryption
-javaSetup $minJdkVersion
-export PYTHONPATH=$PWD/lib
-runWlst archive_infra.py "$@"
+function pre_reqs(){
+    local domain=$1
+    mkdir -p "$REPO_ARCHIVE_PATH/$domain" > /dev/null
+}
+
+function remote_compress(){
+    local file_name=$1
+    local REPO_ARCHIVE_PATH=$2
+    local path_to_wls_dir=$3
+    local multi_tar=$4
+    local FILTERS="--exclude='logs' --exclude='.pid' --exclude='.state' --exclude='oracle-dfw-*/sampling/jvm_threads*' --exclude='core' --exclude='*/tmp/*' --exclude='log' --exclude='*.log*'"
+    if [[ "z$multi_tar" == "z" ]]; then
+        log "info" "Connecting to host: $WLS_HOST and archiving $path_to_wls_dir"
+        ssh $WLS_HOST "tar czf - $FILTERS $path_to_wls_dir" > $REPO_ARCHIVE_PATH/$file_name
+    else
+        log "info" "Archiving Custom Directories"
+        shift;shift;shift;shift;            # Shift all arguments to the left
+        local path_to_wls_dir=("$@")    # Rebuild the array with rest of arguments
+        log "debug" "${path_to_wls_dir[@]}"
+        # echo "$WLS_HOST \"tar czf - $FILTERS ${path_to_wls_dir[@]} \" > $REPO_ARCHIVE_PATH/$file_name"
+        ssh $WLS_HOST "tar czf - $FILTERS" "${path_to_wls_dir[@]}" > "$REPO_ARCHIVE_PATH/$file_name"
+    fi
+    log "info" "Archiving Complete"
+}
+
+function process_custom_dirs(){
+   local dirs_list=$1 #this should be a list of files.
+   remote_compress $dirs_list "$machinename-$domain_name-custom_dirs.tar.gz"
+}
+
+
+# ssh $host "tar -cz - --exclude='logs' --exclude='.pid' --exclude='.state' --exclude='oracle-dfw-*/sampling/jvm_threads*' --exclude='core' --exclude='*/tmp/*' --exclude='log' --exclude='*.log*' $middleware_path" > $REPO_ARCHIVE_PATH/$machinename-$domain_name-weblogic_home.tar.gz
+# ssh $host "tar -cz - --exclude='logs' --exclude='.pid' --exclude='.state' --exclude='oracle-dfw-*/sampling/jvm_threads*' --exclude='core' --exclude='*/tmp/*' --exclude='log' --exclude='*.log*' $jdk_path" > $REPO_ARCHIVE_PATH/$machinename-$domain_name-java_home.tar.gz
+# ssh $host "tar -cz - --exclude='logs' --exclude='.pid' --exclude='.state' --exclude='oracle-dfw-*/sampling/jvm_threads*' --exclude='core' --exclude='*/tmp/*' --exclude='log' --exclude='*.log*' $domain_path" > $REPO_ARCHIVE_PATH/$machinename-$domain_name-domain_home.tar.gz
+# ssh $host "tar -cz - --exclude='logs' --exclude='.pid' --exclude='.state' --exclude='oracle-dfw-*/sampling/jvm_threads*' --exclude='core' --exclude='*/tmp/*' --exclude='log' --exclude='*.log*' $custom_dirs" > $REPO_ARCHIVE_PATH/$machinename-$domain_name-custom_dirs.tar.gz
+
+
+domain_name=$(jq --raw-output -c '.topology.Name' $INVENTORY_FILE)
+middleware_path=$(jq --raw-output -c '.topology.OraclePath' $INVENTORY_FILE)
+domain_path=$(jq --raw-output -c '.topology.DomainPath' $INVENTORY_FILE)
+pre_reqs $domain_name
+REPO_ARCHIVE_PATH=$REPO_ARCHIVE_PATH/$domain_name
+custom_dirs_to_copy=()
+for row in $(jq --raw-output -c '.resources.Machines|keys[]' $INVENTORY_FILE); do
+    # do stuff with pretty-printed, multi-line "$i"
+    machinename=$row
+    host=$(jq --arg m "$machinename" --raw-output -c '.resources.Machines[$m].DETAILS.Hostname' $INVENTORY_FILE)
+    WLS_HOST="-i $PRIV_SSH_KEY_PATH domain@$host $JUMP_HOST_OPTION"
+    jdk_path=$(jq --arg m "$machinename" --raw-output -c '.resources.Machines[$m].JavaPath' $INVENTORY_FILE)
+    custom_dir=$(jq --arg m "$machinename" --raw-output -c '.resources.Machines[$m].ExtraOSPaths|to_entries| .[] |.value' $INVENTORY_FILE )
+    # echo "${custom_dirs_to_copy[@]}"
+    remote_compress "$machinename-$domain_name-java_home.tar.gz" $REPO_ARCHIVE_PATH $jdk_path
+    remote_compress "$machinename-$domain_name-domain_home.tar.gz" $REPO_ARCHIVE_PATH $domain_path
+    remote_compress "$machinename-$domain_name-weblogic_home.tar.gz" $REPO_ARCHIVE_PATH $middleware_path
+    # index=0
+    if [[ "z$custom_dir" != "z" ]]; then
+        for dir_entry in $custom_dir; do
+            #remote_compress "$machinename-$domain_name-custom_dirs_$index.tar.gz" $REPO_ARCHIVE_PATH $dir_entry
+            custom_dirs_to_copy+=("$dir_entry")
+        done
+        # echo $custom_dirs_to_copy
+        remote_compress "$machinename-$domain_name-custom_dirs.tar.gz" $REPO_ARCHIVE_PATH "-" "y" "${custom_dirs_to_copy[@]}"
+    fi
+done

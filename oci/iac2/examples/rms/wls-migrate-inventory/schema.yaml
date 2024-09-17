@@ -156,6 +156,75 @@ variableGroups:
       - bastion_upgrade
       - bastion_tags
 
+  - title: "Datasources Hidden"
+    visible: false
+    variables:
+      - update_any_ds
+      - update_ds_0
+      - update_ds_1
+      - update_ds_2
+      - update_ds_3
+      - update_ds_4
+      - update_ds_5
+      - update_ds_6
+      - update_ds_7
+      - update_ds_8
+      - update_ds_9
+
+
+  - title: "Datasource #0"
+    variables:
+      - ds_0
+      - edit_ds_0
+      - editable_ds_0
+
+  - title: "Datasource #1"
+    variables:
+      - ds_1
+      - edit_ds_1
+      - editable_ds_1
+
+  - title: "Datasource #2"
+    variables:
+      - ds_2
+      - edit_ds_2
+      - editable_ds_2
+  - title: "Datasource #3"
+    variables:
+      - ds_3
+      - edit_ds_3
+      - editable_ds_3
+  - title: "Datasource #4"
+    variables:
+      - ds_4
+      - edit_ds_4
+      - editable_ds_4
+  - title: "Datasource #5"
+    variables:
+      - ds_5
+      - edit_ds_5
+      - editable_ds_5
+  - title: "Datasource #6"
+    variables:
+      - ds_6
+      - edit_ds_6
+      - editable_ds_6
+  - title: "Datasource #7"
+    variables:
+      - ds_7
+      - edit_ds_7
+      - editable_ds_7
+  - title: "Datasource #8"
+    variables:
+      - ds_8
+        edit_ds_8
+      - editable_ds_8
+  - title: "Datasource #9"
+    variables:
+      - ds_9
+        edit_ds_9
+      - editable_ds_9
+
 
 ## VARIABLES Definitions
 variables:
@@ -1028,6 +1097,321 @@ variables:
     type: string
     required: true
     description: OCI Object Storage Bucket name where on-premise Weblogic archives are stored.
+  #Datasources
+  # Datasources Flags
+  update_any_ds:
+    type: boolean
+    required: false
+    visible: false
+  update_ds_0:
+    type: boolean
+    required: false
+    visible: false
+  update_ds_1:
+    type: boolean
+    required: false
+    visible: true
+  update_ds_2:
+    type: boolean
+    required: false
+    visible: false
+  update_ds_3:
+    type: boolean
+    required: false
+    visible: false
+  update_ds_4:
+    type: boolean
+    required: false
+    visible: false
+  update_ds_5:
+    type: boolean
+    required: false
+    visible: false
+  update_ds_6:
+    type: boolean
+    required: false
+    visible: false
+  update_ds_7:
+    type: boolean
+    required: false
+    visible: false
+  update_ds_8:
+    type: boolean
+    required: false
+    visible: false
+  update_ds_9:
+    type: boolean
+    required: false
+    visible: false
+  # Datasources variables
+  ds_0:
+    type: text
+    required: true
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_0}
+
+  edit_ds_0:
+    type: boolean
+    title: Need to update?
+    description: Select if the datasource needs to be updated after the Migration to OCI.
+    required: true
+    default: false
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_0}
+
+  editable_ds_0:
+    type: text
+    required: false
+    default: ${ds_0}
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_0}
+        - ${edit_ds_0}
+
+  ds_1:
+    type: text
+    required: true
+    visible:
+      and:
+        - and:
+            - ${update_any_ds}
+            - ${update_ds_1}
+
+  edit_ds_1:
+    type: boolean
+    required: true
+    default: false
+    title: Need to update?
+    description: Select if the datasource needs to be updated after the Migration to OCI.
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_1}
+
+  editable_ds_1:
+    type: text
+    required: true
+    default: ${ds_1}
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_1}
+        - ${edit_ds_1}
+
+  ds_2:
+    type: text
+    required: true
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_2}
+
+  edit_ds_2:
+    type: boolean
+    required: true
+    default: false
+    title: Need to update?
+    description: Select if the datasource needs to be updated after the Migration to OCI.
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_2}
+  editable_ds_2:
+    type: text
+    required: true
+    default: ${ds_2}
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_2}
+        - ${edit_ds_2}
+
+  ds_3:
+    required: false
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_3}
+
+  edit_ds_3:
+    type: boolean
+    required: true
+    default: false
+    title: Need to update?
+    description: Select if the datasource needs to be updated after the Migration to OCI.
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_3}
+
+  editable_ds_3:
+    type: text
+    required: false
+    default: ${ds_3}
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_3}
+        - ${edit_ds_3}
+  ds_4:
+    required: false
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_4}
+  edit_ds_4:
+    type: boolean
+    required: true
+    default: false
+    title: Need to update?
+    description: Select if the datasource needs to be updated after the Migration to OCI.
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_4}
+
+  editable_ds_4:
+    type: text
+    required: false
+    default: ${ds_4}
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_4}
+        - ${edit_ds_4}
+  ds_5:
+    required: false
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_5}
+  edit_ds_5:
+    type: boolean
+    required: true
+    default: false
+    title: Need to update?
+    description: Select if the datasource needs to be updated after the Migration to OCI.
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_5}
+  editable_ds_5:
+    type: text
+    required: false
+    default: ${ds_5}
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_5}
+        - ${edit_ds_5}
+  ds_6:
+    required: false
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_6}
+  edit_ds_6:
+    type: boolean
+    required: true
+    default: false
+    title: Need to update?
+    description: Select if the datasource needs to be updated after the Migration to OCI.
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_6}
+  editable_ds_6:
+    type: text
+    required: false
+    default: ${ds_6}
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_6}
+        - ${edit_ds_6}
+  ds_7:
+    required: false
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_7}
+  edit_ds_7:
+    type: boolean
+    required: true
+    default: false
+    title: Need to update?
+    description: Select if the datasource needs to be updated after the Migration to OCI.
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_7}
+  editable_ds_7:
+    type: text
+    required: false
+    default: ${ds_7}
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_7}
+        - ${edit_ds_7}
+  ds_8:
+    required: false
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_8}
+  edit_ds_8:
+    type: boolean
+    required: true
+    default: false
+    title: Need to update?
+    description: Select if the datasource needs to be updated after the Migration to OCI.
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_8}
+  editable_ds_8:
+    type: text
+    required: false
+    default: ${ds_8}
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_8}
+        - ${edit_ds_8}
+  ds_9:
+    required: false
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_9}
+
+  edit_ds_9:
+    type: boolean
+    required: true
+    default: false
+    title: Need to update?
+    description: Select if the datasource needs to be updated after the Migration to OCI.
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_9}
+
+  editable_ds_9:
+    type: text
+    required: false
+    default: ${ds_9}
+    visible:
+      and:
+        - ${update_any_ds}
+        - ${update_ds_9}
+        - ${edit_ds_9}
+
 
 outputGroups:
   - title: Identity

@@ -3,10 +3,10 @@
 
 locals {
   datasources = var.update_any_ds? {
-      0 = {
-        on_prem = var.ds_0
-        oci = var.editable_ds_0
-      }
+     0 = {
+      on_prem = var.ds_0
+      oci = var.editable_ds_0
+     }
      1 = {
        on_prem = var.ds_1
        oci = var.editable_ds_1 != "n/a" ? var.editable_ds_1: ""
@@ -43,5 +43,6 @@ locals {
       on_prem = var.ds_9
       oci = var.editable_ds_9
     }
+
   } : {}
 }

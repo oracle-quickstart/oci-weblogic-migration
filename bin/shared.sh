@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # *****************************************************************************
 # shared.sh
 #
@@ -6,135 +6,18 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 #
 #     NAME
-#       shared.cmd - shared script for use with OCI Migration Tool.
+#       shared.sh - shared script for use with OCI Migration Tool.
 #
 #     DESCRIPTION
 #       This script contains shared functions for use with OCI Migration Tool scripts.
 #
 set -o pipefail
+#set -x
 
 scriptName=$(basename "$0")
 scriptPath=$(dirname "$0")
 toolHome=$(builtin cd "$scriptPath/.."; pwd)
 #echo $toolHome
-
-. "$toolHome/deps/wdt/bin/shared.sh"
-
-variableSetup() {
-
-    # set up variables for WLST or Jython execution
-
-    # set the WLSDEPLOY_HOME variable, ignoring any value that was already set
-
-    SCRIPT_DIR="`dirname "$0"`"
-    BASEDIR="`cd "${SCRIPT_DIR}" && pwd `"
-    WLSDEPLOY_HOME="`cd "${BASEDIR}/../deps/wdt" ; pwd`"
-    WLSMIGRATION_HOME="`cd "${BASEDIR}/../deps/wmt" ; pwd`"
- #   echo "JOI variable- this is the $WLSDEPLOY_HOME"
-    export WLSDEPLOY_HOME
-
-
-    # set up logger configuration, see WLSDeployLoggingConfig.java
-
-    LOG_CONFIG_CLASS=oracle.weblogic.deploy.logging.WLSDeployLoggingConfig
-
-    if [ -z "${WLSDEPLOY_LOG_PROPERTIES}" ]; then
-        WLSDEPLOY_LOG_PROPERTIES="${WLSDEPLOY_HOME}/etc/logging.properties"; export WLSDEPLOY_LOG_PROPERTIES
-    fi
-
-    if [ -z "${WLSDEPLOY_LOG_DIRECTORY}" ]; then
-        WLSDEPLOY_LOG_DIRECTORY="${WLSDEPLOY_HOME}/logs"; export WLSDEPLOY_LOG_DIRECTORY
-    fi
-}
-
-runWlst() {
-    # run a WLST script.
-    wlstScript=$1
-    # save first argument in wlstScript, and discard argument from $@
-    shift
-
-    variableSetup
-
-    # set WLST variable to the WLST executable.
-    # set CLASSPATH and WLST_CLASSPATH to include the WDT core JAR file.
-    # if the WLST_PATH_DIR was set, verify and use that value.
-
-    if [ -n "${WLST_PATH_DIR}" ]; then
-        if [ ! -d "${WLST_PATH_DIR}" ]; then
-            echo "Specified -wlst_path directory does not exist: ${WLST_PATH_DIR}" >&2
-            exit 98
-        fi
-        WLST="${WLST_PATH_DIR}/common/bin/wlst.sh"
-        if [ ! -x "${WLST}" ]; then
-            echo "WLST executable ${WLST} not found under -wlst_path directory: ${WLST_PATH_DIR}" >&2
-            exit 98
-        fi
-        CLASSPATH="${WLSDEPLOY_HOME}/lib/weblogic-deploy-core.jar:${WLSMIGRATION_HOME}/weblogic-migration-0.1.jar"; export CLASSPATH
-        if [ ! -z "${WLST_EXT_CLASSPATH}" ]; then
-          WLST_EXT_CLASSPATH="${WLSDEPLOY_HOME}/lib/weblogic-deploy-core.jar:${WLST_EXT_CLASSPATH}"; export WLST_EXT_CLASSPATH
-        else
-          WLST_EXT_CLASSPATH="${WLSDEPLOY_HOME}/lib/weblogic-deploy-core.jar:${WLSMIGRATION_HOME}/weblogic-migration-0.1.jar"; export WLST_EXT_CLASSPATH
-        fi
-    else
-        # if WLST_PATH_DIR was not set, find the WLST executable in one of the known ORACLE_HOME locations.
-
-        WLST=""
-        if [ -x "${ORACLE_HOME}/oracle_common/common/bin/wlst.sh" ]; then
-            WLST="${ORACLE_HOME}/oracle_common/common/bin/wlst.sh"
-            CLASSPATH="${WLSDEPLOY_HOME}/lib/weblogic-deploy-core.jar:${WLSMIGRATION_HOME}/weblogic-migration-0.1.jar"; export CLASSPATH
-          if [ ! -z "${WLST_EXT_CLASSPATH}" ]; then
-            WLST_EXT_CLASSPATH="${WLSDEPLOY_HOME}/lib/weblogic-deploy-core.jar:${WLSMIGRATION_HOME}/weblogic-migration-0.1.jar:${WLST_EXT_CLASSPATH}"
-            export WLST_EXT_CLASSPATH
-          else
-            WLST_EXT_CLASSPATH="${WLSDEPLOY_HOME}/lib/weblogic-deploy-core.jar:${WLSMIGRATION_HOME}/weblogic-migration-0.1.jar"; export WLST_EXT_CLASSPATH
-          fi
-        elif [ -x "${ORACLE_HOME}/wlserver_10.3/common/bin/wlst.sh" ]; then
-            WLST="${ORACLE_HOME}/wlserver_10.3/common/bin/wlst.sh"
-            CLASSPATH="${WLSDEPLOY_HOME}/lib/weblogic-deploy-core.jar:${WLSMIGRATION_HOME}/weblogic-migration-0.1.jar"; export CLASSPATH
-        elif [ -x "${ORACLE_HOME}/wlserver_12.1/common/bin/wlst.sh" ]; then
-            WLST="${ORACLE_HOME}/wlserver_12.1/common/bin/wlst.sh"
-            CLASSPATH="${WLSDEPLOY_HOME}/lib/weblogic-deploy-core.jar:${WLSMIGRATION_HOME}/weblogic-migration-0.1.jar"; export CLASSPATH
-        elif [ -x "${ORACLE_HOME}/wlserver/common/bin/wlst.sh" -a -f "${ORACLE_HOME}/wlserver/.product.properties" ]; then
-            WLST="${ORACLE_HOME}/wlserver/common/bin/wlst.sh"
-            CLASSPATH="${WLSDEPLOY_HOME}/lib/weblogic-deploy-core.jar:${WLSMIGRATION_HOME}/weblogic-migration-0.1.jar"; export CLASSPATH
-        fi
-
-
-        if [ -z "${WLST}" ]; then
-            echo "Unable to determine WLS version in ${ORACLE_HOME} to determine WLST shell script to call" >&2
-            exit 98
-        fi
-    fi
-
-    WLST_PROPERTIES=-Dcom.oracle.cie.script.throwException=true
-    WLST_PROPERTIES="${WLST_PROPERTIES} -Djava.util.logging.config.class=${LOG_CONFIG_CLASS}"
-    WLST_PROPERTIES="${WLST_PROPERTIES} ${WLSDEPLOY_PROPERTIES}"
-    export WLST_PROPERTIES
-
-    # print the configuration, and run the script
-
-    echo "JAVA_HOME = ${JAVA_HOME}"
-    echo "WLST_EXT_CLASSPATH = ${WLST_EXT_CLASSPATH}"
-    echo "CLASSPATH = ${CLASSPATH}"
-    echo "WLST_PROPERTIES = ${WLST_PROPERTIES}"
-
-#    PY_SCRIPTS_PATH="${WLSDEPLOY_HOME}/lib/python"
-    PY_SCRIPTS_PATH="${toolHome}/lib/python"
-
-    if [ -z "${OHARG_VALUE}" ] ; then
-      echo "${WLST} ${PY_SCRIPTS_PATH}/$wlstScript" "$@"
-      "${WLST}" "${PY_SCRIPTS_PATH}/$wlstScript" "$@"
-    else
-      echo "${WLST} ${PY_SCRIPTS_PATH}/$wlstScript $OHARG ${OHARG_VALUE}" "$@"
-      "${WLST}" "${PY_SCRIPTS_PATH}/$wlstScript" $OHARG "${OHARG_VALUE}" "$@"
-    fi
-
-    RETURN_CODE=$?
-    checkExitCode ${RETURN_CODE}
-    exit ${RETURN_CODE}
-}
-
-
 
 readonly OWLSMIG_NAME="OCI Weblogic Migration Tool"
 DEPS_DIR=$toolHome/deps
@@ -146,12 +29,12 @@ readonly WDT_DOWNLOAD_RELEASE_URL="https://github.com/oracle/weblogic-deploy-too
 readonly JQ_DOWNLOAD_RELEASE_URL="https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64"
 readonly REPO_ARCHIVE_PATH=${3:-$toolHome/out}
 readonly INVENTORY_FILE='wlsdomain.json'
-SSH="ssh"
-
+readonly SSH=/usr/bin/ssh
+readonly SECURE_COPY_TOOL=/usr/bin/scp
 #TODO: Set variable definition.
-PRIV_SSH_KEY_PATH="/home/opc/.ssh/dlp_common"
+#PRIV_SSH_KEY_PATH="/home/opc/.ssh/dlp_common"
 #"${PRIV_SSH_KEY_PATH:?Variable not set or empty}"
-readonly JUMP_HOST_OPTION="-J opc@t-wlsb"
+
 
 
 
@@ -174,7 +57,9 @@ function log(){
     level=$1
     message=$2
     section=$3
-    echo "$timestamp" "$section" ["${level^^}"] "$message" | tee -a "$LOG_FILE"
+    echo "$timestamp" "$section" "${level}" "$message" | tee -a "$LOG_FILE"
+    #echo "$timestamp" "$section" ["${level^^}"] "$message"  | tee /dev/fd/3
+    #exec 3>&1 1>"$LOG_FILE" 2>&1
 }
 
 is_empty_dir() {
@@ -192,6 +77,7 @@ load_config(){
 
 run_ssh_command(){
      command="$@"
+     log "info" "Running Remote command: $command"
      # Check required flags are set
        # Need SSH credentials
        # Need Admin Console URL with user and password file
@@ -222,6 +108,8 @@ run_ssh_command(){
      ssh_user=${ssh_user:?"ssh_user property not set. Check onprem.env file. exiting..."} || return $?
      ssh_password_file=${ssh_password_file:-none}
      ssh_private_key_file=${ssh_private_key_file:-none}
+     SSH_COMMAND=()
+#     SSH_COMMAND=""
      SSH_HOST_OPTIONS=""
      SSH_PRE_COMMAND=""
      SSH_CREDS=""
@@ -254,18 +142,66 @@ run_ssh_command(){
      fi
      if [[ "$ssh_jump_host_user@$ssh_jump_host" != "@" ]]; then
            log "info" "jump host set.  $ssh_jump_host"
-           SSH_JUMPHOST_CREDS="$ssh_jump_host@$ssh_jump_host_user"
-           SSH_JUMPHOST_COMMAND="-o ProxyCommand=\"$SSH_JUMPHOST_PRE_COMMAND $SSH_JUMPHOST_CREDS $SSH_JUMPHOST_OPTIONS\""
+           SSH_JUMPHOST_CREDS="$ssh_jump_host_user@$ssh_jump_host"
+           SSH_PROXY_COMMAND=$(echo -e "$SSH_JUMPHOST_PRE_COMMAND $SSH_JUMPHOST_OPTIONS $SSH_JUMPHOST_CREDS" | sed -e 's/^[[:space:]]*//')
+           echo "$SSH_PROXY_COMMAND"
+           SSH_JUMPHOST_COMMAND="-o 'ProxyCommand $SSH -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -W %h:%p $SSH_PROXY_COMMAND'"
      fi
 
      SSH_COMMAND="$SSH_PRE_COMMAND $SSH $SSH_JUMPHOST_COMMAND $SSH_HOST_OPTIONS $SSH_CREDS"
-     log "info" "Running Remote command: $command"
-     echo "$SSH_COMMAND"
-     if $($SSH_COMMAND "$command") >> "$LOG_FILE" 2>&1; then
+     SSH_COMMAND="$SSH_COMMAND $command"
+
+#      SSH_COMMAND+=($SSH_PRE_COMMAND)
+#      SSH_COMMAND+=($SSH)
+#      SSH_COMMAND+=($SSH_HOST_OPTIONS)
+#      SSH_COMMAND+=("-o")
+#      SSH_COMMAND+=("'UserKnownHostsFile /dev/null'")
+#      SSH_COMMAND+=("-o")
+#      SSH_COMMAND+=("'StrictHostKeyChecking no'")
+#      SSH_COMMAND+=($SSH_JUMPHOST_COMMAND)
+#      SSH_COMMAND+=($SSH_CREDS)
+#      SSH_COMMAND+=($command)
+#      SSH_COMMAND+=("date")
+
+
+#     echo "${SSH_COMMAND[@]}"
+      echo $SSH_COMMAND
+      uname=$(uname);
+      case "$uname" in
+          (*Linux*) openCmd='xdg-open'; ;;
+          (*Darwin*) bash -c "$SSH_COMMAND" 2>&1 | tee "$LOG_FILE"; ;;
+          (*CYGWIN*) openCmd='cygstart'; ;;
+          (*) echo 'error: unsupported platform.'; exit 2; ;;
+      esac;
+
+#       bash -c "\""${SSH_COMMAND[@]}"\""
+
+#      `$("$SSH_COMMAND")`
+# echo "${SSH_COMMAND[@]}"` 2>&1 | tee "$LOG_FILE"
+     if [[ $? -eq 1 ]]; then
          log "error" "Failed to run command remotely. Check logs.  exiting..."
          exit 1
      fi
+     log "info" "SSH command executed succesfully"
+}
 
+secure_copy(){
+     source=$1
+     destination=$2
+     log "info" "Secure Copy file: $source"
+     SCP_COMMAND="$SSH_PRE_COMMAND $SECURE_COPY_TOOL $SSH_JUMPHOST_COMMAND $SSH_HOST_OPTIONS $SSH_CREDS:$source $destination"
+#     uname=$(uname);
+     case "$uname" in
+         (*Linux*)  `"$SCP_COMMAND"` 2>&1 | tee "$LOG_FILE"; ;;
+         (*Darwin*) bash -c "$SCP_COMMAND" 2>&1 | tee "$LOG_FILE"; ;;
+#         (*CYGWIN*) openCmd='cygstart'; ;;
+         (*) echo 'error: unsupported platform.'; exit 2; ;;
+     esac;
+     if [[ $? -eq 1 ]]; then
+            log "error" "Failed to run command remotely. Check logs.  exiting..."
+            exit 1
+     fi
+     log "info" "Secure Copy command executed succesfully"
 }
 
 export user_functions_loaded=0

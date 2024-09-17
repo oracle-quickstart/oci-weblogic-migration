@@ -182,4 +182,6 @@ module "wls" {
   bastion_upgrade = false
   #bastion_tags = var.bastion_tags
 
+  #datasources
+  wls_configured_datasource_text = local.datasources
 }
