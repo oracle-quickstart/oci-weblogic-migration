@@ -65,3 +65,31 @@ export WLS_MIG_OUTPUT=$WLS_MIG_HOME/output
 # Configure only domain volume
 # Add input to define volume size in schema.yaml
 # Restore all other archives in /   . Analyze if tree path depends on each other archive to restore to determine order.
+
+#   Check what I need to do with bastion images.
+#TODO Oct 23rd -
+#   Bastion NSGs is not open for SSH
+#   Resource Manager Private End Point Bug
+#   Download Wallet. - Check marketplace images scripts
+#   Fix Bug - LoadBalancer exporting AdminConsole
+#   Fix Big - AdministrativePort property not set in Weblogic Discovered file.
+#   Check https://docs.oracle.com/en/cloud/paas/weblogic-cloud/user-previous/create-domain-using-terraform.html
+#   Ref: https://docs.oracle.com/en/cloud/paas/weblogic-cloud/user-previous/create-data-source-oracle-autonomous-database.html#GUID-6786B961-1283-4F32-8D2D-93B46102BA63
+#   Blog:  https://blogs.oracle.com/weblogicserver/post/atp-database-use-with-weblogic-server
+# Download Wallet
+# /opt/scripts/utils/download_atp_wallet.sh
+# Wallet is not always needed
+# Check blog https://blogs.oracle.com/developers/post/securely-connecting-to-autonomous-db-without-a-wallet-using-tls#Configure%20Java%20Application
+
+#TODO Oct 28th
+#- Archive CMD to verify if it has enough space in the output directory
+#- Archive CMD to verify that model file is the infra_structure file.  It should include oracle,java, etc paths
+#- Archive CMD change logic to compress remotely and then secure copy
+#- Archive CMD to show list of commands to run in each hosts to generate backups
+#-
+
+#TODO Oct 30th
+# Bug discoveryInfra.  When discovered Adrian RAC it resolved custom dirs to have a common unique root as "/" . And then attempted to tar / .  Needs to be at least one folder down.
+# Implement space disk checker before taring directories.
+# Enforce Terms and conditions if UCM selected.
+# Develop code to create mp_images_ol.auto.tfvars  depending on OL7 or OL8 or OL9

@@ -6,18 +6,18 @@ package oracle.weblogic.migration.archive;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-import oracle.weblogic.migration.archive.add.*
+//import oracle.weblogic.migration.archive.add.*;
 
 @Command(
         name = "add",
         header = "Add items to the archive file.",
-        description = "%nCommand-line options:",
+        description = "\n Command-line options:",
         commandListHeading = "%nSubcommands:%n",
         subcommands = {
-                AddWLSHomeCommand.class,
-                AddJavaHomeCommand.class,
-                AddDomainHomeCommand.class,
-                AddCustomCommand.class
+//                AddWLSHomeCommand.class,
+//                AddJavaHomeCommand.class,
+//                AddDomainHomeCommand.class,
+//                AddCustomCommand.class
         }
 )
 public class AddCommand {
@@ -28,3 +28,5 @@ public class AddCommand {
     )
     private boolean helpRequested = false;
 }
+
+

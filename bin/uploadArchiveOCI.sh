@@ -8,54 +8,71 @@ set -o pipefail
 scriptName=$(basename "$0")
 scriptPath=$(dirname "$0")
 toolHome=$(builtin cd "$scriptPath/.."; pwd)
-LOG_FILE='upload_to_oci_archive.log'
-INVENTORY_FILE='wlsdomain.json'
-OCI_COMPARTMENT_ID=${4:-ocid1.compartment.oc1..aaaaaaaaedp6oipcdpkx3md6c3ecdfltlq7wl7lb5q2oj4756edqk2lvj5zq}
+LOG_FILE="$toolHome/logs/upload_to_oci_archive.log"
 
 [ "$user_functions_loaded" ] || source ./shared.sh
 
+
+
 function pre-reqs(){
-    log "info" "Verifying OCI cli."
+    local oci_bucket_name=$1
+    local oci_compartment_id=$2
+    log "info" "<uploadArchiveOCI><pre-reqs><entry> Args: $oci_bucket_name and $oci_compartment_id"
     if ! oci iam region list >> "$LOG_FILE" 2>&1; then
         log "error" "Fail to verify OCI cli is configured. For more information visit: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm"
         log "error" "exiting..."
-        return 1
+        exit 1
     fi
-    local bucket_name=$1
-    local compartment_id=$2
-    log "info" "Verifying OCI Bucket."
-    if ! oci os bucket get --bucket-name "$bucket_name" >> "$LOG_FILE" 2>&1; then
-        log "error" "bucket or autorization does not exist. Attempting to create bucket..."
-        if ! oci os bucket create --name $bucket_name --compartment-id $OCI_COMPARTMENT_ID >> "$LOG_FILE" 2>&1; then
+    log "info" "<uploadArchiveOCI><pre-reqs> oci cli tool seemed configured."
+    log "debug" " about to run command : oci os bucket get --bucket-name "$oci_bucket_name""
+    if ! oci os bucket get --bucket-name "$oci_bucket_name" >> "$LOG_FILE" 2>&1; then
+        log "error" "bucket does not exist. Attempting to create bucket..."
+        log "debug" " about to run command : oci os bucket create --name "$oci_bucket_name" --compartment-id "$oci_compartment_id""
+        if ! oci os bucket create --name "$oci_bucket_name" --compartment-id "$oci_compartment_id" >> "$LOG_FILE" 2>&1; then
             log "error" "Failed to create bucket. Check OCI credentials. Exiting..."
-            return 1
+            exit 1
         fi
-        log "info" "Bucket created. "
+        log "info" "<uploadArchiveOCI><pre-reqs> Bucket created."
     fi
-    log "info" "Bucket exists. Continuing..."
+    log "info" "<uploadArchiveOCI><pre-reqs><exit> "
 }
 
-log "info" "Starting tool to upload WLS Archives to Oracle Cloud Infrastructure Object Storage"
-OSS_NAMESPACE=${1:-}
-log "debug" "Namespace: $OSS_NAMESPACE"
-BUCKET_NAME=${2:-$(jq --raw-output -c '.topology.Name' $INVENTORY_FILE)}
-log "debug" "Bucket: $BUCKET_NAME"
-repo_archive_path=${3:-$(pwd)}
-domain_name=$(jq --raw-output -c '.topology.Name' $INVENTORY_FILE)
-log "debug" "Domain Name: $domain_name"
-REPOSITORY_PATH=$repo_archive_path/$domain_name
-log "info" "$REPOSITORY_PATH found. "
-pre-reqs $BUCKET_NAME $OCI_COMPARTMENT_ID
-log "info" "pre-requisites.          PASSED "
-for machine in $(jq --raw-output -c '.resources.Machines|keys[]' $INVENTORY_FILE); do
-    # do stuff with pretty-printed, multi-line "$i"
-    log "info" "uploading wls archive files to bucket $BUCKET_NAME"
-    #TODO: JOI - Revisig shopt to avoid ls output
-    #shopt -s nullglob  # expand globs to nothing if no match
-    for f in $REPOSITORY_PATH/$machine*;
-    do
-        [[ -e "$f" ]] || break
-        log "info" "uploading archive $f"
-        oci os object put --namespace "$OSS_NAMESPACE" --bucket-name "$BUCKET_NAME" --file "$f" --force >> "$LOG_FILE";
+upload_to_oss(){
+    return_code=0
+    log "info" "<uploadArchiveOCI><upload_to_oss><entry> Args:  $1 $2 $3"
+    local INVENTORY_FILE=$1
+    local REPO_DIRECTORY=$2
+    local REPO_PATH=${3:-$toolHome/out}
+    local REPO="$REPO_PATH/$REPO_DIRECTORY"
+    compartment_ocid=${compartment_ocid:?"output file not passed must exit. exiting..."} || return $?
+    bucket_name=${bucket_name:?"a bucket name is required. Check configuration file. exiting..."} || return $?
+    tenancy_namespace=${tenancy_namespace:?"OCI tenancy_namespace is required. ref: https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/understandingnamespaces.htm. exiting..."} || return $?
+    log "info" "Starting tool to upload WLS Archives to Oracle Cloud Infrastructure Object Storage"
+    log "debug" "Namespace: $tenancy_namespace"
+    log "debug" "Bucket: $bucket_name"
+    log "debug" "repo: $REPO"
+    domain_name=$(jq --raw-output -c '.topology.Name' "$INVENTORY_FILE")
+    pre-reqs "$bucket_name" "$compartment_ocid"
+    shopt -s nullglob  # expand globs to nothing if no match
+    for machine in $(jq --raw-output -c '.resources.Machines|keys[]' "$INVENTORY_FILE"); do
+        log "debug" "machine: $machine"
+        for f in "$REPO/$machine"*;
+        do
+            [[ -e "$f" ]] || break
+            log "info" "<uploadArchiveOCI><upload_to_oss> uploading archive $f"
+            oci os object put --namespace "$tenancy_namespace" --bucket-name "$bucket_name" --file "$f" --force >> "$LOG_FILE" || (log "error" "failed to upload $f ... exiting" ; exit 1)
+        done
+        return_code=$OP_COMPLETED
     done
-done
+    return "$return_code"
+}
+
+update_oss_auto_tfvars(){
+   log "info" "<uploadArchiveOCI><update_oss_auto_tfvars><entry>"
+   stack_path="$toolHome/oci/iac/overlay/wls-migrate-inventory"
+   bucket_name=${bucket_name:?"a bucket name is required. Check configuration file. exiting..."} || return $?
+   log "info" "<uploadArchiveOCI><update_oss_auto_tfvars> creating oss.auto.tfvars with bucket $bucket_name"
+   echo "bucket_name=$bucket_name" > $stack_path/oss.auto.tfvars
+   log "info" "<uploadArchiveOCI><update_oss_auto_tfvars><exit>"
+}
+

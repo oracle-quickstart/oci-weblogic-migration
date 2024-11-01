@@ -4,8 +4,39 @@
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #######################################################################################################
-# Build the Oracle Resource Manager (ORM) bundles for developers to test new features or bug fixes    #
+# Build the Oracle Resource Manager (ORM) Stack bundles.  #
+# example ./build_orm.sh -i ../out/Discovered_multi_connection_string.json -s owm_rm_`date +%Y%m%d%H%M`
 #######################################################################################################
+scriptName=$(basename "$0")
+scriptPath=$(dirname "$0")
+toolHome=$(builtin cd "$scriptPath/.." ||exit; pwd)
+LOG_FILE_NAME="build_rm_stack.log"
+ON_PREM_ENV_FILE="$toolHome/config"
+
+[ "$user_functions_loaded" ] || source ./shared.sh
+log "info" "<build_orm><init> shared functions loaded"
+############################################################
+#
+#
+############################################################
+set -e
+# Trap the EXIT signal to ensure cleanup
+#trap cleanup EXIT
+trap 'cleanup $? $LINENO' EXIT
+
+# Create a temporary directory and files
+TMP_BUILD=$(mktemp -d)
+log "info" "<build_orm><init> temporary directory created $TMP_BUILD"
+# Function to clean up temporary files
+cleanup() {
+  rm -rf "$TMP_BUILD"
+  if [ "$1" != "0" ]; then
+    log "error" "Script exit with error code: $1"
+  fi
+
+}
+
+
 
 ############################################################
 # help                                                     #
@@ -14,11 +45,10 @@ help()
 {
   echo "Build the Oracle Resource Manager (ORM) bundles for developers to deploy in Marketplace"
   echo
-  echo "Arguments: build_orm_dev.sh -v|--version <12.2.1.4|14.1.1.0> -t|--scripts_version --all"
+  echo "Arguments: build_orm.sh -s|--stack <stack_name> -i|--inventory <path_to_file>"
   echo "options:"
-  echo "-v, --version             WebLogic version. Supported values are 12.2.1.4 or 14.1.1.0. Optional when --all option is provided"
-  echo "-t, --scripts_version     VM scripts version"
-  echo "--all                     All bundles"
+  echo "-s, --stack         Stack Name"
+  echo "-i, --inventory     Inventory File (JSON Format)"
   echo
 }
 
@@ -27,25 +57,25 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+log "info" "<build_orm><init> parsing flags"
 while [ $# -ne 0 ]
 do
     case $1 in
         -h|--help)
             help
-            exit 0
+            exit 1
             ;;
-        -v|--version)
-            WLS_VERSION="$2"
+        -s|--stack)
+            STACK_NAME="$2"
 	          shift
             ;;
-#        -t|--scripts_version)
-#            SCRIPTS_VERSION="$2"
-#            shift
-#            ;;
-        --all)
-	    CREATE_ALL_BUNDLES="true"
-	    break
-	    ;;
+        -i|--inventory)
+            INVENTORY_FILE="$2"
+            shift
+            ;;
+        -t|--test)
+            BUILD_TEST="debug"
+            ;;
         *)
             help
             exit 1
@@ -57,95 +87,108 @@ done
 # validate the input parameters
 validate()
 {
-
-#  if [ -z "${SCRIPTS_VERSION}" ]; then
-#    echo "vm scripts version is not provided"
-#    help
-#    exit 1
-#  fi
-
-  if [ "${CREATE_ALL_BUNDLES}" == "true" ]; then
-     echo "Creating all bundles.."
-     return
-  fi
-
-  if [ -z "${WLS_VERSION}" ]; then
-    echo "WebLogic version is not provided"
+  log "info" "<build_orm><validate><entry>"
+  if [ -z "${STACK_NAME}" ]; then
+    echo "Stack name argument missing. exiting.."
     help
     exit 1
-  elif [ "${WLS_VERSION}" != "12.2.1.4" ] && [ "${WLS_VERSION}" != "14.1.1.0" ]; then
-    echo "Please provide valid WebLogic version"
-    help
-    exit 1
+  elif [ "z${STACK_NAME}" == "z-s" ] || [ "z${STACK_NAME}" == "z--stack" ]; then
+     echo "Stack name argument missing. exiting.."
+     help
+     exit 1
   fi
+
+  if [ -z "${INVENTORY_FILE}" ]; then
+     echo "Inventory file missing. exiting.."
+     help
+     exit 1
+  elif [ "z${INVENTORY_FILE}" == "z-i" ] || [ "z${INVENTORY_FILE}" == "z--inventory" ] || [ "z${INVENTORY_FILE}" == "znone" ]; then
+       echo "Inventory file missing. exiting.."
+       help
+       exit 1
+  fi
+#  echo "$STACK_NAME"
+#  echo "$INVENTORY_FILE"
+  log "info" "<build_orm><validate><exit> $STACK_NAME $INVENTORY_FILE"
 }
 
 #Run validation for the input parameters
 validate
 
-cd $(dirname $0)
-SCRIPT_DIR=$(pwd)
-
-echo "Cleaning wlsoci folder"
-#rm -rf ${SCRIPT_DIR}/../oci/generated
-echo "Creating wlsoci folder"
-TMP_BUILD=${SCRIPT_DIR}/../oci/generated
-mkdir -p ${SCRIPT_DIR}/../oci/generated
-
-create_12214_bundle()
-{
-  cp -Rf ${SCRIPT_DIR}/../oci/iac/schema.yaml ${SCRIPT_DIR}/../oci/iac/modules ${SCRIPT_DIR}/../oci/iac/*.tf ${TMP_BUILD}
-  cp -f ${SCRIPT_DIR}/../oci/iac/orm/orm_provider.tf ${TMP_BUILD}/provider.tf
-  replace_12214_variables
-#  (cd ${TMP_BUILD}; zip -r ${SCRIPT_DIR}/../oci/stack/wlsoci-resource-manager-ee-12214.zip *; rm -Rf ${TMP_BUILD}/*)
-  (cd ${TMP_BUILD}; zip -r ${SCRIPT_DIR}/../oci/stack/wlsoci-resource-manager-ee-12214.zip *;)
+# creates a Resource Manager zip file
+# Args:
+#   toolHome  :   Weblogic Migration tool home.
+#   TMP_BUILD :   Temparary directory to store terraform files
+#   STACK_NAME :  Zip file name .  Name Pattern:  owm_rm_202410302018.zip
+#   INVENTORY_FILE : JSON formated file with Weblogic Domain inventory.
+create_bundle(){
+#  TMP_BUILD/ -> path for Resource Manager Stack Front
+#  TMP_BUILD/inventory  -> path to store Weblogic Domain Discovery Output. JSON Formatted.
+#  TMP_BUILD/iac  ->  Resource Manager root Module  - Base Module with Stack logic
+#
+  log "info" "<build_orm><create_bundle><entry>"
+  cp -Rf ${toolHome}/oci/rm/*.tf ${toolHome}/oci/rm/*.tfvars ${TMP_BUILD}/
+  cp -Rf ${toolHome}/oci/rm/iac  ${TMP_BUILD}/
+  #  Copy generated schema to wls-inventory folder
+  cp -Rf ${toolHome}/oci/generated/schema.yaml ${TMP_BUILD}/
+  # Copy datasource inventory generated files
+  cp -Rf ${toolHome}/oci/generated/*.tf ${TMP_BUILD}/
+  cp -Rf ${toolHome}/oci/generated/*.tfvars ${TMP_BUILD}/
+  log "info" "<build_orm><create_bundle> terraform files copied to temporay stack $TMP_BUILD"
+  #TODO does the provider file need to be included?
+#  cp -f ${toolHome}/oci/iac2/orm/orm_provider.tf ${TMP_BUILD}/provider.tf
+  #TODO module path should not change. Update logic to pull from repo
+#  replace_module_source
+  mkdir -p ${TMP_BUILD}/inventory/
+  cp -f $INVENTORY_FILE ${TMP_BUILD}/inventory/wlsdomain.json
+  if [ "${BUILD_TEST}" == "debug" ]; then
+       log "info" "<build_orm><create_bundle><debug> enabled"
+       cp ${toolHome}/oci/test/auto/storage.auto.env ${TMP_BUILD}/storage.auto.tfvars
+       cp ${toolHome}/oci/test/auto/sec.auto.env ${TMP_BUILD}/sec.auto.tfvars
+#       cp ${toolHome}/oci/test/auto/network.auto.env ${TMP_BUILD}/network.auto.tfvars
+       generate_random_network_details
+       cp ${toolHome}/oci/test/auto/bastion.auto.env ${TMP_BUILD}/bastion.auto.tfvars
+       cp ${toolHome}/oci/test/auto/wlsservers.auto.env ${TMP_BUILD}/wlsservers.auto.tfvars
+       log "info" "<build_orm><create_bundle><debug> ORM Stack built for development"
+  fi
+  (cd ${TMP_BUILD}; zip -r ${toolHome}/oci/stack/$STACK_NAME.zip *;)
+  log "info" "<build_orm><create_bundle><exit>"
 }
-create_14110_bundle()
+
+generate_random_network_details()
 {
-  echo "entered create_14110 bundle"
-#  cp -Rf ${SCRIPT_DIR}/../oci/iac/modules ${SCRIPT_DIR}/../oci/iac/*.tf ${SCRIPT_DIR}/../oci/iac/schema_14110.yaml ${TMP_BUILD}
-#  cp -f ${SCRIPT_DIR}/../oci/iac/orm/orm_provider.tf ${TMP_BUILD}/provider.tf
-#  replace_14110_variables
-#  (cd ${TMP_BUILD}; zip -r ${SCRIPT_DIR}/binaries/wlsoci-resource-manager-ee-14110.zip *; rm -Rf ${TMP_BUILD}/*)
+  echo "vcn_name=\"joicito`uuidgen | cut -c 1-4`\"" > ${TMP_BUILD}/network.auto.tfvars
+  echo "vcn_dns_label=\"joilabel`uuidgen | cut -c 1-4`\"" >> ${TMP_BUILD}/network.auto.tfvars
+}
+
+replace_module_source(){
+  log "info" "replacing module source."
+  sed -i -e 's|\(.*source=.*\)|source="../"|' ${TMP_BUILD}/main.tf
+  log "info" "replacing module source . Done"
 }
 
 #need to change it to false after RM UI fix
-replace_12214_variables()
+replace_variables()
 {
-  echo "before first sed"
+  log "info" "before first sed"
 #  sed -i '/variable "generate_dg_tag" {/!b;n;n;n;cdefault = false' ${TMP_BUILD}/variables.tf
   sed -i'' -e '/^variable "generate_dg_tag" {/,/}/ s/\(.*default.*\)/default = false/' ${TMP_BUILD}/variables.tf
 #  sed -i -e '/^  #np1 = {/,/}/ s/\(.*ocpus.*\)/#ocpus  = 4,/' $TF_VARS_RUN
-  echo "second sed"
+  log "info" "second sed"
 #  sed -i '/variable "use_marketplace_image" {/!b;n;n;n;cdefault = false' ${TMP_BUILD}/mp_variables.tf
   sed -i'' -e '/^variable "use_marketplace_image" {/,/}/ s/\(.*default.*\)/default = false/' ${TMP_BUILD}/variables.tf
-  echo "third sed"
+  log "info" "third sed"
   #sed -i '/variable "tf_script_version" {/!b;n;n;n;cdefault = \"'"$SCRIPTS_VERSION"'\"' ${TMP_BUILD}/variables.tf
   sed -i'' -e '/^variable "tf_script_version" {/,/}/ s/\(.*default.*\)/default = \"'"$SCRIPTS_VERSION"'\"/' ${TMP_BUILD}/variables.tf
-  echo "done replacing with sed variables 12214"
+  log "info" "done replacing with sed variables 12214"
 }
 
-##need to change it to false after RM UI fix
-#replace_14110_variables()
-#{
-#  sed -i '/variable "generate_dg_tag" {/!b;n;n;n;cdefault = false' ${TMP_BUILD}/variables.tf
-#  sed -i '/variable "wls_version" {/!b;n;n;n;cdefault = \"14.1.1.0\"' ${TMP_BUILD}/weblogic_variables.tf
-#  sed -i '/variable "use_marketplace_image" {/!b;n;n;n;cdefault = false' ${TMP_BUILD}/mp_variables.tf
-#  sed -i '/variable "tf_script_version" {/!b;n;n;n;cdefault = \"'"$SCRIPTS_VERSION"'\"' ${TMP_BUILD}/variables.tf
-#}
+deploy_to_orm(){
+  log "info" "<build_orm><deploy_to_orm><entry>"
+  oci resource-manager stack create --compartment-id ${OCI_COMPARTMENT_ID} --config-source ${toolHome}/oci/stack/$STACK_NAME.zip >> "$LOG_FILE" || (log "error" "failed to deploy Stack to OCI ... exiting" ; exit 1)
+  log "info" "<build_orm><deploy_to_orm><exit>"
+}
 
-if [ "${CREATE_ALL_BUNDLES}" == "true" ]; then
-  create_12214_bundle
-  create_14110_bundle
-else
-  if [ "${WLS_VERSION}" == "12.2.1.4" ]; then
-    create_12214_bundle
-  else
-    create_14110_bundle
-  fi
-fi
-
-#cleanup
-#rm -Rf $TMP_BUILD
-
+create_bundle
+#deploy_to_orm
 exit 0

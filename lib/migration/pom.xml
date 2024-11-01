@@ -45,6 +45,7 @@
     <jline.version>3.26.1</jline.version>
     <jansi.version>2.4.1</jansi.version>
     <junit.version>5.10.2</junit.version>
+    <oci.sdk.version>3.49.0</oci.sdk.version>
   </properties>
   <dependencies>
     <dependency>
@@ -56,6 +57,11 @@
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
       <version>4.7.5</version>
+    </dependency>
+    <dependency>
+      <groupId>com.oracle.oci.sdk</groupId>
+      <artifactId>oci-java-sdk-objectstorage-extensions</artifactId>
+      <version>3.49.0</version>
     </dependency>
   </dependencies>
   <build>

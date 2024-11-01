@@ -1,0 +1,7 @@
+oracle/weblogic/migration/discover/InfraCommandRunner.class
+oracle/weblogic/migration/archive/AddCommand.class
+oracle/weblogic/migration/archive/WLSMigrationZipFile.class
+oracle/weblogic/migration/archive/OCIArchiveHelper.class
+oracle/weblogic/migration/archive/WLSMigrationArchiveHelper.class
+oracle/weblogic/migration/archive/WeblogicDomainArchiverCommand.class
+oracle/weblogic/migration/archive/WLSMigrationArchiveHelper$ArgParsingExceptionHandler.class

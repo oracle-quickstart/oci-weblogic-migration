@@ -1,0 +1,105 @@
+{
+    "domainInfo" : {
+        "AdminUserName" : "--FIX ME--",
+        "AdminPassword" : "--FIX ME--"
+    },
+    "topology" : {
+        "Name" : "testdefault",
+        "AdminServerName" : "adminserver",
+        "InternalAppsDeployOnDemandEnabled" : false,
+        "ProductionModeEnabled" : true,
+        "NMProperties" : {
+            "ListenPort" : 5678,
+            "JavaHome" : "/opt/jdk",
+            "ListenAddress" : "lakemigperhostnm.lakewlsprivates.lakevcn.oraclevcn.com",
+            "PropertiesVersion" : "12.2.1.4.0"
+        },
+        "Cluster" : {
+            "testcluster" : {
+            }
+        },
+        "Server" : {
+            "adminserver" : {
+                "AdministrationPortEnabled" : true,
+                "Machine" : "machinename1",
+                "AdministrationPort" : 9875,
+                "ListenAddress" : "lakemigperhostnm.lakewlsprivates.lakevcn.oraclevcn.com",
+                "SSL" : {
+                    "Enabled" : true
+                },
+                "ServerStart" : {
+                    "Arguments" : "-Dweblogic.security.SSL.minimumProtocolVersion=TLSv1.2",
+                    "Username" : "wlsadmin",
+                    "PasswordEncrypted" : "--FIX ME--"
+                }
+            },
+            "managedserver1" : {
+                "ListenPort" : 7003,
+                "Machine" : "machinename1",
+                "Cluster" : "testcluster",
+                "ListenAddress" : "lakemigperhostnm.lakewlsprivates.lakevcn.oraclevcn.com",
+                "SSL" : {
+                    "ListenPort" : 7004,
+                    "Enabled" : true
+                },
+                "ServerStart" : {
+                    "Arguments" : "-Dweblogic.security.SSL.minimumProtocolVersion=TLSv1.2",
+                    "Username" : "wlsadmin",
+                    "PasswordEncrypted" : "--FIX ME--"
+                }
+            }
+        },
+        "MigratableTarget" : {
+            "managedserver1 (migratable)" : {
+                "Cluster" : "testcluster",
+                "MigrationPolicy" : "manual",
+                "UserPreferredServer" : "managedserver1"
+            }
+        },
+        "Machine" : {
+            "machinename1" : {
+                "NodeManager" : {
+                    "NMType" : "SSL",
+                    "ListenAddress" : "lakemigperhostnm.lakewlsprivates.lakevcn.oraclevcn.com",
+                    "ListenPort" : 5678
+                }
+            }
+        },
+        "SecurityConfiguration" : {
+            "NodeManagerUsername" : "nmuser",
+            "NodeManagerPasswordEncrypted" : "--FIX ME--"
+        },
+        "DomainPath" : "/opt/domains/testdefault",
+        "OraclePath" : "/opt/middleware"
+    },
+    "resources" : {
+        "Machines" : {
+            "machinename1" : {
+                "DETAILS" : {
+                    "OS_RELEASE" : "9",
+                    "OS_VERSION" : "8",
+                    "Arch" : "x86_64",
+                    "OS" : "oracle",
+                    "Kernel" : "206.153.7.el8uek.x86_64",
+                    "Hostname" : "lakemigperhostnm.lakewlsprivates.lakevcn.oraclevcn.com"
+                },
+                "Owner" : {
+                    "uid" : "1001",
+                    "uname" : "domain",
+                    "gid" : "1001",
+                    "gname" : "domain"
+                },
+                "NodeManager" : [
+                    "-server -Xms32m -Xmx200m -Djdk.tls.ephemeralDHKeySize=2048 -Dweblogic.RootDirectory=/opt/middleware/wlserver/../oracle_common/common/nodemanager -Dcoherence.home=/opt/middleware/wlserver/../coherence -Dbea.home=/opt/middleware/wlserver/.. -Djava.system.class.loader=com.oracle.classloader.weblogic.LaunchClassLoader -Djava.security.policy=/opt/middleware/wlserver/server/lib/weblogic.policy -Dweblogic.nodemanager.JavaHome=/opt/jdk /opt/jdk/bin/java weblogic.NodeManager -v"
+                ],
+                "WeblogicServer" : [
+                    "-server -Xms256m -Xmx512m -Dlaunch.use.env.classpath=true -Dweblogic.Name=adminserver -Djava.security.policy=/opt/middleware/wlserver/server/lib/weblogic.policy -Dweblogic.ProductionModeEnabled=true -Dweblogic.system.BootIdentityFile=/opt/domains/testdefault/servers/adminserver/data/nodemanager/boot.properties -Dweblogic.nodemanager.ServiceEnabled=true -Dweblogic.nmservice.RotationEnabled=true -Dweblogic.security.SSL.minimumProtocolVersion=TLSv1.2 -Djava.system.class.loader=com.oracle.classloader.weblogic.LaunchClassLoader -Dwls.home=/opt/middleware/wlserver/server -Dweblogic.home=/opt/middleware/wlserver/server /opt/jdk/bin/java -cp /opt/middleware/wlserver/server/lib/weblogic-launcher.jar -javaagent:/opt/middleware/wlserver/server/lib/debugpatch-agent.jar -da weblogic.Server",
+                    "-server -Xms256m -Xmx512m -Dlaunch.use.env.classpath=true -Dweblogic.Name=managedserver1 -Djava.security.policy=/opt/middleware/wlserver/server/lib/weblogic.policy -Dweblogic.ProductionModeEnabled=true -Dweblogic.system.BootIdentityFile=/opt/domains/testdefault/servers/managedserver1/data/nodemanager/boot.properties -Dweblogic.nodemanager.ServiceEnabled=true -Dweblogic.nmservice.RotationEnabled=true -Dweblogic.security.SSL.minimumProtocolVersion=TLSv1.2 -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust -Djava.security.egd=file:///dev/urandom -Dweblogic.ssl.JSSEEnabled=true -Dweblogic.security.SSL.enableJSSE=true -DORACLE_HOME='/opt/middleware/oracle_common' -Djava.system.class.loader=com.oracle.classloader.weblogic.LaunchClassLoader -Dwls.home=/opt/middleware/wlserver/server -Dweblogic.home=/opt/middleware/wlserver/server -Dweblogic.management.server=http://lakemigperhostnm.lakewlsprivates.lakevcn.oraclevcn.com:7001 /opt/jdk/bin/java -cp /opt/middleware/wlserver/server/lib/weblogic-launcher.jar -javaagent:/opt/middleware/wlserver/server/lib/debugpatch-agent.jar -da weblogic.Server"
+                ],
+                "JavaPath" : "/opt/jdk",
+                "ExtraOSPaths" : [
+                ]
+            }
+        }
+    }
+}
