@@ -1,31 +1,43 @@
 Purpose
 -------
-This solution lifts and shifts single/multi node Weblogic cluster to Oracle Cloud Infrastructure optionally fronted
-by a load balancer. The solution will create only one stack at time and further modifications that are done will be
-done on the same stack.
+Oracle WebLogic Migration tool lifts and shifts single/multi node Weblogic Domain to Oracle Cloud Infrastructure optionally fronted
+by a load balancer. The solution will create only one stack at time and further modifications  will be done on the same stack.
+
+The Oracle WebLogic Migration tool is designed to facilitate a smooth lift-and-shift migration of WebLogic domains to the cloud. The solution will introspect a Weblogic Domain and creates a tailored Resource Manager Stack that leverages the capabilities of OCI Resource Manager service to securely create OCI Network, Compute Instances to host the WebLogic Domain discovered.    
 
 
+Requirements
+-----------------------------
+
+*On-Premise Requirements*
+
+To deploy the software, ensure the following prerequisites are met:
+
+    Oracle Linux compatibility: The operating system release should be within the supported range.
+
+    File system permissions: WebLogic Migration Tool is designed to be installed directly on to the AdminServer Host. An Operating System user with read and write permissions on WebLogic Domain's , Oracle Middleware and Java Home is require to perform tasks such us unzip, tar.
+
+    Internet Connection: OWM Tool requires access to github.com repositories to download two required libraries - Weblogic Deployment Tool and JQ - to discover the source WebLogic environment. Alternatively, specific releases can be manually download and placed in $toolHome/deps/wdt and deps/jq respectively. 
+
+    Network configuration: AdminServer Host must have an established SSH authentication system in place, connecting the AdminServer and all the Weblogic Managed server Linux hosts seamlessly.
+
+    Storage Space:  Admin Server disk space to store 3 times the space used by Oracle Middleware and Oracle Domain home combined.
+
+    Oracle Cloud Infrastructure CLI: The process of migrating an source on-premise WebLogic Domain involves compressing different directories and uploading them to an Oracle Cloud Object Storage Bucket. Current release uploads files using OCI cli.
 
 
-**On-Premise Requirements**
-Oracle Linux compatible Operating Systems releases.  
-User with read and write file system permissions to unzip, create directories in AdminServer Linux Server host.
-Access to download Weblogic Deployment Tool, JQ. from github repositories directly from AdminServer Linux Host.
-AdminServer Host must have pre-configured ssh authentication between AdminServer and all the Weblogic Managed server Linux hosts.
-Oracle Cloud Infrastructure CLI installed. 
+*Oracle Cloud Requirements*
 
+* Oracle Cloud Account (Tenancy) :  Resources discovered on-premise will be recreated under an OCI Tenancy.  
 
-**Public subnet Topology**
-Creates following subnets under new VCN or existing VCN in different ADs.
-* Loadbalancer Frontend Public Subnet
+* OCI Compartment:  Oracle Cloud facilitates the organzation of resources using a logical separation called compartments.  A comparment is requred to group all the resources created by Oracle WebLogic Migration Tool.
 
+* OCI Resource Manager:  Oracle Cloud Account with permissions to create, plan and apply Stacks.
 
-**Private Subnet Topology**
-Creates following subnets under new VCN or existing VCN in different ADs.
+* OCI Permissions:  Oracle CLoud user must have enough permissions to create, destroy, manage Virtual Cloud Network, Compute Instances, Block Storage, LoadBalancers, Private Resource Manager Endpoints.   
 
-* WLS Private Subnet
-* Management Public Subnet (for bastion host)
-* Loadbalancer Frontend Public Subnet
+* Oracle CLI:  Details on how to install and configured can be found at https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
+
 
 
 Organization
@@ -33,82 +45,142 @@ Organization
 **inputs** - this directory consists of following:
 * **config/on-prem.env** - Weblogic Domain specific config
 
-[//]: # (* **main.tf** - is where we call the modules in order as defined in ../oci/iac/.)
+[//]: # (* **main.tf** - is where we call the modules in order as defined in ../oci/rm/.)
 
 [//]: # (* **outputs.tf** - result printed on the stdout at the completion of terraform provisioning.)
 
 [//]: # (* **provider.tf** - oci provider is defined.)
 
-OCI Pre-requisites
---------------------
-The OCI CLI supports API Key based authentication and Instance Principal based authentication. Details on how to install and configured can be found at https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
-
-**Tenancy OCID** - The global identifier for your account, always shown on the bottom of the web console.
-**User OCID** - The identifier of the user account you will be using for Terraform
-**Fingerprint** - The fingerprint of the public key added in the above user's API Keys section of the web console.
-**Private key path** - The path to the private key stored on your computer. The public key portion must be added to the user account above in the API Keys section of the web console.
 
 Installing OCI Weblogic Migration Tool
 ----------------------------------------
-Open a Secure SHell (SSH) session to AdminServer linux host. 
-Download the most recent release from  https://github.com/oracle-quickstart/oci-weblogic-migration/releases
-Unzip the installer to a folder where the user has read and write permissions. 
-Folder is now will be referenced as $OWM_HOME   
+* Initiate a Secure Shell (SSH) connection to the AdminServer Linux Host, utilizing a user account with read and write file system permissions. This step enables secure remote access and interaction with the server.
+* Download the most recent release from  https://github.com/oracle-quickstart/oci-weblogic-migration/releases
+* Unzip the installer to a folder where the user has read and write permissions.
+* Folder will be referenced as $OWM_HOME.
 
-To invoke OCI Weblogic Migration Tool
+
+Install Pre-Requisites 
+-----------------------
+If the AdminServer host has access to internet OWM can automatically download and install WebLogic Deploy Tooling and JQ library from github repositories. 
+
+$> bash install_dependencies.sh
+
+
+Discover On-Premise WebLogic Domain
 ----------------------------------------
-Before running any script, make sure a configuration file is correctly populated in $OWM_HOME/config. Use on-prem.env as a reference. 
 
-From $OWM_HOME/bin dir execute:
-
-### Discover Weblogic Domain and Generate Inventory 
-```bash
-$ owm.sh local <on-prem.env>
-```
-
-### Discover Infrastructure
-Default path to Inventory File in json format is $OWM_HOME/out/ 
-```bash
-$ owm.sh local <on-prem.env> <PATH to Inventoryfile.json>
-```
-
-### Archive Weblogic Domain
-Default path to `Inventory File` is $OWM_HOME/out/.
-
-**WLS Non JRF:**
-If the domain to be discovered is a JRF type domain. Do not set any value to property `wls_domain_type` in the environment config file
-**WLS JRF with Database:**
-If the domain to be discovered is a JRF type domain. Set the property `wls_domain_type=JRF` in the environment config file
+Step 1.  Declare WebLogic source domain details in $toolHome/config/on-prem.env
 
 ```bash
-$ owm.sh archive <on-prem.env> <PATH to Inventoryfile.json> <PATH to `InfraInventory` File.json> 
+ssh_admin_server_host=           # Weblogic Server Admin IP or hostname.
+ssh_user=                        # Operating system user with permissions to read
+ssh_password_file=               #/path/to/file_with_ssh_password
+ssh_private_key_file=            #/path/to/private_key_file
+
+# [ SSH JumpHost]
+ssh_jump_host=                     # Jumphost IP Address or hostname
+ssh_jump_host_user=                # username to authenticate on SSH Jumphost
+ssh_jump_host_password_file=       #/path/to/ssh_jump_host user password_file
+ssh_jump_host_private_key_file=    #/path/to/ssh_jump_host user private_key_file
+
+# [ HTTP Proxy]
+http_proxy=                         #http proxy server address  i.e http://192.168.0.10:80
+https_proxy=                        #https proxy server address  i.e https://192.168.0.10:80
+http_proxy_user=                    #http proxy user
+http_proxy_password_file=           #/path/to/https proxy_password file
+
+# [ Weblogic Domain]
+oracle_home=                     #set to ORACLE_HOME in local Linux Server.
+jdk_home=                        # set to JDK path in local Linux Server.
+node_manager_home=               # set the node_manager_home IF WebLogic Deployment Type is Node Manager per Machine. 
+domain_home=                     # Path to WebLogic Domains: i.e /opt/domains/testdomain
+wdt_home=./deps/wdt              # If Oracle WebLogic Deploy Tooling is already installed in the system.  Set WDT path  
 ```
 
-### Upload Archives to OCI Object Storage
-Configure OCI CLI client and confirm that the OCI user has permissions to create Object Storage Buckets.
-More information at https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/managingbuckets_topic-To_create_a_bucket.htm#top
+### Step 2. Discover Weblogic Domain and generate Inventory 
+
+In this step, OWM will read the on-prem.env configuration file and connect to the AdminServer host to discover the WebLogic domain.  If the task is successfull, it will generate a JSON formated file stored in $toolHome/out directory.   File name pattern is Discovery_<date>.json
+
+From $OWM_HOME/bin directory run:
+ 
+```bash
+$>  bash owm.sh wls <on-prem.env>
+```
+
+###  Step 3.  Discover Infrastructure
+A complete inventory file (json formated) will be created with entries found on the source WebLogic Domain and the infrastructure it is running on. The resulting file `infra_<date>.json` wil be stored at $OWM_HOME/out/ 
+
+From $OWM_HOME/bin directory run:
+
+```bash
+$ bash owm.sh infra <on-prem.env> <PATH to Inventoryfile.json>
+```
+
+### Step 4.  Archive Weblogic Domain
+
+In this step, each discovered machine found in the Complete Inventory file `_infra_<date>.json` will compress its own WebLogic Domain home, Jdk Home, Oracle Home and any custom directory found in the WebLogic configuration.  Each archive filename must follow the pattern weblogicMachineName_WebLogicDomainName_<folder_type>_home.tar.gz and stored under `$toolHome/out/<dir_specified>`
+
+Note: All archives will be Secured Copied from each unique Host running Managed Servers to AdminServer host.  AdminServer Disk space must account for all of the files generated per Managed Server hosts
+
+Note:  Is is highly recommended that the WebLogic Domain is in stop state before compressing directories to avoid files being modified between read and write. 
+
+Example:
+
+```bash
+machinename1-testdomain-domain_home.tar.gz  
+machinename1-testdomain-java_home.tar.gz  
+machinename1-testdomain-weblogic_home.tar.gz
+machinename1-testdomain-custom_home.tar.gz
+```
+
+From $OWM_HOME/bin directory run:
+
+```bash
+$ bash owm.sh archive <on-prem.env> -i <PATH to Complete Inventoryfile.json> -r <dir_name under $toolHome/out/> 
+./owm.sh archive "$ONPREM_CONFIG" -i "$INFRA_DISCOVER" -r wls-coh
+```
+
+### Step 4.  Upload Archives to OCI Object Storage (Optional)
+
+The restore process expects all of the archives to be stored in a Oracle Cloud Object Storage Bucket. Therefore, this steps helps with the upload process using the OCI cli client. 
+
+To configure OCI CLI client and confirm that the OCI user has permissions to create Object Storage Buckets. More information at https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/managingbuckets_topic-To_create_a_bucket.htm#top
+
+Note: User may opt to upload the archives manually due to Network security restrictions on-premise. Follow Oracle Cloud documentation on how to transfer files via the Oracle Cloud Console.
+
 **Create OSS bucket and Upload Archives:**
 ```bash
-$ owm.sh lift <on-prem.env> <PATH to `WLSInventory` File.json> <PATH to `InfraInventory` File.json>
+$ owm.sh lift <on-prem config file> <PATH to InfraInventory File.json> <archive_dir> <bucket_name>
 ```
+i.e  $> bash owm.sh lift ../config/on-prem.env ../out/inventory/infra_output_202410281306.json uat-files wlsmig_domain
 
-### Database Connections Inventory
-OWM can inspect your domain to identify JDBC datasources that need to be updated once the environment has been moved to OCI.  
+
+### Step 4. Discovery Database Connections 
+
+OWM will look for Datasources entires in the inventory file to identify JDBC datasources that need to be updated once the environment has been moved to OCI.  With the list of connection strings, it will generate a custom form that will let the user pick from their existing OCI ATP or Database to connect to. 
 
 **Process Datasources**
 ```bash
-$ owm.sh ds <PATH to Inventoryfile.json>
+$ bash owm.sh ds <on-prem.env> <PATH to Inventoryfile.json> 
 ```
+i.e. ./owm.sh ds ../config/on-prem.env ../out/infra_output_202410281306.json
 
-### Generate OCI Resource Manager Stack
-Once you confirmed the Inventory Files were correctly created with the Weblogic Domain to be moved to OCI. Proceed to create an OCI Resource Manager Stack.
+### Step 5.  Generate OCI Resource Manager Stack
+
+Once all previous steps were correctly executed, the migration to OCI will happen via Resource Manager Service.  This step genarates a .zip file with a Infrastructure as Code files that will be the input to create a Resource Manager Stack in Oracle Cloud. 
+
 ```bash
-$ owm.sh orm <stack_name> <PATH to `InfraInventory` File.json>
+$ bash owm.sh orm <PATH to `InfraInventory` File.json> 
 ```
-Newly created OCI Resource Manager Stack will be created under $OWM_HOME/oci/stack
+
+i.e ./owm.sh orm ../out/infra_output_202410281306.json  will generate a stack named similar to owm_rm_202411042318.zip
 
 
-### Move WLS Domain to OCI Cloud
+Newly created Zip files will be stored under $OWM_HOME/oci/stack
+
+
+### Step 5. Migrate WLS Domain to OCI Cloud
 
 Resource Manager
 --------------------
@@ -128,12 +200,11 @@ From the Stack Details, click `Apply`.
 What it does
 -------------
 
-**Pre-requisites for JFR Weblogic enabled domains :**
-Databases should be migrated to OCI or accessible from OCI Cloud Compartment. JDBC String must be known before runing Resource Manager `Apply` action  
-
-
 * Based on the variables value selected, Resource Manager will provision a number of OCI Compute Instances with the required OCI networking.
 * User also has option to use pre-existing VCN. Network Security must be created along with the existing network. It should have internet gateway pre-configured.
+* WebLogic Domains with JDBC Datasource configured can to select between Autonomous Database, Base System and Manual Datasource connection string replacement to recreate the Datasource connection string in OCI. 
+* **Pre-requisites for JFR Weblogic enabled domains :**
+  Databases should be migrated to OCI or accessible from OCI Cloud Compartment. JDBC String must be known before runing Resource Manager `Apply` action
 
 * **Inputs to Resource Manager:**
     *  User will provide the following as param to terraform:
@@ -244,6 +315,21 @@ Databases should be migrated to OCI or accessible from OCI Cloud Compartment. JD
 * To use existing VCN, user needs to ensure that internet gateway is preconfigured.
 * It can only support WLS and OCI DB in same VCN.
 
-Tests
------
-https://coherence.us.oracle.com/display/CLOUD/WLS+Terraform+Testing - documents all test cases.
+
+### Step 6. Start OCI WebLogic Domain and Verify Services
+
+All OCI Instances (Servers hosting AdminServers and Managed Servers) will be created in a Private Subnet in OCI Virtual Cloud Network. To access them, an SSH session should be established via the Bastion Host created along this migration.  
+
+To find the commands to ssh, click on Stack - Application Details Tab and copy the SSH command example given. 
+
+The complete ssh command to access the AdminServer should follow this format:
+
+```bash 
+ssh -i <private ssh key file> -o 'UserKnownHostsFile /dev/null' -o 'StrictHostKeyChecking no' -o 'ProxyCommand ssh -W %h:%p -i <private ssh key file> -l opc <Bastion Public IP>' -l opc <AdminServer Private IP>
+
+$admin-server> sudo su - <same username as on-premise> 
+```
+
+Once in the new AdminServer instance, change directory to the WebLogic Domain Home and bring up your AdminServer. Verify and Test your WebLogic domain to confirm that the migration was successful. 
+
+
