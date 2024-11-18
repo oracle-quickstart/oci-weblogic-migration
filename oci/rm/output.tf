@@ -22,6 +22,10 @@ output "wlsserver_pool_size" { value = var.wlsserver_pool_size }
 output "wlsserver_image_id" { value = local.vm_instance_image_id }
 output "weblogic_instances_private_ips" { value = module.wls.wlsserver_pool_ips }
 
+output "weblogic_console" {
+  value = "https://10.0.2.79:7002/console"
+}
+
 output "wlsserver_pool_ids" {
   value = concat(
     values(coalesce(module.wls.wlsserver_instances, {})),

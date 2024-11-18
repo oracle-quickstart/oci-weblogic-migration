@@ -1,0 +1,62 @@
+# Copyright (c) 2022, 2023 Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
+
+locals {
+  wlsdomain_group_name = format("wls-%s-%v", var.resource_name_prefix, var.state_id)
+  wlsserver_group_name          = format("wls-wlsservers-%v", var.state_id)
+  wlsserver_compartments        = coalescelist(var.wlsserver_compartments, [var.compartment_id])
+  wlsserver_compartment_matches = formatlist("instance.compartment.id = '%v'", local.wlsserver_compartments)
+  wlsserver_compartment_rule    = format("ANY {%v}", join(", ", local.wlsserver_compartment_matches))
+
+  wlsserver_group_rules = var.use_defined_tags ? format("ALL {%v}", join(", ", [
+    format("tag.%v.role.value='wlsserver'", var.tag_namespace),
+    format("tag.%v.state_id.value='%v'", var.tag_namespace, var.state_id),
+    format("tag.%v.domain.value='%v'", var.tag_namespace, var.resource_name_prefix),
+  ])) : local.wlsserver_compartment_rule
+
+
+  #TODO: JOI Future version narrow access to specific bucket  target.bucket.name
+  wlsservers_object_storage_templates = tolist([
+    "Allow dynamic-group ${local.wlsserver_group_name} to read buckets in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to read objects in compartment id %v"
+  ])
+
+  # TODO support keys defined at wlsserver group level
+  wlsserver_kms_volume_templates = tolist([
+#    "Allow service wls to USE key-delegates in compartment id %v where target.key.id = '%v'",
+    "Allow service blockstorage to USE keys in compartment id %v where target.key.id = '%v'",
+    "Allow dynamic-group ${local.wlsserver_group_name} to USE key-delegates in compartment id %v where target.key.id = '%v'",
+  ])
+
+
+  # Block volume encryption using OCI Key Management System (KMS)
+  wlsserver_kms_volume_statements = coalesce(var.wlsserver_volume_kms_key_id, "none") != "none" ? flatten(tolist([
+    for statement in local.wlsserver_kms_volume_templates :
+    formatlist(statement, local.wlsserver_compartments, var.wlsserver_volume_kms_key_id)
+  ])) : []
+
+  # Object Storage access  (OSS)
+  wlsservers_object_storage_statements = flatten(tolist([
+  for statement in local.wlsservers_object_storage_templates :
+  formatlist(statement, local.wlsserver_compartments)
+  ]))
+
+  wlsserver_policy_statements = var.create_iam_wlsserver_policy ? tolist(concat(
+    local.wlsservers_object_storage_statements,
+    local.wlsserver_kms_volume_statements,
+  )) : []
+}
+
+resource "oci_identity_dynamic_group" "wlsservers" {
+  provider       = oci.home
+  count          = var.create_iam_resources && var.create_iam_wlsserver_policy ? 1 : 0
+  compartment_id = var.tenancy_id # dynamic groups exist in root compartment (tenancy)
+  description    = format("Dynamic group of Weblogic Server nodes for WLS Terraform state %v", var.state_id)
+  matching_rule  = local.wlsserver_group_rules
+  name           = local.wlsserver_group_name
+  defined_tags   = local.defined_tags
+  freeform_tags  = local.freeform_tags
+  lifecycle {
+    ignore_changes = [defined_tags, freeform_tags]
+  }
+}

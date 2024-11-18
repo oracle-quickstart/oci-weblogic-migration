@@ -149,6 +149,7 @@ create_bundle(){
        generate_random_network_details
        cp ${toolHome}/oci/test/auto/bastion.auto.env ${TMP_BUILD}/bastion.auto.tfvars
        cp ${toolHome}/oci/test/auto/wlsservers.auto.env ${TMP_BUILD}/wlsservers.auto.tfvars
+       cp ${toolHome}/oci/test/auto/stack.auto.env ${TMP_BUILD}/stack.auto.tfvars
        log "info" "<build_orm><create_bundle><debug> ORM Stack built for development"
   fi
   (cd ${TMP_BUILD}; zip -r ${toolHome}/oci/stack/$STACK_NAME.zip *;)

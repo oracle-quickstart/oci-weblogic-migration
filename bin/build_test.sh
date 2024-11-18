@@ -22,11 +22,11 @@ log "info" "<build_orm><init> shared functions loaded"
 set -e
 # Trap the EXIT signal to ensure cleanup
 #trap cleanup EXIT
-trap 'cleanup $? $LINENO' EXIT
+#trap 'cleanup $? $LINENO' EXIT
 
 # Create a temporary directory and files
 #TMP_BUILD=$(mktemp -d)
-TMP_BUILD="$toolHome/oci/test/tf-cli/$STACK_NAME"
+TMP_BUILD="$toolHome/oci/test/tf-cli/"
 mkdir -p $TMP_BUILD
 log "info" "<build_orm><init> temporary directory created $TMP_BUILD"
 # Function to clean up temporary files
@@ -151,8 +151,14 @@ create_bundle(){
        generate_random_network_details
        cp ${toolHome}/oci/test/auto/bastion.auto.env ${TMP_BUILD}/bastion.auto.tfvars
        cp ${toolHome}/oci/test/auto/wlsservers.auto.env ${TMP_BUILD}/wlsservers.auto.tfvars
+       cp ${TF_LOCAL_PROVIDER_FILE} ${TMP_BUILD}/terraform.tfvars.json
+       cp ${toolHome}/oci/test/auto/stack.auto.env ${TMP_BUILD}/stack.auto.tfvars
+       cp ${toolHome}/oci/test/auto/jdbc_atp.auto.env ${TMP_BUILD}/jdbc_atp.auto.tfvars
+       cp -f ${toolHome}/oci/test/auto/provider.tf ${TMP_BUILD}/provider.tf
+       cp ${toolHome}/oci/test/auto/data.tf ${TMP_BUILD}/data.tf
        log "info" "<build_orm><create_bundle><debug> ORM Stack built for development"
   fi
+  echo ${TMP_BUILD}
   (cd ${TMP_BUILD}; terraform init; terraform plan;)
   log "info" "<build_orm><create_bundle><exit>"
 }
@@ -161,6 +167,8 @@ generate_random_network_details()
 {
   echo "vcn_name=\"joicito`uuidgen | cut -c 1-4`\"" > ${TMP_BUILD}/network.auto.tfvars
   echo "vcn_dns_label=\"joilabel`uuidgen | cut -c 1-4`\"" >> ${TMP_BUILD}/network.auto.tfvars
+  echo "allow_wlsserver_ssh_access=true" >> ${TMP_BUILD}/network.auto.tfvars
+  echo "allow_adminserver_ssh_access=true" >> ${TMP_BUILD}/network.auto.tfvars
 }
 
 replace_module_source(){

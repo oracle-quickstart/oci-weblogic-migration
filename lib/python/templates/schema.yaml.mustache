@@ -43,13 +43,16 @@ variableGroups:
       - use_marketplace_image
       - instance_image_id
       - wlsserver_is_public
+      - ssh_kms_vault_id
+      - ssh_kms_secret_id
+      - wlsoci_vmscripts_zip_bundle_path
+      - wls_discovery_folder
+
 
   - title: "Stack Configuration"
     variables:
       - compartment_ocid
       - ssh_public_key
-      - ssh_kms_vault_id
-      - ssh_kms_secret_id
       - create_oci_policies
       - create_vcn
       - add_load_balancer
@@ -98,6 +101,9 @@ variableGroups:
       - wlsserver_ocpus
       - wlsserver_memory
       - wlsserver_boot_volume_size
+      - wlsserver_mw_volume_size
+      - wlsserver_jdk_volume_size
+      - wlsserver_domain_volume_size
       - wlsserver_block_volume_type
       - wlsserver_use_encryption
       - wlsserver_volume_kms_vault_id
@@ -177,6 +183,9 @@ variableGroups:
     visible: false
     variables:
         - update_any_ds
+  {{#datasources}}
+        - is_ocidb_system_id_available_{{{datasourceName}}}
+  {{/datasources}}
 
 {{/hasDatasources}}
 {{#datasources}}
@@ -200,6 +209,7 @@ variableGroups:
         - oci_db_database_id_{{{datasourceName}}}
         - oci_db_pdb_service_name_{{{datasourceName}}}
         - oci_db_port_{{{datasourceName}}}
+        - atp_db_existing_vcn_id_{{{datasourceName}}}
 {{/datasources}}
   
     
@@ -962,6 +972,18 @@ variables:
     title: Boot volume size (GB)
     type: number
     required: false
+  wlsserver_mw_volume_size:
+    title: Middleware volume size (GB)
+    type: number
+    required: false
+  wlsserver_jdk_volume_size:
+    title: JDK volume size (GB)
+    type: number
+    required: false
+  wlsserver_domain_volume_size:
+    title: WebLogic Domain volume size (GB)
+    type: number
+    required: false
   wlsserver_image_type:
     title: Image License Type
     description: The selected image is used for Weblogic instances.
@@ -1131,6 +1153,7 @@ variables:
     required: true
     description: OCI Object Storage Bucket name where on-premise Weblogic archives are stored.
 
+
   #Datasources
     # Datasources Flags
 
@@ -1277,6 +1300,14 @@ variables:
     default: false
     title: "Database uses private endpoint"
     description: "The Autonomous Transaction Processing (ATP) database uses private endpoint for network access"
+
+  atp_db_existing_vcn_id_{{{datasourceName}}}:
+    visible: false
+    type: string
+    default: ""
+    required: false
+    title: "The OCID of the VCN used by the ATP database private endpoint"
+
   ########
   # End section: ATP
   ########
@@ -1471,6 +1502,7 @@ outputGroups:
   - title: Domain
     outputs:
       - wls_domain_name
+      - weblogic_console
   - title: Weblogic Servers
     outputs:
       - wlsserver_pool_ids
@@ -1525,6 +1557,9 @@ outputs:
     type: ocid
   wlsserver_shape:
     title: Shape
+    type: string
+  weblogic_console:
+    title: Admin Console
     type: string
 #  create_iam_wlsserver_policy:
 #    title: Create self-managed wlsserver policy

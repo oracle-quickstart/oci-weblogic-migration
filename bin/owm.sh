@@ -80,14 +80,15 @@ process_datasources(){
 }
 
 process_archives(){
-  local inventory_file=$1
-  local archive_folder_name=$2
-  local repository=${3:-$toolHome/out}
-  log "info" "<discoverDomain><process_archives><entry> args: $inventory_file $archive_folder_name $repository"
-  source $toolHome/bin/archiveWLSDomain.sh
+#  local inventory_file=$1
+#  local archive_folder_name=$2
+#  local dry_run=$3
+  log "info" "<discoverDomain><process_archives><entry> args: $*"
+#  source $toolHome/bin/archiveWLSDomain.sh
 #  archive_repository_path=$3
 #  $toolHome/bin/archiveWLSDomain.sh $inventory_file $archive_folder_name  $archive_repository_path
-   archiveWLSDomain "$inventory_file" "$archive_folder_name" "$repository"
+   #archiveWLSDomain "$inventory_file" "$archive_folder_name" "$repository"
+   source "${toolHome}/bin/archiveWLSDomain.sh" "$@"
    log "info" "<discoverDomain><process_archives><exit> success"
 }
 
@@ -120,7 +121,6 @@ build_orm_test(){
     local inventory_file=${1:-none}
     local stack_name=${2:-owm_rm_$file_timestamp}
     log "info" "<owm><build_orm><entry> args: $inventory_file - $stack_name"
-#    ret_code=$(source $toolHome/bin/build_orm.sh -i "$inventory_file" -s "$stack_name" )
     source "${toolHome}/bin/build_test.sh" -i "$inventory_file" -s "$stack_name" -t
     log "info" "<owm><build_orm><exit> success"
 }
@@ -159,7 +159,10 @@ case "$1" in
         ;;
     "archive")
        load_config "$2"
-       process_archives "$3" "$4"
+       shift; shift
+       #process_archives "$3" "$4" "$5"
+       process_archives $@
+
        ;;
     "lift")
        load_config "$2"

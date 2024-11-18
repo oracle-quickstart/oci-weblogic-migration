@@ -34,6 +34,12 @@ variable "atp_db_network_compartment_id_{{{datasourceName}}}" {
   default     = ""
 }
 
+variable "atp_db_existing_vcn_id_{{{datasourceName}}}" {
+    type        = string
+    description = "The OCID of the VCN used by the ATP database private endpoint"
+    default     = ""
+}
+
 variable "atp_db_compartment_id_{{{datasourceName}}}" {
   type        = string
   description = "The OCID of the compartment where the ATP database is located"

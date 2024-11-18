@@ -32,3 +32,32 @@ data "oci_database_db_home" "ocidb_db_home_0" {
   db_home_id = data.oci_database_database.ocidb_database_0[0].db_home_id
 }
 /////////////////////# Datasource #0
+# DB Connection String #1
+data "oci_database_autonomous_database" "atp_db_1" {
+  count                  = local.is_atp_db_1 ? 1 : 0
+  autonomous_database_id = var.atp_db_id_1
+}
+
+data "oci_database_db_systems" "ocidb_db_systems_1" {
+  count          = local.is_oci_db_1 ? 1 : 0
+  compartment_id = var.oci_db_compartment_id_1
+  filter {
+    name   = "id"
+    values = [var.oci_db_dbsystem_id_1]
+  }
+}
+
+
+data "oci_database_database" "ocidb_database_1" {
+  count       = local.is_ocidb_system_id_available_1 ? 1 : 0
+  database_id = var.oci_db_database_id_1
+}
+
+
+data "oci_database_db_home" "ocidb_db_home_1" {
+  #  count      = local.is_ocidb_system_id_available_1 && !local.is_db_deleted ? 1 : 0
+  count      = local.is_ocidb_system_id_available_1 ? 1 : 0
+  #  db_home_id = data.oci_database_database.ocidb_database[0].db_home_id
+  db_home_id = data.oci_database_database.ocidb_database_1[0].db_home_id
+}
+/////////////////////# Datasource #1
