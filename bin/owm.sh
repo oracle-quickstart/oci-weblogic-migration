@@ -18,20 +18,24 @@ ON_PREM_ENV_FILE="$toolHome/config"
 [ "$user_functions_loaded" ] || source ./shared.sh
 
 discover(){
+  log "info" "<discoverDomain><discover><entry> args: $*"
   EXEC_TYPE=$1
   SCRIPT_PATH=$2
   shift; shift
-  DISCOVER_BASE_FLAGS="-oracle_home $oracle_home  $@"
+  DISCOVER_BASE_FLAGS="-oracle_home $oracle_home  $*"
   if [[ "$EXEC_TYPE" == "remote" ]]; then
       run_ssh_command "$SCRIPT_PATH" "$DISCOVER_BASE_FLAGS"
   else
-     bash "$SCRIPT_PATH" "$DISCOVER_BASE_FLAGS"
+     bash "$SCRIPT_PATH" $DISCOVER_BASE_FLAGS
   fi
 }
 
 discover_local(){
-  SCRIPT_PATH="discoverWLS.sh" "-domain_home" "$domain_home" "-skip_archive" "-model_file $toolHome/out/Discovered_`date +%Y%m%d%H%M`.json"
-  discover "local" "$SCRIPT_PATH"
+  log "info" "<discoverDomain><discover_local><entry> args: $*"
+  file_timestamp=`date +%Y%m%d%H%M`
+  SCRIPT_PATH="$toolHome/bin/discoverWLS.sh"
+  discover "local" "$SCRIPT_PATH" "-domain_home $domain_home" "-model_file $toolHome/out/Discovered_$file_timestamp.json" "-skip_archive"
+  log "info" "<discoverDomain><discover_local><exit>"
 }
 
 
@@ -39,14 +43,17 @@ discover_remote(){
   # http # Future version HTTP Proxy
   # ${x:=default_value}
   #
+  log "info" "<discoverDomain><discover_remote><entry> args: $*"
    SCRIPT_PATH="$wdt_home/bin/discoverWLS.sh"
 #   SCRIPT_FLAGS="-remote" "-skip_archive" "-ssh_host" "$ssh_admin_server_host" "-ssh_user" "$ssh_user" "-ssh_private_key" "$ssh_private_key_file"
    file_timestamp=`date +%Y%m%d%H%M`
    discover "remote" "$SCRIPT_PATH" "-domain_home" "$domain_home" "-model_file $wdt_home/out/Discovered_$file_timestamp.json" "-skip_archive"
    secure_copy "$wdt_home/out/Discovered_$file_timestamp.json" "$toolHome/out/"
+   log "info" "<discoverDomain><discover_remote><exit> success"
 }
 
 discover_online(){
+  log "info" "<discoverDomain><discover_online><entry> args: $*"
    #WEBLOGIC DOMAIN
     domain_console_url=${domain_console_url:?"domain_console_url property not set. Check onprem.env file. exiting..."} || return $?
     domain_admin_user=${domain_admin_user:?"domain_admin_user property not set. Check onprem.env file. exiting..."} || return $?
@@ -55,43 +62,99 @@ discover_online(){
    SCRIPT_PATH="discoverWLS.sh"
 #   SCRIPT_FLAGS="-remote" "-skip_archive" "-ssh_host" "$ssh_admin_server_host" "-ssh_user" "$ssh_user" "-ssh_private_key" "$ssh_private_key_file"
    discover "$SCRIPT_PATH" "-admin_url" "$domain_console_url" "-admin_user" "$domain_admin_user"
+   log "info" "<discoverDomain><discover_online><exit> success"
 }
 
-discover_infra(){
-#  alias dinf="`pwd`/discoverInfra.sh -oracle_home /opt/middleware -model_file Discovered_`date +%F`.json -archive_file infra_output__`date +%F`.json"
+discover_infra_local(){
+   log "info" "<discoverDomain><discover_infra_local><entry> args: $*"
+   wls_inventory_file=$1
+   local file_timestamp=`date +%Y%m%d%H%M`
+   local SCRIPT_PATH="$toolHome/bin/discoverInfra.sh"
+   local model_file_arg=""
+   if [[ -f $wls_inventory_file ]]; then
+      model_file_arg="-model_file $wls_inventory_file"
+   elif [[ -f "$toolHome/out/$wls_inventory_file" ]]; then
+      model_file_arg="-model_file $toolHome/out/$wls_inventory_file"
+   else
+       log "error" "<discoverDomain><discover_infra_local><error> model_file $wls_inventory_file not found. exiting."
+       exit 1
+   fi
+   discover "local" "$SCRIPT_PATH" "$model_file_arg" "-archive_file $toolHome/out/infra_output_$file_timestamp.json"
+   exit_code=$?
+   log "info" "Executed discover infra with exit code [$exit_code]"
+   if [ $exit_code -ne 0 ]; then
+       log "error" "<discoverDomain><discover_infra_local><error> Error executing discover infra"
+       exit 1
+   fi
+   log "info" "<discoverDomain><discover_infra_local><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
+}
+
+discover_infra_remote(){
+   log "info" "<discoverDomain><discover_infra_remote><entry> args: $*"
    wls_inventory_file=$1
    file_timestamp=`date +%Y%m%d%H%M`
    SCRIPT_PATH="$wdt_home/bin/discoverInfra.sh"
    discover "remote" "$SCRIPT_PATH" "-model_file $wdt_home/out/$wls_inventory_file" "-archive_file $wdt_home/out/infra_output_$file_timestamp.json"
    secure_copy "$wdt_home/out/infra_output_$file_timestamp.json" "$toolHome/out/"
+   log "info" "<discoverDomain><discover_infra_remote><exit>"
 }
 
 process_datasources(){
-  wls_inventory_file=$1
-  SCRIPT_PATH="$wdt_home/bin/discoverDatasources.sh"
+  local wls_inventory_file=$1
+  SCRIPT_PATH="$toolHome/bin/discoverDatasources.sh"
 #  ./discoverDatasources.sh -oracle_home /home/opc/mw/ -model_file Discovered_RAC.json
 #  discover "remote" "$SCRIPT_PATH" "-model_file $wdt_home/out/$wls_inventory_file" "-archive_file $wdt_home/out/infra_output_$file_timestamp.json"
-  discover "remote" "$SCRIPT_PATH" "-model_file $wdt_home/out/$wls_inventory_file"
-  secure_copy "$wdt_home/oci/generated/schema.yaml" "$toolHome/oci/generated/"
-  secure_copy "$wdt_home/oci/generated/db-connection-string.auto.tfvars" "$toolHome/oci/generated/"
-  secure_copy "$wdt_home/oci/generated/locals-db-connection-string.tf" "$toolHome/oci/generated/"
-  secure_copy "$wdt_home/oci/generated/data-oci-db-resources.tf" "$toolHome/oci/generated/"
-  secure_copy "$wdt_home/oci/generated/variables-db-connection-string.tf" "$toolHome/oci/generated/"
+#  discover "local" "$SCRIPT_PATH" "-model_file $toolHome/out/$wls_inventory_file"
+  discover "local" "$SCRIPT_PATH" "-model_file $wls_inventory_file"
+#  cp "$toolHome/oci/generated/schema.yaml" "$toolHome/oci/generated/"
+#  cp "$toolHome/oci/generated/db-connection-string.auto.tfvars" "$toolHome/oci/generated/"
+#  cp "$toolHome/oci/generated/locals-db-connection-string.tf" "$toolHome/oci/generated/"
+#  cp "$toolHome/oci/generated/data-oci-db-resources.tf" "$toolHome/oci/generated/"
+#  cp "$toolHome/oci/generated/variables-db-connection-string.tf" "$toolHome/oci/generated/"
+  log "info" "<discoverDomain><process_datasources><exit>"
 }
 
-process_archives(){
-#  local inventory_file=$1
-#  local archive_folder_name=$2
-#  local dry_run=$3
+#process_archives(){
+#  #  local inventory_file=$1
+#  #  local archive_folder_name=$2
+#  #  local dry_run=$3
+#  log "info" "<discoverDomain><process_archives><entry> args: $*"
+#   #  source $toolHome/bin/archiveWLSDomain.sh
+#   #  archive_repository_path=$3
+#   #  $toolHome/bin/archiveWLSDomain.sh $inventory_file $archive_folder_name  $archive_repository_path
+#   #archiveWLSDomain "$inventory_file" "$archive_folder_name" "$repository"
+##   output=$(bash "${toolHome}/bin/archiveWLSDomain.sh" $*)
+#   source "${toolHome}/bin/archiveWLSDomain.sh" "$@"
+#   exit_code=$?
+#   log "info" "<discoverDomain><process_archives><exit> exit_code=$?"
+#   log "info" "<discoverDomain><process_archives> $output"
+#
+#}
+
+function process_archives() {
   log "info" "<discoverDomain><process_archives><entry> args: $*"
-#  source $toolHome/bin/archiveWLSDomain.sh
-#  archive_repository_path=$3
-#  $toolHome/bin/archiveWLSDomain.sh $inventory_file $archive_folder_name  $archive_repository_path
-   #archiveWLSDomain "$inventory_file" "$archive_folder_name" "$repository"
-   source "${toolHome}/bin/archiveWLSDomain.sh" "$@"
-   log "info" "<discoverDomain><process_archives><exit> success"
-}
+  wls_inventory_file=$1
+  shift
+  SCRIPT_PATH="$toolHome/bin/archiveWLSDomain_retiring.sh"
+  local model_file_arg=""
+     if [[ -f $wls_inventory_file ]]; then
+        model_file_arg="-model_file $wls_inventory_file"
+     elif [[ -f "$toolHome/out/$wls_inventory_file" ]]; then
+        model_file_arg="-model_file $toolHome/out/$wls_inventory_file"
+     else
+         log "error" "<discoverDomain><process_archives><error> model_file $wls_inventory_file not found. exiting."
+         exit 1
+     fi
+      discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@"
+     exit_code=$?
+     log "info" "Executed discover infra with exit code [$exit_code]"
+     if [ $exit_code -ne 0 ]; then
+         log "error" "<discoverDomain><process_archives><error> Error executing discover infra"
+         exit 1
+     fi
+     log "info" "<discoverDomain><process_archives><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
 
+}
 upload_to_oci(){
   local inventory_file=$1
   local archive_folder_name=$2
@@ -130,9 +193,10 @@ print_help() {
     # Menu Options
     echo "Usage: $0 [option] [env_name]"
     echo "Options:"
-    echo "  discover   Discover Weblogic Domain running locally"
+    echo "  wls   Discover Weblogic Domain running locally"
 #    echo "  remote  Discover Weblogic Domain running on a remote Linux Server"
     echo "  infra   Create an inventory file with Linux Host configured in the Weblogic Domain."
+    #echo "  infra-remote   Create an inventory file with Linux Host configured in the Weblogic Domain."
     echo "  archive   Archive Directories -Middleware,JDK, Domains, Custom - and copy it localy"
     echo "  lift   Upload Weblogic Domain archives to OCI Object Storage for a given Inventory file"
     echo "  ds   Process Datasources from WLS Inventory File and configure OCI Resource Manager stack"
@@ -145,23 +209,27 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
 fi
 
 case "$1" in
-    "discover")
+    "wls")
         load_config "$2"
         discover_local
         ;;
-    "wls")
+    "remote")
         load_config "$2"
         discover_remote
         ;;
     "infra")
         load_config "$2"
-        discover_infra $3
+        discover_infra_local $3
+        ;;
+    "infra-remote")
+        load_config "$2"
+        discover_infra_remote $3
         ;;
     "archive")
        load_config "$2"
        shift; shift
-       #process_archives "$3" "$4" "$5"
-       process_archives $@
+#       process_archives "$3" "$4" "$5"
+       process_archives "$@"
 
        ;;
     "lift")

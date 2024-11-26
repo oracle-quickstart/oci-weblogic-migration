@@ -94,6 +94,7 @@ load_config(){
 }
 
 init_ssh_session(){
+  echo "<shared><init_ssh_session><entry>"
   # Check required flags are set
          # Need SSH credentials
          # Need Admin Console URL with user and password file
@@ -129,8 +130,13 @@ init_ssh_session(){
        SSH_HOST_OPTIONS=""
        SSH_PRE_COMMAND=""
        SSH_CREDS=""
-       if [[ "$ssh_private_key_file" == "none " && "$ssh_password_file" == "none" ]]; then
+       if [[ -f $ssh_private_key_file &&  -f $ssh_password_file ]]; then
+         echo "file with the user password (ssh_password_file) or ssh private key file (ssh_private_key_file) must be set.  exiting.."
+         exit 1
+       fi
+       if [[ "$ssh_private_key_file" == "none" && "$ssh_password_file" == "none" ]]; then
            log "error" "either a file with the user password or ssh private key file must be set. Ref: ssh_password_file and ssh_private_key_file in onprem.env. exiting..."
+           echo "<shared><init_ssh_session><error> neither privatey_key_file or ssh_password_file was set. "
            exit 1
        elif [[ "$ssh_private_key_file" != "none " ]] ;then
            SSH_HOST_OPTIONS="-i $ssh_private_key_file"
@@ -139,7 +145,7 @@ init_ssh_session(){
        fi
 
       SSH_CREDS="$ssh_user@$ssh_admin_server_host"
-
+      echo "<shared><init_ssh_session><credentials> checked"
        ## [ SSH JumpHost]
        #ssh_jump_host=129.146.72.166                    # Jumphost IP Address or hostname
        #ssh_jump_host_user=opc                # username to authenticate on SSH Jumphost
@@ -161,22 +167,23 @@ init_ssh_session(){
              SSH_JUMPHOST_CREDS="$ssh_jump_host_user@$ssh_jump_host"
              SSH_PROXY_COMMAND=$(echo -e "$SSH_JUMPHOST_PRE_COMMAND $SSH_JUMPHOST_OPTIONS $SSH_JUMPHOST_CREDS" | sed -e 's/^[[:space:]]*//')
   #           echo "$SSH_PROXY_COMMAND"
-             SSH_JUMPHOST_COMMAND="-o 'ProxyCommand $SSH -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -W %h:%p $SSH_PROXY_COMMAND'"
+             SSH_JUMPHOST_COMMAND="-o 'ProxyCommand $SSH -E $toolHome/logs/ssh_jumphost.log -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -W %h:%p $SSH_PROXY_COMMAND'"
        fi
-
-       SSH_COMMAND="$SSH_PRE_COMMAND $SSH $SSH_JUMPHOST_COMMAND $SSH_HOST_OPTIONS $SSH_CREDS"
+       SSH_COMMAND="$SSH_PRE_COMMAND $SSH -E $toolHome/logs/ssh.log $SSH_JUMPHOST_COMMAND $SSH_HOST_OPTIONS $SSH_CREDS"
 #       SSH_COMMAND="$SSH_COMMAND $command"
        SSH_COMMAND="$SSH_COMMAND WLSDEPLOY_PROPERTIES=-Dwlsdeploy.debugToStdout=true $command"
+       echo "<shared><init_ssh_session><exit>  $SSH_COMMAND"
 }
 
-run_piped_ssh_command(){
-   output_file=${1:?"output file not passed must exit. exiting..."} || return $?
+function run_piped_ssh_command(){
+   echo "<shared><run_piped_ssh_command><entry> $*"
+   output_file=${1:?"output file not defined. exiting..."} || return $?
    shift
    command="$@"
    init_ssh_session
    uname=$(uname);
        case "$uname" in
-           (*Linux*) `"$SCP_COMMAND"` ;;
+           (*Linux*) bash -c "$SSH_COMMAND" ;;
            (*Darwin*) bash -c "$SSH_COMMAND" > $output_file;;
    #        (*CYGWIN*) openCmd='cygstart'; ;;
            (*) echo 'error: unsupported platform.'; exit 2; ;;

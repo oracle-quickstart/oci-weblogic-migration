@@ -111,7 +111,14 @@ init_argument_map= None
 __required_arguments = [
     CommandLineArgUtil.ORACLE_HOME_SWITCH,
     CommandLineArgUtil.MODEL_FILE_SWITCH,
-    CommandLineArgUtil.ARCHIVE_FILE_SWITCH
+    # CommandLineArgUtil.OUTPUT_DIR_SWITCH,
+    CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH,
+    CommandLineArgUtil.LOCAL_OUTPUT_DIR_SWITCH
+    # CommandLineArgUtil.ARCHIVE_FILE_SWITCH,
+    #-output_dir <path to store archives>
+    #-remote_output_dir <path to generate it remotely>
+    #-local_output_dir <path to store archives>
+    #-skip_archive  : skip archive generation and show commands
 ]
 
 __optional_arguments = [
@@ -127,7 +134,12 @@ __optional_arguments = [
     CommandLineArgUtil.SSH_PRIVATE_KEY_PASSPHRASE_FILE_SWITCH,
     CommandLineArgUtil.SSH_PRIVATE_KEY_PASSPHRASE_PROMPT_SWITCH,
     CommandLineArgUtil.SSH_HOST_SWITCH,
-    CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH #
+    CommandLineArgUtil.SKIP_ARCHIVE_FILE_SWITCH
+
+    #
+    # OUTPUT_DIR_SWITCH          = "-output_dir"
+    # REMOTE_OUTPUT_DIR_SWITCH   = '-remote_output_dir'
+    # LOCAL_OUTPUT_DIR_SWITCH    = '-local_output_dir'
 
 ]
 
@@ -223,7 +235,7 @@ def __verify_java_home(optional_arg_map):
 
 
 def __verify_remote_output_dir_argument(argument_map):
-    _method_name = '__ensure_upload_download_args'
+    _method_name = '__verify_remote_output_dir_argument'
     if CommandLineArgUtil.SSH_USER_SWITCH in argument_map or CommandLineArgUtil.REMOTE_SWITCH in argument_map:
         if not CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH in argument_map:
             ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR, 'WLSDPLY-32902',
@@ -285,13 +297,12 @@ def __generate_remote_report_json(model_context):
 
 def __archive_directories(model, model_context, helper):
     """
-    Populate the model from the domain.
+    Archive WebLogic Home, Middleware Home, JDK Home, Custom Directories
     :param model_context: the model context
     :param helper: wlst_helper instance
-    :return: the fully-populated model
     :raises DiscoverException: if an error occurred while discover the domain
     """
-    _method_name = '__discover'
+    _method_name = '__archive_directories'
     __logger.entering(class_name=_class_name, method_name=_method_name)
     topology = model.get_model_topology()
     machines = model.get_model_resources()
@@ -307,24 +318,30 @@ def __archive_directories(model, model_context, helper):
         nodes=unix_machine_nodes
 
     # Verify tool is running from the same host.
-    if len(nodes)==1 and not model_context.is_ssh():
-        admin_server_name = topology['AdminServerName']
-        if 'Machine' in topology['Server'][admin_server_name]:
-            admin_machine=topology['Server'][admin_server_name]["Machine"]
-            if admin_machine in nodes:
-                #Do local Discovery.  It should include any managed server registered.
-                archive_result=WLSMigrationArchiver(admin_machine,model_context, OrderedDict(), base_location, model).archive()
-                if not infra_constants.SUCCESS == archive_result:
-                    ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902',
-                                                               "ERROR")
-                    __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-                    raise ex
-
-    # else:
-    #     #  Todo raise an exception. Could not discover.
-    #     return None
+    # if len(nodes)==1 and not model_context.is_ssh():
+    admin_server_name = topology['AdminServerName']
+    admin_machine = None
+    if 'Machine' in topology['Server'][admin_server_name]:
+        admin_machine=topology['Server'][admin_server_name]["Machine"]
+        if admin_machine in nodes:
+            #Do local Discovery.  It should include any managed server registered.
+            archive_result=WLSMigrationArchiver(admin_machine,model_context, OrderedDict(), base_location, model).archive()
+            if not infra_constants.SUCCESS == archive_result:
+                ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902',
+                                                           "ERROR")
+                __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+                raise ex
+            nodes
     else:
-        for machine in nodes:
+        #  Todo raise an exception. Could not discover.
+        ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902',
+                                                   "ERROR")
+        __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+        raise ex
+
+    for machine in nodes:
+        #__logger.info('WLSDPLY-02300', type(machine))
+        if not machine == admin_machine:
             node_details = OrderedDict()
             listen_address=common.traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
             global init_argument_map

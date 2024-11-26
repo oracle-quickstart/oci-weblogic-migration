@@ -114,7 +114,7 @@ install_deps() {
 
     install_wdt_release
     install_jq_release
-    install_oci_sdk_release
+    #install_oci_sdk_release
     end_section "DEPENDENCIES"
 }
 

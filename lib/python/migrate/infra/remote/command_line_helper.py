@@ -175,6 +175,15 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
         args=""
         return command,args
 
+    def get_compress_commands(self, file_name,folder):
+        filters_os="--exclude='.pid' --exclude='.state' --exclude='core' --exclude='diag/ofm/*/*/lck/*.lck'"
+        filters_logs="--exclude='*/tmp/*' --exclude='*.log*'"
+        filters_diagnostics="--exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*'"
+        command="/usr/bin/tar"
+        # args='czf {0} {1} {2} {3} {4}'.format(file_name,filters_os,filters_logs,filters_diagnostics,folder)
+        args='czf %s %s %s %s %s' % (file_name,filters_os, filters_logs, filters_diagnostics, folder)
+        return command,args
+
     def get_common_root(self,paths):
         # Split each path into its components
         split_paths = [p.split('/') for p in paths]

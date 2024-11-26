@@ -67,6 +67,18 @@ class CommandHelper(object):
         self.cmd_builder=os_cmd_line_helper
         self._path_helper = path_helper.get_path_helper()
 
+    def compress_archive(self, file_name, archive_path, dry_run):
+        _method_name= "compress_archive"
+        _logger.entering(class_name=_class_name, method_name=_method_name)
+        cmd,args = self.cmd_builder.get_compress_commands(file_name,archive_path)
+        if dry_run:
+            response='%s %s ' % (cmd,args)
+        else:
+            response= self._run_command(cmd,args)
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=cmd)
+        return response
+
+
     def get_server_details(self, server=None):
         _method_name = "get_server_details"
         _logger.entering(class_name=_class_name, method_name=_method_name)

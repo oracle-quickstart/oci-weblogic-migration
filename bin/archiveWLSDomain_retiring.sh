@@ -2,7 +2,7 @@
 # *****************************************************************************
 # archiveWLSDomain.sh
 #
-# Copyright (c) 2023, Oracle and/or its affiliates.
+# Copyright (c) 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 #
 #     NAME
@@ -41,14 +41,18 @@ usage() {
   echo "           -ssh_private_key_pass_file <ssh_private_key_pass_file> |"
   echo "           -ssh_private_key_pass_prompt"
   echo "          ]"
-  echo "          [-remote_test_file <remote_test_file> -local_output_dir <local_output_dir>]"
-  echo "          [-local_test_file <local_test_file> -remote_output_dir <remote_output_dir>]"
-  echo "          [-wlst_path <wlst_path>]"
-  echo ""
+  echo "          ["
+  echo "            -local_output_dir <local_output_dir> |"
+  echo "            -remote_output_dir <remote_output_dir> |"
+  echo "            -skip_archive"
+  echo "          ]"
   echo "    where:"
   echo "        oracle_home     - the existing Oracle Home directory for the domain."
   echo "                          This argument is required unless the ORACLE_HOME"
   echo "                          environment variable is set."
+  echo "        local_output_dir   - Local Path to store archives"
+  echo "        remote_output_dir  - Path on Remote Host to store archives"
+  echo "        skip_archive       - Skip archive compression and show commands to run on each remote host"
   echo "        ssh_host        - the hostname or IP address of the remote machine.  This"
   echo "                          argument is required."
   echo ""
@@ -104,7 +108,7 @@ usage() {
   echo ""
 }
 
-WLSDEPLOY_PROGRAM_NAME="verifySSH"; export WLSDEPLOY_PROGRAM_NAME
+WLSDEPLOY_PROGRAM_NAME="archiveHelper"; export WLSDEPLOY_PROGRAM_NAME
 
 scriptName=$(basename "$0")
 scriptPath=$(dirname "$0")
