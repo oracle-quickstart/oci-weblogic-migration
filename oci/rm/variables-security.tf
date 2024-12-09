@@ -20,12 +20,13 @@ variable "ssh_kms_secret_id" {
   type    = string
 }
 
-data "oci_secrets_secretbundle" "ssh_key" {
-  secret_id = var.ssh_kms_secret_id
-}
+# data "oci_secrets_secretbundle" "ssh_key" {
+#   secret_id = var.ssh_kms_secret_id
+# }
 
 locals {
   ssh_public_key         = try(base64decode(var.ssh_public_key), var.ssh_public_key)
-  ssh_key_bundle         = sensitive(one(data.oci_secrets_secretbundle.ssh_key.secret_bundle_content))
-  ssh_key_bundle_content = sensitive(lookup(local.ssh_key_bundle, "content", null))
+  #   ssh_key_bundle         = try(sensitive(one(data.oci_secrets_secretbundle.ssh_key.secret_bundle_content)))
+  ssh_key_bundle = null
+  ssh_key_bundle_content = try(sensitive(lookup(local.ssh_key_bundle, "content", null)),null)
 }

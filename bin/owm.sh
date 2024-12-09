@@ -135,7 +135,7 @@ function process_archives() {
   log "info" "<discoverDomain><process_archives><entry> args: $*"
   wls_inventory_file=$1
   shift
-  SCRIPT_PATH="$toolHome/bin/archiveWLSDomain_retiring.sh"
+  SCRIPT_PATH="$toolHome/bin/archiveWLSDomain.sh"
   local model_file_arg=""
      if [[ -f $wls_inventory_file ]]; then
         model_file_arg="-model_file $wls_inventory_file"
@@ -174,9 +174,11 @@ build_orm(){
     local inventory_file=${1:-none}
     local stack_name=${2:-owm_rm_$file_timestamp}
     log "info" "<owm><build_orm><entry> args: $inventory_file - $stack_name"
-#    ret_code=$(source $toolHome/bin/build_orm.sh -i "$inventory_file" -s "$stack_name" )
-    source "${toolHome}/bin/build_orm.sh" -i "$inventory_file" -s "$stack_name" -t
-    log "info" "<owm><build_orm><exit> success"
+    source $toolHome/bin/build_orm.sh -i "$inventory_file" -s "$stack_name"
+    ret_code=$?
+    echo "Executed build_orm with exit code [$ret_code]"
+    #source "${toolHome}/bin/build_orm.sh" -i "$inventory_file" -s "$stack_name" -t
+    log "info" "<owm><build_orm><exit> build Oracle Resource Manager completed with return code [$ret_code]"
 }
 
 build_orm_test(){

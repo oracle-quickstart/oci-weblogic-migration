@@ -680,8 +680,8 @@ variables:
     title: Image OS version
     description: Image operating system version.
     type: enum
-    default: "8.7"
-    enum: [ "7.9", "8.7" ]
+    default: "7.9"
+    enum: [ "7.9" ]
     required: true
     visible:
       and:

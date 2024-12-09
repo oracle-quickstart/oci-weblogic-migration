@@ -153,6 +153,11 @@ create_bundle(){
        log "info" "<build_orm><create_bundle><debug> ORM Stack built for development"
   fi
   (cd ${TMP_BUILD}; zip -r ${toolHome}/oci/stack/$STACK_NAME.zip *;)
+  if [[ -f "${toolHome}/oci/stack/$STACK_NAME.zip" ]]; then
+      log "info" "<build_orm><create_bundle> Stack file created ${toolHome}/oci/stack/$STACK_NAME.zip"
+  else
+     log "error" "<build_orm><create_bundle> <error> Resource Mananger Stack file not created "
+  fi
   log "info" "<build_orm><create_bundle><exit>"
 }
 
@@ -192,4 +197,3 @@ deploy_to_orm(){
 
 create_bundle
 #deploy_to_orm
-exit 0

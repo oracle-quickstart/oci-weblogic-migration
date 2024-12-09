@@ -16,14 +16,7 @@ minimum_os_version_oracle="8.0"
 minimum_os_version_rhel="8.0"
 minimum_cpu_count=8
 minimum_mem_in_gib=8
-expected_system_disk_partition_table_type="gpt"
-minimum_system_disk_size_human_readable="80Gi"
-minimum_data_disk_size_human_readable="100Gi"
-minimum_root_size_human_readable="2Gi"
-minimum_home_size_human_readable="4Gi"
-minimum_tmp_size_human_readable="3Gi"
-minimum_var_size_human_readable="50Gi"
-minimum_usr_size_human_readable="8Gi"
+
 
 ###################################################### Script setup #########################################################
 
@@ -127,10 +120,8 @@ end_section
 start_section "RAM"
 
 
-# mem_in_gib=$(awk '/MemFree/ { printf "%.3f \n", $2/1024/1024 }' /proc/meminfo)
 mem_in_gib=$(free -m | sed -n 's/^Mem:\s\+[0-9]\+\s\+\([0-9]\+\)\s.\+/\1/p')
 mem_in_gib="${mem_in_gib//[$'\t\r\n ']}"
-# mem_in_gib=`expr $mem_in_gib + 1`
 if [ "$mem_in_gib" -lt "$minimum_mem_in_gib" ]; then
     errors+=("At least  ${minimum_mem_in_gib}Gi RAM required, but ${mem_in_gib}Gi was detected.")
 fi
@@ -193,39 +184,6 @@ set -e
 
 end_section
 
-################################################ Kernel configuration values  ####################################################
-
-
-# pip install virtualenv
-
-# virtualenv oci_sdk_env
-# source oci_sdk_env/bin/activate
-
-# pip install oci
-
-# readonly OCI_SDK_PYTHON_DOC_URL=https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/pythonsdk.htm
-
-# if ! curl --silent --head --retry 3 --output /dev/null $INSTALLATION_TEST_URL; then
-#     errors+=("Unable to reach the URL hosting the installation script: $INSTALLATION_TEST_URL.")
-# fi
-
-# start_section "Kernel configuration"
-
-# max_user_instances=$(sysctl fs.inotify.max_user_instances | awk '{print $NF}')
-
-# if [ "$max_user_instances" -lt 512 ]
-# then
-#     errors+=("The kernel configuration fs.inotify.max_user_instances should be set to at least 512 but was detected to be $max_user_instances.")
-# fi
-
-# max_io_request=$(sysctl fs.aio-max-nr | awk '{print $NF}')
-
-# if [ "$max_io_request" -lt 1048576 ]
-# then
-#     errors+=("The kernel configuration fs.aio-max-nr should be set to at least 1048576 but was detected to be $max_io_request.")
-# fi
-
-# end_section
 
 ################################################ Report findings to user ####################################################
 

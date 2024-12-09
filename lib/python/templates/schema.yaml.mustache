@@ -650,8 +650,8 @@ variables:
     title: Image OS
     description: Image operating system.
     type: enum
-    default: "Oracle Autonomous Linux"
-    enum: [ "Oracle Autonomous Linux", "Oracle Linux" ]
+    default: "Oracle Linux"
+    enum: [ "Oracle Linux" ]
     required: true
     visible:
       and:
@@ -664,8 +664,8 @@ variables:
     title: Image OS version
     description: Image operating system version.
     type: enum
-    default: "8.7"
-    enum: [ "7.9", "8.7" ]
+    default: "7.9"
+    enum: [ "7.9" ]
     required: true
     visible:
       and:
@@ -678,7 +678,7 @@ variables:
     title: Image type
     type: enum
     default: platform
-    enum: [ platform, custom ]
+    enum: [ platform ]
     required: true
     visible: false
   bastion_image_id:

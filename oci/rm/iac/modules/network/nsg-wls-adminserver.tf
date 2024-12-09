@@ -26,16 +26,16 @@ locals {
             destination_type = local.rule_type_nsg,
           },
         },
-        {
-          "Allow ALL ingress to adminserver from Weblogic Servers(as)" : {
-            protocol    = local.all_protocols, port = local.all_ports, source = local.wlsserver_nsg_id,
-            source_type = local.rule_type_nsg,
-          },
-        },
+#         {
+#           "Allow ALL ingress to adminserver from Weblogic Servers(as)" : {
+#             protocol    = local.all_protocols, port = local.all_ports, source = local.wlsserver_nsg_id,
+#             source_type = local.rule_type_nsg,
+#           },
+#         },
         {
             for port in var.adminserver_ports :
               "Allow TCP ingress to AdminServer from Managed Servers on port ${port} (as)" => {
-                 protocol = local.tcp_protocol, port = port, source = local.pub_lb_nsg_id, source_type = local.rule_type_nsg,
+                 protocol = local.tcp_protocol, port = port, source = local.wlsserver_nsg_id, source_type = local.rule_type_nsg,
               }
         },
         {
