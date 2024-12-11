@@ -16,7 +16,7 @@ locals{
     existing_lb_object_as_list = local.use_existing_lb ? [for lb in data.oci_load_balancer_load_balancers.existing_load_balancers_data_source.load_balancers[*] : lb if lb.id == var.existing_load_balancer_id] : []
     valid_existing_lb          = length(local.existing_lb_object_as_list) == 1
     use_existing_lb            = local.add_load_balancer && local.existent_load_balancer
-    lb_backendset_name         = local.use_existing_lb ? var.backendset_name_for_existing_load_balancer : format("%s-%v-lb-backendset",local.wls_domain_name,local.state_id)
+    lb_backendset_name         = local.use_existing_lb ? var.backendset_name_for_existing_load_balancer : substr(format("%s-%v-lbset",local.wls_domain_name,local.state_id),0,32)
 
   # Filter configured nsgs eligible for resource creation
     pub_lb_nsg_config = try(var.nsgs.pub_lb, { create = "never" })
