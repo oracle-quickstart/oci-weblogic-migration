@@ -122,6 +122,10 @@ resource "oci_core_instance" "wlsservers" {
       desired_state = "ENABLED"
       name          = "Block Volume Management"
     }
+    plugins_config {
+      name          = "OS Management Service Agent"
+      desired_state = "DISABLED"
+    }
 
 
   }
@@ -143,9 +147,10 @@ resource "oci_core_instance" "wlsservers" {
 
   metadata = merge(
     {
-      #apiserver_host           = var.apiserver_private_host
-      #cluster_ca_cert          = var.cluster_ca_cert
       logs_dir=   "/var/log/owm"
+      wls_domain_name = var.resource_name_prefix
+      vmscripts_path = var.vm_scripts_path
+      mode = var.mode
       wls-tenancy-id           = var.tenancy_id
       wls-initial-node-labels  = join(",", [for k, v in each.value.node_labels : format("%v=%v", k, v)])
       secondary_vnics          = jsonencode(lookup(each.value, "secondary_vnics", {}))

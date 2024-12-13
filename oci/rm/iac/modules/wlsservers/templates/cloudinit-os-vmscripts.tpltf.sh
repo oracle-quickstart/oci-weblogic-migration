@@ -29,9 +29,21 @@ function get_logs_dir {
   fi
 }
 
+function get_deployment_mode {
+  response_code=$(curl  --write-out '%%{http_code}' --silent --output /dev/null -H "Authorization:Bearer Oracle" http://169.254.169.254/opc/v2/instance/metadata/mode)
+  if [[ "$response_code" -eq 200 ]] ; then
+     mode=$(curl -H "Authorization:Bearer Oracle" http://169.254.169.254/opc/v2/instance/metadata/mode)
+     echo $logs_dir
+  else
+     mode=$(curl -L http://169.254.169.254/opc/v1/instance/metadata/logs_dir)
+     echo $mode
+  fi
+}
+
 logs_dir=`get_logs_dir`
+mode=`get_deployment_mode`
 mkdir -p $${logs_dir}
-log_file="$${logs_dir}/wls-restore.log"
+log_file="$${logs_dir}/os-vmscripts.log"
 
 
 function log(){
@@ -41,30 +53,15 @@ function log(){
     done
 }
 
-function check_fs(){
-   echo "<cloud-init><restore><check_fs> list volumes prior restoring" | log >> $log_file
-   ls  ${jdk_device_id} && ls ${mw_device_id} && ls ${domain_device_id}
-   exit_code=$?
-   echo "list devices returned with exit code $[exit_code] " | log >> $log_file
-   if [[ $exit_code -ne 0 ]]; then
-     echo "<cloud-init><restore><check_fs> volumes not mounted attempting to format and mount again" | log >> $log_file
-     mkfs.xfs -f ${jdk_device_id}
-     mkfs.xfs -f ${mw_device_id}
-     mkfs.xfs -f ${domain_device_id}
-     mount -a
-     echo "<cloud-init><restore><check_fs> volumes not mounted and created outside cloud-init" | log >> $log_file
-   fi
+echo "Executing unpack vmscript script" | log >> $log_file
 
-}
-
-check_fs
-output=$(sudo -u ${user} -E python /opt/scripts/restore-archives.py)
+output=$(sudo -u ${user} -E python /opt/scripts/restore-vmscripts.py)
 exit_code=$?
 echo $output | log >> $log_file
 if [[ $exit_code -ne 0 ]]; then
-  echo "<cloud-init><restore><ERROR> Failed to restore WebLogic Archives " | log >> $log_file
+  echo "<cloud-init><restore><ERROR> Failed to restore VM Scripts" | log >> $log_file
   exit 1
 fi
-echo "Executed restore-archives via ${user} with exit code [$exit_code]" | log >> $log_file
-echo "<cloud-init><restore_archives> Restore completed" | log >> $log_file
+echo "Executed os-vmscripts via ${user} with exit code [$exit_code]" | log >> $log_file
+echo "<cloud-init><os-vmscripts> Restore completed" | log >> $log_file
 

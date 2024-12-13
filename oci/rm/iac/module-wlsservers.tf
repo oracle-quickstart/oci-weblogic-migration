@@ -117,6 +117,7 @@ module "wlsservers" {
   text_to_replace_in_config=local.wls_config_text_changes
   # Development Mode Prod or Development
   is_development = contains(["DEV"], var.release )
+  mode = var.release
   vm_scripts_path = var.vm_script_path
 
   depends_on = [

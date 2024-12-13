@@ -40,8 +40,23 @@ function configure_ocifs(){
   exit_code=$?
   echo $output | log >> $log_file
   if [ $exit_code -ne 0 ]; then
-      echo  "<cloud-init><configure_ocifs> ocifs is not installed - will not mount OCI Object Storage systems. exiting.." | log >> $log_file
-      exit 1
+      echo "<cloud-init><configure_ocifs> ocifs not installed via cloud-init. Attempting to install manually 3 times."
+      for i in $(seq 1 30)
+      do
+          osms check 2>&1
+          if [[ $? != 0 ]]
+          then
+              # Failed
+              echo "."
+              sleep 1s
+          else
+              # worked!
+              yum -y install ocifs 2>&1
+              exit_code=$?
+              echo "yum install ocifs exited with code [$exit_code]" | log >> $log_file
+              break
+          fi
+      done
   else
       echo "<cloud-init><configure_ocifs> OCIFS installed - configuring access via instance_principal to ${bucket_name}" | log >> $log_file
       output=$(su -c 'mkdir -p ${temp_oss_mount_point} 2>&1' - ${user})

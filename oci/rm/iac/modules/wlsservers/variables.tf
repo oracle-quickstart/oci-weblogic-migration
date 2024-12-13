@@ -273,6 +273,7 @@ variable "wlsserver_ports" { type = list(string)}
 variable "adminserver_ports" { type = list(string)}
 variable "bucket_name" {type = string}
 
+
 #WLS Domain Details
 variable "wls_datasources_config" {type = any}
 variable "wls_domain_home" {type = string}
@@ -286,9 +287,20 @@ variable "wls_archived_volumes" {
   description = "List of volumes to be mounted in the compute instance. Each element must be an object with the following attributes: volume_mount_point, display_name, device"
 }
 
+variable "stage_archive_path" {
+  type = string
+  description = "Path inside the OS to stage all archives downloaded from Object Storage. Defaults to /tmp"
+  default = "/tmp"
+}
+
 variable "is_development" {
   type = bool
   default = false
+}
+
+variable "mode" {
+  type = string
+  default = "PROD"
 }
 variable "vm_scripts_path" {
   type =  string

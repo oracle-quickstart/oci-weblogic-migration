@@ -110,19 +110,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
         exit 1
     fi
   elif [[ $is_custom_jdbc == "true" ]]; then
-     #files=$(grep -il "${jdbc_string.on_prem}" "${domain_home}/config/jdbc/"*.xml)
-     #for file in $files; do
-     #    output=$(python3 /opt/scripts/ds_update_config_xml_w_db_system.py "$file" "$oci_jdbc_string" )
-     #    exit_code=$?
-     #    echo "Executed datasource update on $file with exit code [$exit_code]" | log >> $log_file
-     #    echo "$output" | log >> $log_file
-     #    if [ $exit_code -ne 0 ]; then
-     #        echo "Error executing datasource update with custom JDBC connection string database.. Exiting provisioning" | log >> $log_file
-     #        #clean up script
-     #        #/opt/scripts/tidyup.sh
-     #        exit 1
-     #    fi
-     #done
+
         output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/jdbc/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
         exit_code=$?
         echo "Executed datasource update on $file with exit code [$exit_code]" | log >> $log_file

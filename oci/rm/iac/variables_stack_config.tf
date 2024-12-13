@@ -83,6 +83,6 @@ variable "release" {
 }
 
 variable "vm_script_path" {
-  default = ""
+  default = "/u01/zips/TF/wlsoci-vmscripts.zip"
 }
 

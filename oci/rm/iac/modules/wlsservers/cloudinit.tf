@@ -63,40 +63,7 @@ data "cloudinit_config" "wlsservers" {
     }
   }
 
-  # Install packages.
-  dynamic "part" {
-    for_each = each.value.disable_default_cloud_init ? [] : [1]
-    content {
-      content_type = "text/cloud-config"
-      content = jsonencode({
-        # https://cloudinit.readthedocs.io/en/latest/reference/examples.html#install-arbitrary-packages
-        packages = [
-          "ocifs",
-        ]
-      })
-      filename   = "10-packages.yml"
-      merge_type = local.default_cloud_init_merge_type
-    }
-  }
 
-
-#  dynamic "part" {
-#    for_each = each.value.disable_default_cloud_init ? [] : [1]
-#    content {
-#      content_type = "text/cloud-config"
-#      # https://cloudinit.readthedocs.io/en/latest/reference/modules.html#users-and-groups
-#      content      = jsonencode({ groups = [var.group] })
-#      filename     = "20-groups.yml"
-#      merge_type = local.default_cloud_init_merge_type
-#    }
-#  }
-
-#  "chpasswd": {
-#    "list": "foobar:foo24barmig",
-#    "expire": false
-#  }
-
-  #TODO: JOI remove backdoor user before release users = ["default", var.user]
   dynamic "part" {
     for_each = each.value.disable_default_cloud_init ? [] : [1]
     content {
@@ -104,17 +71,6 @@ data "cloudinit_config" "wlsservers" {
       # https://cloudinit.readthedocs.io/en/latest/reference/modules.html#users-and-groups
       content      = jsonencode({
         users = ["default",{
-          "name": "ilom",
-          "gecos": "Ilom User",
-          "sudo": [
-            "ALL=(ALL) NOPASSWD:ALL"
-          ],
-          "selinux-user": "staff_u",
-          "groups": "wheel,users,adm,systemd-journal",
-          "passwd": "dD/kDJqv.yxxg",
-
-        },
-        {
           "name":var.user,
           "uid": var.user_id,
         }
@@ -126,8 +82,6 @@ data "cloudinit_config" "wlsservers" {
     }
   }
 
-
-  #  # TODO: JOI - format and mount disks.
   #  #  # Mount, Format WLS filesystems.
   dynamic "part" {
     for_each = each.value.disable_default_cloud_init ? [] : [1]
@@ -170,30 +124,6 @@ data "cloudinit_config" "wlsservers" {
     }
   }
 
-#  # Bug w/ write_files defer: parent directory created as root if not present.
-#  # https://github.com/canonical/cloud-init/pull/916#issuecomment-1254732400
-#  # Or: defer not supported on older versions of cloud-init.
-#  # Created in tmp first and moved into user's home directory using runcmd.
-#    dynamic "part" {
-#      for_each = each.value.disable_default_cloud_init ? [] : [1]
-#      content {
-#        content_type = "text/cloud-config"
-#        content      = jsonencode({
-#          runcmd = [
-##            "cat /tmp/*.bashrc >> /home/${var.user}/.bashrc && rm /tmp/*.bashrc",
-##            "chmod 600 /home/${var.user}/.bashrc",
-#            "chown -R ${var.user}:${var.group} ${local.block_volume_domain_mountpath}",
-#            "chown -R ${var.user}:${var.group} ${local.block_volume_mw_mountpath}",
-#            "chown -R ${var.user}:${var.group} ${local.block_volume_jdk_mountpath}",
-#            #"chown -R ${var.user}:${var.user} /home/${var.user}",
-#          ]
-#        })
-#        filename   = "50-home.yml"
-#        merge_type = local.default_cloud_init_merge_type
-#      }
-#    }
-
-
   # Weblogic startup initialization
   dynamic "part" {
     for_each = each.value.disable_default_cloud_init ? [] : [1]
@@ -227,43 +157,7 @@ data "cloudinit_config" "wlsservers" {
     }
   }
 
-  # Weblogic startup initialization
-  dynamic "part" {
-    for_each = each.value.disable_default_cloud_init ? [] : [1]
-    content {
-      content_type = "text/x-shellscript"
-      content      = templatefile("${path.module}/templates/cloudinit-os-configure-ocifs.tpl.sh", {
-        temp_oss_mount_point = local.oss_mount_point
-        bucket_name = var.bucket_name
-        user = var.user
-        group = var.group
-        block_volume_domain_mountpath = local.block_volume_domain_mountpath
-        block_volume_mw_mountpath = local.block_volume_mw_mountpath
-        block_volume_jdk_mountpath = local.block_volume_jdk_mountpath
-      })
-      filename     = "66-os-configure-ocifs.sh"
-      merge_type   = local.default_cloud_init_merge_type
-    }
-  }
-
-#   # Write extra Weblogic configuration to filesystem
-#   dynamic "part" {
-# #     for_each = each.value.disable_default_cloud_init && var.is_development ? [] : [1]
-#     for_each = each.value.disable_default_cloud_init ? [] : [1]
-#     content {
-#       content_type = "text/cloud-config"
-#       content = jsonencode({
-#         runcmd = [
-#           "mkdir -p /opt/scripts",
-#           format("chown -R %s:%s /opt/scripts",var.user,var.group),
-#         ]
-#       })
-#       filename   = "70-wls-development.yml"
-#       merge_type = local.default_cloud_init_merge_type
-#     }
-#   }
-
-  # Write Python Restore File to filesystem
+  # Python scripts to restore file system
   dynamic "part" {
     for_each = each.value.disable_default_cloud_init ? [] : [1]
     content {
@@ -274,7 +168,7 @@ data "cloudinit_config" "wlsservers" {
             content = templatefile("${path.module}/templates/restore-archives.py", {
                     restore_path="/"
                     bucket_name=var.bucket_name
-                    temporary_path="/tmp"
+                    temporary_path=var.stage_archive_path
                     middleware_archive=format("%s-%s-weblogic_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
                     jdk_archive =format("%s-%s-java_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
                     domain_archive =format("%s-%s-domain_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
@@ -289,7 +183,7 @@ data "cloudinit_config" "wlsservers" {
     }
   }
 
-   # Write extra Weblogic configuration to filesystem
+   # Write Python files to perform database related task
    dynamic "part" {
      for_each = each.value.disable_default_cloud_init && length(var.wls_datasources_config) > 0 ? [] : [1]
      content {
@@ -311,57 +205,62 @@ data "cloudinit_config" "wlsservers" {
      }
    }
 
-  # Write extra Weblogic configuration to filesystem
+  # Python script to restore OSVM Scripts If mode=dev download from OSS else use image vmscripts
+  dynamic "part" {
+    for_each = each.value.disable_default_cloud_init ? [] : [1]
+    content {
+      content_type = "text/cloud-config"
+      content = jsonencode({
+        write_files = [
+          {
+            content = templatefile("${path.module}/templates/restore-vmscripts.py", {
+              bucket_name=var.bucket_name
+              temporary_path="/tmp"
+              vmscripts_file=var.vm_scripts_path  #"wlsoci-vmscripts.zip"
+            })
+            path    = "/opt/scripts/restore-vmscripts.py"
+          },
+        ]
+      })
+      filename   = "73-wls-restore-vmscripts.yml"
+      merge_type = local.default_cloud_init_merge_type
+    }
+  }
+
+  # VMscript bootstrap file
   dynamic "part" {
     #     for_each = each.value.disable_default_cloud_init && var.is_development ? [] : [1]
     for_each = each.value.disable_default_cloud_init ? [] : [1]
     content {
       content_type = "text/x-shellscript"
-      content = templatefile("${path.module}/templates/cloudinit-os-vmscripts.tpl.sh", {
+      content = templatefile("${path.module}/templates/cloudinit-os-vmscripts.tpltf.sh", {
         user =var.user
         vmscripts_file=var.vm_scripts_path  #"wlsoci-vmscripts.zip"
-        oss_mount_point=local.oss_mount_point
-        restore_path="/"
       })
-      filename   = "73-os-vmscripts.yml"
+      filename   = "74-os-vmscripts.yml"
       merge_type = local.default_cloud_init_merge_type
     }
   }
 
-  # Restore Weblogic Archives.
+  # Restore Bash bootstrap script to restore WLS Archives
   dynamic "part" {
     for_each = each.value.disable_default_cloud_init ? [] : [1]
     content {
       content_type = "text/x-shellscript"
       content      = templatefile("${path.module}/templates/cloudinit-wls-restore-archives.tpl.sh", {
         user = var.user
+        jdk_device_id =local.block_volume_jdk_device_id
+        mw_device_id = local.block_volume_mw_device_id
+        domain_device_id = local.block_volume_domain_device_id
       })
-      filename     = "74-wls-restore-archives.sh"
+      filename     = "79-wls-restore-archives.sh"
       merge_type   = local.default_cloud_init_merge_type
     }
   }
 
 
-#   # Write extra Weblogic configuration to filesystem
-#   dynamic "part" {
-#     for_each = each.value.disable_default_cloud_init && var.is_development ? [] : [1]
-#     content {
-#       content_type = "text/cloud-config"
-#       content = jsonencode({
-#         write_files = [
-#           {
-#             content = filebase64(var.vm_scripts_path)
-#             path    = "/tmp/vm_scripts.zip"
-#           }
-#         ]
-#       })
-#       filename   = "72-wls-development.yml"
-#       merge_type = local.default_cloud_init_merge_type
-#     }
-#   }
 
-
-
+  # WLS config updates. 8x-filename.sh or .yml
 
   # Update Datasources
   dynamic "part" {
@@ -374,7 +273,7 @@ data "cloudinit_config" "wlsservers" {
         domain_home = var.wls_domain_home
         datasources = var.wls_datasources_config
       })
-      filename     = "75-wls-update_datasources.sh"
+      filename     = "80-wls-update_datasources.sh"
       merge_type   = local.default_cloud_init_merge_type
     }
   }
@@ -389,7 +288,7 @@ data "cloudinit_config" "wlsservers" {
         domain_path = var.wls_domain_home
         user = var.user
       })
-      filename     = "80-wls-update_config_w_new_env.sh"
+      filename     = "81-wls-update_config_w_new_env.sh"
       merge_type   = local.default_cloud_init_merge_type
     }
   }
