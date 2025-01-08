@@ -50,7 +50,6 @@ module "iam" {
   compartment_id               = local.compartment_id
   state_id                     = local.state_id
   tenancy_id                   = local.tenancy_id
-#  cluster_id                   = local.cluster_id
   create_iam_resources         = var.create_iam_resources
   create_iam_autoscaler_policy = local.create_iam_autoscaler_policy
   create_iam_kms_policy        = local.create_iam_kms_policy
@@ -63,11 +62,8 @@ module "iam" {
   tag_namespace            = var.tag_namespace
   use_defined_tags         = var.use_defined_tags
 
-#  cluster_kms_key_id         = var.cluster_kms_key_id
-#  operator_volume_kms_key_id = var.operator_volume_kms_key_id
   wlsserver_volume_kms_key_id   = var.wlsserver_volume_kms_key_id
 
-#  autoscaler_compartments = local.autoscaler_compartments
   wlsserver_compartments     = local.wlsserver_compartments
 
   providers = {

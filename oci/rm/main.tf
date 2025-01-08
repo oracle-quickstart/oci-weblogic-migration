@@ -33,7 +33,7 @@ module "wls" {
   use_defined_tags         = var.use_defined_tags
   tag_namespace            = var.tag_namespace
   create_iam_autoscaler_policy = "never"
-  create_iam_wlsserver_policy     = var.create_iam_wlsserver_policy ? "always" : "never"
+#   create_iam_wlsserver_policy     = var.create_iam_wlsserver_policy ? "always" : "never"
 
   #Network
   # Network

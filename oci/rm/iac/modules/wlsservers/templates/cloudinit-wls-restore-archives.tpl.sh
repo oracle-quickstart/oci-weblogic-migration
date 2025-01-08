@@ -57,7 +57,26 @@ function check_fs(){
 
 }
 
+function set_fs_ownership() {
+    echo "<cloud-init><set_fs_ownership> Setting ownership to ${user} on mounted volumes" | log >> $log_file
+    chown -R ${user}:${group} ${block_volume_domain_mountpath}
+    exit_code=$?
+    echo "<cloud-init><set_fs_ownership> change ownership on mount point ${block_volume_domain_mountpath} returned with exit code $[exit_code] " | log >> $log_file
+    chown -R ${user}:${group} ${block_volume_mw_mountpath}
+    exit_code=$?
+    echo "<cloud-init><set_fs_ownership> change ownership on mount point ${block_volume_mw_mountpath} returned with exit code $[exit_code] " | log >> $log_file
+    chown -R ${user}:${group} ${block_volume_jdk_mountpath}
+    exit_code=$?
+    echo "<cloud-init><set_fs_ownership> change ownership on mount point ${block_volume_jdk_mountpath} returned with exit code $[exit_code] " | log >> $log_file
+    if [ $exit_code -ne 0 ]; then
+        echo "<cloud-init><set_fs_ownership><error> Failed to change ownership. Exiting with [$exit_code] " | log >> $log_file
+        exit 1
+    fi
+    echo "<cloud-init><set_fs_ownership> change ownership completed" | log >> $log_file
+}
+
 check_fs
+set_fs_ownership;
 output=$(sudo -u ${user} -E python /opt/scripts/restore-archives.py)
 exit_code=$?
 echo $output | log >> $log_file

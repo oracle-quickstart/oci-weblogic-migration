@@ -252,6 +252,10 @@ data "cloudinit_config" "wlsservers" {
         jdk_device_id =local.block_volume_jdk_device_id
         mw_device_id = local.block_volume_mw_device_id
         domain_device_id = local.block_volume_domain_device_id
+        group = var.group
+        block_volume_jdk_mountpath = local.block_volume_jdk_mountpath
+        block_volume_domain_mountpath = local.block_volume_domain_mountpath
+        block_volume_mw_mountpath = local.block_volume_mw_mountpath
       })
       filename     = "79-wls-restore-archives.sh"
       merge_type   = local.default_cloud_init_merge_type
