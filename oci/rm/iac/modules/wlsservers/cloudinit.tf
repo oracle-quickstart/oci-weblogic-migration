@@ -185,7 +185,7 @@ data "cloudinit_config" "wlsservers" {
 
    # Write Python files to perform database related task
    dynamic "part" {
-     for_each = each.value.disable_default_cloud_init && try(length(var.wls_datasources_config),0) > 0 ? [] : [1]
+     for_each = each.value.disable_default_cloud_init && try(length(var.wls_datasources_config),-1) < 0 ? [] : [1]
      content {
        content_type = "text/cloud-config"
        content = jsonencode({
@@ -229,6 +229,7 @@ data "cloudinit_config" "wlsservers" {
 
   # VMscript bootstrap file
   dynamic "part" {
+    #TODO vm_script_path bootstrap part should only be enabled if this is a devel environment.
     #     for_each = each.value.disable_default_cloud_init && var.is_development ? [] : [1]
     for_each = each.value.disable_default_cloud_init ? [] : [1]
     content {
@@ -268,8 +269,7 @@ data "cloudinit_config" "wlsservers" {
 
   # Update Datasources
   dynamic "part" {
-    for_each = each.value.disable_default_cloud_init && try(length(var.wls_datasources_config),0) > 0? [] : [1]
-#     for_each = each.value.disable_default_cloud_init ? [] : [1]
+    for_each = each.value.disable_default_cloud_init && try(length(var.wls_datasources_config),-1) > 0? [] : [1]
     content {
       content_type = "text/x-shellscript"
       content      = templatefile("${path.module}/templates/cloudinit-wls-update-jdbc-datasources.tpl.sh", {
