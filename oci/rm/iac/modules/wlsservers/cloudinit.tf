@@ -185,7 +185,7 @@ data "cloudinit_config" "wlsservers" {
 
    # Write Python files to perform database related task
    dynamic "part" {
-     for_each = each.value.disable_default_cloud_init && length(var.wls_datasources_config) > 0 ? [] : [1]
+     for_each = each.value.disable_default_cloud_init && try(length(var.wls_datasources_config),0) > 0 ? [] : [1]
      content {
        content_type = "text/cloud-config"
        content = jsonencode({
@@ -268,8 +268,8 @@ data "cloudinit_config" "wlsservers" {
 
   # Update Datasources
   dynamic "part" {
-#     for_each = each.value.disable_default_cloud_init && length(var.wls_datasources_config) > 0? [] : [1]
-    for_each = each.value.disable_default_cloud_init ? [] : [1]
+    for_each = each.value.disable_default_cloud_init && try(length(var.wls_datasources_config),0) > 0? [] : [1]
+#     for_each = each.value.disable_default_cloud_init ? [] : [1]
     content {
       content_type = "text/x-shellscript"
       content      = templatefile("${path.module}/templates/cloudinit-wls-update-jdbc-datasources.tpl.sh", {
