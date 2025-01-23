@@ -176,7 +176,7 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
         return command,args
 
     def get_compress_commands(self, file_name,folder):
-        filters_os="--exclude='.pid' --exclude='.state' --exclude='core' --exclude='diag/ofm/*/*/lck/*.lck'"
+        filters_os="--exclude='.pid' --exclude='.state' --exclude='.core' --exclude='diag/ofm/*/*/lck/*.lck'"
         filters_logs="--exclude='servers/*/logs/*.*' --exclude='*.log*[0-9]' --exclude='*.log' --exclude='*.out' --exclude='*.out*[0-9]'"
         filters_diagnostics="--exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*'"
         command="/usr/bin/tar"
