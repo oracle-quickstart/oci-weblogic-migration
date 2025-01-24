@@ -13,8 +13,9 @@ locals {
   os_gid              = one(distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gid]))
   jdk_home            = one(distinct([for machine in local.wls_data.resources.Machines : machine.JavaPath]))
   domain_path         = local.wls_topology.DomainPath
+  domain_mount_point  = dirname(local.domain_path)
   oracle_home         = local.wls_topology.OraclePath
-  wls_domain_name     = element(split("/", local.domain_path), length(split("/", local.domain_path)) - 1)
+  wls_domain_name     = basename(local.domain_path)
   num_oci_instances = length(local.wls_machines)
 }
 
@@ -45,7 +46,14 @@ locals {
   wls_admin_t3_port                     = local.ADMIN_DEFAULT_T3_PORT
   wls_admin_t3_ssl_port                 = local.ADMIN_DEFAULT_T3_SSL_PORT
   wls_admin_server_non_unique_ports     = [local.wls_admin_administrative_port, local.wls_admin_listen_port, local.wls_admin_ssl_port, local.wls_admin_t3_port, local.wls_admin_t3_ssl_port]
-  wls_admin_server_ports                = distinct(compact(local.wls_admin_server_non_unique_ports))
+  _wls_admin_network_channel_port_definition = distinct(compact(flatten([
+  for name, channel in try(lookup(local.wls_adminserver_details, "NetworkAccessPoint", null), {}) :
+  [
+    try(channel["PublicPort"], null),
+    try(channel["ListenPort"], null)
+  ]
+  ])))
+  wls_admin_server_ports                = distinct(compact(concat(local.wls_admin_server_non_unique_ports,local._wls_admin_network_channel_port_definition)))
 }
 
 ## MANAGED SERVER DETAILS
@@ -154,22 +162,14 @@ locals {
   #############################################################################
   # Builds a list of ports and instance IP to be used by Load Balancer Backend
   #############################################################################
-#
-#  __wls_dynamic_server_dynamic_ports_by_instance = [ for pair in setproduct(local.oci_instance_ips, local.__wls_dyn_app_ports_tempo):{
-#                                                        instance = pair[0]
-#                                                        port     = pair[1]
-#                                                     }
-#  ]
 
 
 
   ####################################################################
   # Merge DynamicTemplate Listen Ports (Only) and Weblogic Managed Server Listen Ports (Only)
   ####################################################################
-#  __wls_all_ports_application_traffic_servers = concat(local.wls_managed_server_listen_ports_by_instance, local.__wls_dynamic_server_dynamic_ports_by_instance)
+
     wls_all_ports_application_traffic_servers = flatten(distinct(concat(local.wls_managed_server_listen_ports, local.__wls_dyn_app_ports_tempo)))
-#  wls_domain_app_traffic_listen_ports_by_priv_ip_tomap          = { for k in local.__wls_all_ports_application_traffic_servers : format("%s-%v", k.instance, k.port) => k... }
-#  wls_domain_app_traffic_listen_ports_by_priv_ip_tomap = local.__wls_all_ports_application_traffic_servers
 
 
   __wls_dynamic_server_ports = distinct(compact(flatten([

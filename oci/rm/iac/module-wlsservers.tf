@@ -34,7 +34,7 @@ locals {
       size               =  var.wlsserver_jdk_volume_size
     },
     "domain" = {
-      volume_mount_point = local.domain_path
+      volume_mount_point = local.domain_mount_point
       display_name       = local.wls_domain_name
       device             = "/dev/oracleoci/oraclevdd"
       size               = var.wlsserver_domain_volume_size

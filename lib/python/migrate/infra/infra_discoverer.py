@@ -214,7 +214,7 @@ class InfraDiscoverer(Discoverer):
         if len(jvms) > 0:
                 jvm_paths=self._cmd_helper.get_unique_paths_in_jvms(jvms, exclude_paths)
                 extra_dirs = extra_dirs + jvm_paths
-        if app_deployments :
+        if app_deployments and not self._model_context.is_ssh():
             # get Library and Application
             libraries = app_deployments[model_constants.LIBRARY]
             applications = app_deployments[model_constants.APPLICATION]

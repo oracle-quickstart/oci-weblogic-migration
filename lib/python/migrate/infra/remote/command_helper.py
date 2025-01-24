@@ -405,8 +405,13 @@ class CommandHelper(object):
                 for item in exclude_patterns:
                     if path.startswith(item):
                         return;
-                parent=self._path_helper.get_parent_directory(path)
-                discoverer.add_to_model(dictionary, parent, key)
+                    if item.startswith(path):
+                        return;
+                    if self._path_helper.is_relative_path(path):
+                        return;
+                # parent=self._path_helper.get_parent_directory(path)
+                # discoverer.add_to_model(dictionary, parent, key)
+                discoverer.add_to_model(dictionary, path, key)
 
     def _find_unique_dirs_except_pattern(self,unique_paths,value,key,exclude_patterns):
         if isinstance(value, (str,unicode)):
