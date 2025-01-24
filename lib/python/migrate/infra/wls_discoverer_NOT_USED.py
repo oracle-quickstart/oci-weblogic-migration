@@ -8,7 +8,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))),'lib', 'python','migrate','infra'))
 
 import infra_constants
-from migration_discoverer import MigrationDiscoverer
+from migration_discoverer_NOT_USED import MigrationDiscoverer
 from infra_constants import Owner
 
 

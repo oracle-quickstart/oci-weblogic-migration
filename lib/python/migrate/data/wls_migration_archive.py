@@ -233,6 +233,7 @@ class WLSMigrationArchiver(object):
             _logger.info('WLSDPLY-06034', "custom_dirs", "Extra dir found to be root / - ignoring",
                          class_name=_class_name, method_name=_method_name)
             return
+        #flatten list of custom archives
 
         file_path=self._model_context.get_local_output_dir()
         if self._model_context.is_ssh():

@@ -5,6 +5,7 @@ Licensed under the Universal Permissive License v 1.0 as shown at https://oss.or
 import os
 import sys
 import re
+import tempfile
 
 from oracle.weblogic.deploy.util import PyOrderedDict as OrderedDict
 
@@ -30,7 +31,15 @@ from wlsdeploy.util import path_helper
 from wlsdeploy.util import string_utils
 from wlsdeploy.tool.util.wlst_helper import WlstHelper
 from wlsdeploy.exception import exception_helper
-
+from wlsdeploy.util import dictionary_utils
+from wlsdeploy.util import model_helper
+from wlsdeploy.aliases.location_context import LocationContext
+from wlsdeploy.aliases.model_constants import APPLICATION
+from wlsdeploy.aliases.model_constants import LIBRARY
+from wlsdeploy.aliases.model_constants import MODULE_TYPE
+from wlsdeploy.aliases.model_constants import SOURCE_PATH
+from wlsdeploy.aliases.model_constants import PLAN_DIR
+from wlsdeploy.aliases.model_constants import PLAN_PATH
 
 
 _class_name = 'InfraDiscoverer'
@@ -82,7 +91,7 @@ class InfraDiscoverer(Discoverer):
         domain_name = self._discovered_model.get_model_topology()[model_constants.DOMAIN_NAME]
         domain_path = self._discovered_model.get_model_topology()[infra_constants.DOMAIN_HOME_DIR]
         oracle_path = self._discovered_model.get_model_topology()[infra_constants.ORACLE_HOME_DIR] or self._model_context.get_oracle_home()
-
+        app_deployments = self._discovered_model.get_model_app_deployments()
         if string_utils.is_empty(domain_path)  or string_utils.is_empty(domain_name):
             ex = exception_helper.create_discover_exception('WLSDPLY-06023')
             _logger.throwing(ex, class_name=_class_name, method_name=_method_name)
@@ -128,7 +137,9 @@ class InfraDiscoverer(Discoverer):
         discoverer.add_to_model(self._dictionary, model_top_folder_name, jdk_home)
 
         domain_jvms=node_mgr_jvm + domain_only_jvms
-        model_top_folder_name, fs = self.find_wls_extra_dir(domain_jvms,unique_paths, domain_name)
+        model_top_folder_name, fs = self.find_wls_extra_dir(app_deployments , domain_jvms,unique_paths, domain_name)
+
+
         discoverer.add_to_model(self._dictionary, model_top_folder_name, fs)
 
         _logger.exiting(class_name=_class_name, method_name=_method_name)
@@ -196,11 +207,104 @@ class InfraDiscoverer(Discoverer):
         _logger.exiting(class_name=_class_name, method_name=_method_name)
         return infra_constants.OWNER, result
 
-    def find_wls_extra_dir(self, jvms, exclude_paths, domain_name):
+    def find_wls_extra_dir(self, app_deployments, jvms, exclude_paths, domain_name):
         _method_name = 'get_wls_extra_dir'
         _logger.entering(class_name=_class_name, method_name=_method_name)
+        extra_dirs=[]
         if len(jvms) > 0:
-                extra_dirs=self._cmd_helper.get_unique_paths_in_jvms(jvms, exclude_paths)
-                _logger.exiting(class_name=_class_name, method_name=_method_name, result=extra_dirs)
-                return infra_constants.FILESYSTEM, extra_dirs
+                jvm_paths=self._cmd_helper.get_unique_paths_in_jvms(jvms, exclude_paths)
+                extra_dirs = extra_dirs + jvm_paths
+        if app_deployments :
+            # get Library and Application
+            libraries = app_deployments[model_constants.LIBRARY]
+            applications = app_deployments[model_constants.APPLICATION]
 
+            for application_name in applications:
+                application=dictionary_utils.get_dictionary_element(applications, application_name)
+                deployment_source_path = dictionary_utils.get_element(application, SOURCE_PATH)
+                is_custom_path,custom_path = self._is_custom_dir(deployment_source_path)
+                if is_custom_path:
+                    extra_dirs.append(custom_path)
+                deployment_plan_path= self._get_combined_model_plan_path(application)
+                is_custom_path,custom_path = self._is_custom_dir(deployment_plan_path)
+                if is_custom_path:
+                    extra_dirs.append(custom_path)
+
+            # for each element inside Library and Application get Attribute SourcePath
+            # if SourcePath is not None: (found)
+            #    if SourcePath startswith @@ORACLE_HOME@@   - ignore as this will be included in Middleware Archive
+            #    if SourcePath is a full path - starts /   -
+            #       then check if it does not start with domain_path or oracle_path add it to the list.
+            #            extra_dirs.append(SourcePath)
+
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=extra_dirs)
+        return infra_constants.FILESYSTEM, extra_dirs
+
+    def _is_custom_dir(self,string_value):
+        _method_name = '_is_custom_dir'
+        _logger.entering(class_name=_class_name, method_name=_method_name)
+        _path_helper = path_helper.get_path_helper()
+        path=""
+        result = False
+        if string_value is None:
+            result = False
+        elif string_value.startswith(self._model_context.ORACLE_HOME_TOKEN):
+            result = False
+        elif string_value.startswith(self._model_context.WL_HOME_TOKEN):
+            result = False
+        elif string_value.startswith(self._model_context.DOMAIN_HOME_TOKEN):
+            result = False
+        elif string_value.startswith(self._model_context.JAVA_HOME_TOKEN):
+            result = False
+        elif string_value.startswith(self._model_context.CURRENT_DIRECTORY_TOKEN):
+            result = False
+        elif string_value.startswith(self._model_context.TEMP_DIRECTORY_TOKEN):
+            result = True
+            path=self._model_context.replace_token_string(string_value)
+            parent_dir_name = _path_helper.get_parent_directory(path)
+            path=parent_dir_name
+        elif _path_helper.is_relative_local_path(string_value):
+            result = False
+        elif _path_helper.is_absolute_path(string_value):
+            result = True
+            parent_dir_name = _path_helper.get_parent_directory(string_value)
+            path=parent_dir_name
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=path)
+        return result, path
+
+
+
+    # def _replace_path_tokens_for_deployment(self, deployment_type, deployment_name, deployment_dict):
+    #     _method_name = '_replace_path_tokens_for_deployment'
+    #     _logger.entering(deployment_type, deployment_name, deployment_dict,
+    #                          class_name=self._class_name, method_name=_method_name)
+    #
+    #     self.model_context.replace_tokens(deployment_type, deployment_name, SOURCE_PATH, deployment_dict)
+    #     self.model_context.replace_tokens(deployment_type, deployment_name, PLAN_DIR, deployment_dict)
+    #     self.model_context.replace_tokens(deployment_type, deployment_name, PLAN_PATH, deployment_dict)
+    #
+    #     self.logger.exiting(class_name=self._class_name, method_name=_method_name)
+
+    def _get_combined_model_plan_path(self, application_dict):
+        """
+        Combine the PlanDir and PlanPath attributes from the model dictionary
+        to create a single path.
+        :param deployment_dict: a model deployment dictionary
+        :return: a full path for deployment plan
+        """
+        _method_name = '_get_combined_model_plan_path'
+        _logger.entering(application_dict, class_name=_class_name, method_name=_method_name)
+        _path_helper = path_helper.get_path_helper()
+        plan_dir = dictionary_utils.get_element(application_dict, PLAN_DIR)
+        plan_path = dictionary_utils.get_element(application_dict, PLAN_PATH)
+
+        full_path = None
+        if not string_utils.is_empty(plan_path):
+            if string_utils.is_empty(plan_dir):
+                full_path = plan_path
+            else:
+                # not an archive location...
+                full_path = _path_helper.local_join(plan_dir, plan_path)
+
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=full_path)
+        return full_path
