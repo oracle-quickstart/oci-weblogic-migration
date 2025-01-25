@@ -107,6 +107,8 @@ module "wls" {
   allow_wlsservers_ssh_access      = var.allow_wlsserver_ssh_access
   allow_wlsservers_internet_access = var.allow_wlsserver_internet_access
   allow_adminserver_ssh_access = var.allow_adminserver_ssh_access
+  allow_bastion_adminserver_access = var.allow_bastion_adminserver_console_access
+  allow_bastion_domain_access = var.allow_bastion_domain_access
   enable_waf                   = var.enable_waf #TODO: JOI - Future release
 
 

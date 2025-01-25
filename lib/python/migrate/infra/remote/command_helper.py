@@ -122,20 +122,14 @@ class CommandHelper(object):
         _logger.entering(class_name=_class_name, method_name=_method_name)
         cmd,args = self.cmd_builder.get_user_details(path)
         result = OrderedDict()
-        if self.is_remote:
-            # full_command=cmd+" "+args
-            response = self.cmd_builder.get_single_result(self._run_command(cmd,args))
-            response = self.cmd_builder.unicode_to_string(response)
-            user_pair = response.split(infra_constants.COMMA_SEPARATOR)[0]
-            group_pair = response.split(infra_constants.COMMA_SEPARATOR)[1]
-            result[infra_constants.USER_ID] = user_pair.split(infra_constants.COLON_SEPARATOR)[0]
-            result[infra_constants.USERNAME] = user_pair.split(infra_constants.COLON_SEPARATOR)[1]
-            result[infra_constants.GROUP_ID] = group_pair.split(infra_constants.COLON_SEPARATOR)[0]
-            result[infra_constants.GROUP_NAME] = group_pair.split(infra_constants.COLON_SEPARATOR)[1]
-        else:
-            response = self.cmd_builder.statdict(path)
-            #     todo if reponse is == fail.  then raise exception
-            # response="running local"
+        response = self.cmd_builder.get_single_result(self._run_command(cmd,args))
+        response = self.cmd_builder.unicode_to_string(response)
+        user_pair = response.split(infra_constants.COMMA_SEPARATOR)[0]
+        group_pair = response.split(infra_constants.COMMA_SEPARATOR)[1]
+        result[infra_constants.USER_ID] = user_pair.split(infra_constants.COLON_SEPARATOR)[0]
+        result[infra_constants.USERNAME] = user_pair.split(infra_constants.COLON_SEPARATOR)[1]
+        result[infra_constants.GROUP_ID] = group_pair.split(infra_constants.COLON_SEPARATOR)[0]
+        result[infra_constants.GROUP_NAME] = group_pair.split(infra_constants.COLON_SEPARATOR)[1]
         _logger.exiting(class_name=_class_name, method_name=_method_name, result=result)
         return result
 
@@ -278,64 +272,22 @@ class CommandHelper(object):
         try:
             _logger.entering(_class_name, _method_name)
             script =""
-            # script = self._domain_typedef.get_post_create_rcu_schemas_script()
             if script is None:
-                _logger.exiting(class_name=_class_name, method_name=_method_name)
+                _logger.exiting(class_name=_class_name, method_name=_method_name, result="script is None")
                 return
-            # runner = ScriptRunner()
-            # runner = CreateDomainLifecycleHookScriptRunner(
-            #     POST_CREATE_RCU_SCHEMAS_LIFECYCLE_HOOK, POST_CREATE_RCU_SCHEMA_LOG_BASENAME, , java_home,
-            #     oracle_home, self._model_context.get_domain_home(), self._model_context.get_domain_name())
             timer = time.time()
             runner =InfraCommandRunner("python","localRunLog",cmd,args)
             exit_code=runner.runScript()
             output=runner.getOutput()
             if len(output) == 0:
                 exit_code=1
-            _logger.exiting(class_name=_class_name, method_name=_method_name)
+            _logger.exiting(class_name=_class_name, method_name=_method_name, result=timer)
             return exit_code,output
-            # for line in array:
-            #     print(line)
-            #
-            # print("done printing")
-            # print(timer)
-            # # Construct the command and its arguments
-            # process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            #                            close_fds=True)
-
-            # Timeout handling
-
-            # while time.time() - timer <= timeout:
-            #     for input_ in inputs:
-            #         process.stdin.write(input_ + '\n')
-            #     process.stdin.flush()
-            #     if process.stdout.readline() != '' and print_console_message:
-            #         sys.stdout.write(process.stdout.readline())
-            #     if process.stderr.readline() != '' and print_console_message:
-            #         sys.stderr.write(process.stderr.readline())
-            #     time.sleep(0.1)  # Adjust this value if you need a more precise timeout
-            #
-            # process.stdin.close()
-
-            # # Wait for process termination or timeout
-            # if process.wait(timeout=timeout) is None:
-            #     process.terminate()  # Terminate the process if it's still running after the timeout
-
-            # Get the return code and combined output/error streams
-            # return (process.returncode, process.stdout.read().decode().strip(), process.stderr.read().decode().strip())
         except CreateException, ce:
             ex = exception_helper.create_discover_exception(ExitCode.ERROR,
                                                        'WLSDPLY-20028', ce.getLocalizedMessage(), error=ce)
             __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
             raise ex
-
-    #TODO host command run at OS level has to be found with full path. Either use which command in linux or read it from en user provided properties.
-    # def check_cmd_exists(cmd):
-    #     try:
-    #         subprocess.check_output(["which", cmd], stderr=subprocess.STDOUT)
-    #         return True
-    #     except subprocess.CalledProcessError:
-    #         return False
 
 
     def get_unique_java_homes(self, jvm_list):
@@ -402,6 +354,8 @@ class CommandHelper(object):
             if re.match(dir_pattern, path):
                 # Python syntax does not work in jython
                 # if all([not path.startswith(item) for item in exclude_patterns]):
+                if not string_utils.is_empty(path) and os.path.isfile(path):
+                    path = self._path_helper.get_parent_directory(path)
                 for item in exclude_patterns:
                     if path.startswith(item):
                         return;
@@ -430,9 +384,14 @@ class CommandHelper(object):
         return file_list
 
     def get_server_hostname(self):
+        _method_name="get_server_hostname"
         hostname=""
         if self.is_remote:
             hostname=self.ssh_context._ssh_client.getRemoteHostname()
         else:
-            hostname=self.cmd_builder.get_hostname()
+            cmd,args=self.cmd_builder.get_hostname()
+            hostname=self._run_command(cmd,args)
+            if len(hostname) > 0:
+                hostname = hostname[0]
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=hostname)
         return hostname

@@ -155,6 +155,7 @@ variableGroups:
       - bastion_subnet_id
       - bastion_allowed_cidrs
       - allow_bastion_domain_access
+      - allow_bastion_adminserver_console_access
       - bastion_availability_domain
       - bastion_user
       - bastion_shape_name
@@ -487,7 +488,7 @@ variables:
     required: true
     visible: ${create_nsgs}
   allow_bastion_domain_access:
-    title: Allow Bastion to access Weblogic Managed Servers
+    title: Allow Bastion Server egress Traffic
     type: boolean
     default: true
     required: true
@@ -495,6 +496,15 @@ variables:
       and:
         - ${create_nsgs}
         - ${create_bastion}
+  allow_bastion_adminserver_console_access:
+    title: Allow Bastion to access Admin Server Listen Ports
+    type: boolean
+    default: true
+    required: true
+    visible:
+    and:
+    - ${create_nsgs}
+    - ${create_bastion}
   allow_rules_internal_lb:
     title: Additional internal load balancer rules
     additionalProps:

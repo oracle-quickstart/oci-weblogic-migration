@@ -95,8 +95,8 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
 
     def get_hostname(self):
         # remote_host = self.getRemoteHostname()
-        command = '/usr/bin/hostname'
-        args = "| cat"
+        command = "/usr/bin/hostname"
+        args = "-f | cat"
         return command, args
 
     def stat_to_dict(self, filestat):
@@ -187,20 +187,20 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
             args='czf %s %s %s %s %s' % (file_name,filters_os, filters_logs, filters_diagnostics, folder)
         return command,args
 
-    def get_common_root(self,paths):
-        # Split each path into its components
-        split_paths = [p.split('/') for p in paths]
-        # Find the common prefix among these lists
-        common_components = []
-        for i in range(len(min(split_paths, key=lambda x: len(x)))):
-            component = set([sp[i] for sp in split_paths])
-
-            # If there's more than one unique component at this level, stop searching
-            if len(component) > 1: break
-
-            common_components.extend(list(component))
-
-        return '/'.join(common_components) + '/'
+    # def get_common_root(self,paths):
+    #     # Split each path into its components
+    #     split_paths = [p.split('/') for p in paths]
+    #     # Find the common prefix among these lists
+    #     common_components = []
+    #     for i in range(len(min(split_paths, key=lambda x: len(x)))):
+    #         component = set([sp[i] for sp in split_paths])
+    #
+    #         # If there's more than one unique component at this level, stop searching
+    #         if len(component) > 1: break
+    #
+    #         common_components.extend(list(component))
+    #
+    #     return '/'.join(common_components) + '/'
 
     def get_unique_paths(self,input_list):
         """

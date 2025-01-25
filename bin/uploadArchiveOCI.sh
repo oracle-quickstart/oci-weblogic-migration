@@ -15,10 +15,15 @@ LOG_FILE="$toolHome/logs/upload_to_oci_archive.log"
 
 
 function pre-reqs(){
+    if ! oci >> /dev/null 2>&1; then
+            log "ERROR" "Oracle Cloud Infrastructure CLI (oci) not found in $PATH."
+            log "error" "See https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm . exiting..."
+            exit 1
+    fi
     local oci_bucket_name=$1
     local oci_compartment_id=$2
     log "info" "<uploadArchiveOCI><pre-reqs><entry> Args: $oci_bucket_name and $oci_compartment_id"
-    if ! oci iam region list >> "$LOG_FILE" 2>&1; then
+    if ! echo n |oci iam region list >> "$LOG_FILE" 2>&1; then
         log "error" "Fail to verify OCI cli is configured. For more information visit: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm"
         log "error" "exiting..."
         exit 1

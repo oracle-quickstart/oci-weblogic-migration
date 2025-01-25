@@ -35,7 +35,13 @@ discover_local(){
   file_timestamp=`date +%Y%m%d%H%M`
   SCRIPT_PATH="$toolHome/bin/discoverWLS.sh"
   discover "local" "$SCRIPT_PATH" "-domain_home $domain_home" "-model_file $toolHome/out/Discovered_$file_timestamp.json" "-skip_archive"
-  log "info" "<discoverDomain><discover_local><exit>"
+  exit_code=$?
+  log "info" "Executed discover WebLogic with exit code [$exit_code]"
+  if [ $exit_code -ne 0 ]; then
+     log "error" "<discoverDomain><discover_local><error> Error executing discover infra"
+     exit 1
+  fi
+  log "info" "<discoverDomain><discover_infra_local><exit> WebLogic Inventory File : $toolHome/out/Discovered_$file_timestamp.json"
 }
 
 
@@ -114,23 +120,6 @@ process_datasources(){
   log "info" "<discoverDomain><process_datasources><exit>"
 }
 
-#process_archives(){
-#  #  local inventory_file=$1
-#  #  local archive_folder_name=$2
-#  #  local dry_run=$3
-#  log "info" "<discoverDomain><process_archives><entry> args: $*"
-#   #  source $toolHome/bin/archiveWLSDomain.sh
-#   #  archive_repository_path=$3
-#   #  $toolHome/bin/archiveWLSDomain.sh $inventory_file $archive_folder_name  $archive_repository_path
-#   #archiveWLSDomain "$inventory_file" "$archive_folder_name" "$repository"
-##   output=$(bash "${toolHome}/bin/archiveWLSDomain.sh" $*)
-#   source "${toolHome}/bin/archiveWLSDomain.sh" "$@"
-#   exit_code=$?
-#   log "info" "<discoverDomain><process_archives><exit> exit_code=$?"
-#   log "info" "<discoverDomain><process_archives> $output"
-#
-#}
-
 function process_archives() {
   log "info" "<discoverDomain><process_archives><entry> args: $*"
   wls_inventory_file=$1
@@ -159,14 +148,24 @@ upload_to_oci(){
   local inventory_file=$1
   local archive_folder_name=$2
   local repository=${3:-$toolHome/out}
-  log "info" "<discoverDomain><upload_to_oss><entry> args: $inventory_file $archive_folder_name $repository"
+  log "info" "<discoverDomain><upload_to_oci><entry> args: $inventory_file $archive_folder_name $repository"
   source $toolHome/bin/uploadArchiveOCI.sh
-  ret_code=$(upload_to_oss "$inventory_file" "$archive_folder_name" "$repository")
-  if [[ "$ret_code" == OP_COMPLETED ]]; then
-     update_oss_auto_tfvars
+  upload_to_oss "$inventory_file" "$archive_folder_name" "$repository"
+  exit_code=$?
+  log "info" "Executed owm.sh lift with exit code [$exit_code]"
+
+  if [ $exit_code -ne 0 ] && [ $exit_code -ne $OP_COMPLETED ]; then
+    log "error" "<discoverDomain><upload_to_oci><error> Error executing owm.sh lift operation"
+    echo "check $LOG_FILE for more details.."
+    exit 1
   fi
-#  upload_to_oss "$inventory_file" "$archive_folder_name" "$repository"
-  log "info" "<discoverDomain><upload_to_oss><exit> success"
+#  if [[ "$exit_code" == $OP_COMPLETED ]]; then
+#     update_oss_auto_tfvars
+#  else
+#     log "error" "<discoverDomain><upload_to_oci><error> Error uploading archives to oci operation code [$ret_code]"
+#     exit 1
+#  fi
+  log "info" "<discoverDomain><upload_to_oss><exit> "
 }
 
 build_orm(){

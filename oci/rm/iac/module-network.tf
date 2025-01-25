@@ -121,7 +121,6 @@ module "network" {
   allow_adminserver_ssh_access      = var.allow_adminserver_ssh_access
   allow_wlsserver_internet_access = var.allow_wlsservers_internet_access
   allow_wlsserver_ssh_access      = var.allow_wlsservers_ssh_access
-  #TODO: JOI Surface these flags.
   allow_bastion_domain_access = var.allow_bastion_domain_access
   allow_bastion_adminserver_access = var.allow_bastion_adminserver_access
   assign_dns                   = var.assign_dns

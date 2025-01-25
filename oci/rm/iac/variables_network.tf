@@ -254,7 +254,7 @@ variable "allow_bastion_domain_access" {
 
 variable "allow_bastion_adminserver_access" {
   default     = false
-  description = "Whether to allow access to the Admin Managed Servers from the bastion host."
+  description = "Whether to allow access to the Admin Managed Server from the bastion host."
   type        = bool
 }
 

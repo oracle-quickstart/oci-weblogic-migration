@@ -190,7 +190,7 @@ class InfraDiscoverer(Discoverer):
         result = self._cmd_helper.get_server_details()
         hostname= self._cmd_helper.get_server_hostname()
         result[infra_constants.HOSTING_SERVER_KEY]=hostname
-        _logger.exiting(class_name=_class_name, method_name=_method_name)
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=hostname)
         return  infra_constants.DETAILS_KEY,result
 
     def get_fs_details(self, wls_directory):
