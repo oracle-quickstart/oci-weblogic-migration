@@ -33,9 +33,9 @@ function get_deployment_mode {
   response_code=$(curl  --write-out '%%{http_code}' --silent --output /dev/null -H "Authorization:Bearer Oracle" http://169.254.169.254/opc/v2/instance/metadata/mode)
   if [[ "$response_code" -eq 200 ]] ; then
      mode=$(curl -H "Authorization:Bearer Oracle" http://169.254.169.254/opc/v2/instance/metadata/mode)
-     echo $logs_dir
+     echo $mode
   else
-     mode=$(curl -L http://169.254.169.254/opc/v1/instance/metadata/logs_dir)
+     mode=$(curl -L http://169.254.169.254/opc/v1/instance/metadata/mode)
      echo $mode
   fi
 }
@@ -55,13 +55,15 @@ function log(){
 
 echo "Executing unpack vmscript script" | log >> $log_file
 
-output=$(sudo -u ${user} -E python /opt/scripts/restore-vmscripts.py)
+#sudo -u ${user} -E python /opt/scripts/restore-vmscripts.py
+python3 /opt/scripts/restore-vmscripts.py
 exit_code=$?
-echo $output | log >> $log_file
+echo "<cloud-init><vmscripts>Executed restore-vmscripts.py with exit code [$exit_code]" | log >> $log_file
 if [[ $exit_code -ne 0 ]]; then
-  echo "<cloud-init><restore><ERROR> Failed to restore VM Scripts" | log >> $log_file
+  echo "<cloud-init><vmscripts><ERROR> Failed to restore VM Scripts" | log >> $log_file
   exit 1
 fi
-echo "Executed os-vmscripts via ${user} with exit code [$exit_code]" | log >> $log_file
+sudo chown -R oracle:oracle /opt/scripts
+sudo chmod -R 775 /opt/scripts
 echo "<cloud-init><os-vmscripts> Restore completed" | log >> $log_file
 

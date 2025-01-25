@@ -132,9 +132,8 @@ module "wls" {
   wlsserver_image_os_version = var.wlsserver_image_os_version
   # Development or Release
 
-  vm_script_path = var.wlsoci_vmscripts_zip_bundle_path
-  #TODO (joi) change to PROD before releasing.
-  release = "DEV"
+  vm_script_path = local.vm_scripts_path_selected
+  #release = "DEV"
   #Weblogic Server Instance Details
   wlsserver_cloud_init       = local.wlsserver_cloud_init
   wlsserver_shape = {

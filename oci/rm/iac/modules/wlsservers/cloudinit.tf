@@ -112,9 +112,9 @@ data "cloudinit_config" "wlsservers" {
           },
         }
         mounts = [
-          [ local.block_volume_mw_device_id, "${local.block_volume_mw_mountpath}", "xfs", "defaults,_netdev,nofail,x-systemd.device-timeout=30s,x-systemd.makefs", "0","2"],
-          [ local.block_volume_jdk_device_id,  "${local.block_volume_jdk_mountpath}", "xfs", "defaults,_netdev,nofail,x-systemd.device-timeout=30s,x-systemd.makefs", "0","2"],
-          [ local.block_volume_domain_device_id, "${local.block_volume_domain_mountpath}", "xfs", "defaults,_netdev,nofail,x-systemd.device-timeout=30s,x-systemd.makefs", "0","2"],
+          [ local.block_volume_mw_device_id, "${local.block_volume_mw_mountpath}", "ext4", "defaults,_netdev,nofail,x-systemd.device-timeout=30s,x-systemd.makefs", "0","2"],
+          [ local.block_volume_jdk_device_id,  "${local.block_volume_jdk_mountpath}", "ext4", "defaults,_netdev,nofail,x-systemd.device-timeout=30s,x-systemd.makefs", "0","2"],
+          [ local.block_volume_domain_device_id, "${local.block_volume_domain_mountpath}", "ext4", "defaults,_netdev,nofail,x-systemd.device-timeout=30s,x-systemd.makefs", "0","2"],
         ]
         mounts_default_fields= [ "None", "None", "auto", "defaults,_netdev,nofail", "0", "2"]
       })

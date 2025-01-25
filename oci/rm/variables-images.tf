@@ -45,6 +45,7 @@ locals{
   vm_instance_image_id  = lookup(local.marketplace_images_map[local.image_type_selected_key],"instance_image_id","ohhh")
   listing_id_selected = lookup(local.marketplace_images_map[local.image_type_selected_key],"listing_id", "none")
   listing_resource_version_selected = lookup(local.marketplace_images_map[local.image_type_selected_key],"listing_resource_version","none")
+  vm_scripts_path_selected = lookup(local.marketplace_images_map[local.image_type_selected_key],"vm_scripts_path", null )
 
   vm_instance_image_requirements = {
     tnc = var.terms_and_conditions

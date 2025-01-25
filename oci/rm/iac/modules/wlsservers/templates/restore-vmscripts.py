@@ -89,13 +89,18 @@ if __name__ == '__main__':
     try:
         vmscripts_status=True
         if mode is not None and mode.strip().lower() == 'dev':
+            log("WARNING - Running Stack in Development Mode")
             archive_on_disk=download_file_from_oss(bucket_name=bucket,file_name="${vmscripts_file}",store_path=temp_store)
-        else:
+            vmscripts_status = unzip_archive(archive_on_disk, '/', '/opt/scripts/databag.py')
+            delete_file(archive_on_disk)
+        elif mode is not None and mode.strip().lower() == 'prod':
             archive_on_disk=getVMScriptsPath()
-        # restore(archive_on_disk,skip_file=False,change_to_dir="/opt/scripts")
-        vmscripts_status = unzip_archive(archive_on_disk, '/', '/opt/scripts/databag.py')
-        delete_file(archive_on_disk)
-
+            log("INFO - Prod mode. Using Archive On Disk {0} ".format(archive_on_disk))
+            vmscripts_status = unzip_archive(archive_on_disk, '/', '/opt/scripts/databag.py')
+        else:
+            log("ERROR - Invalid Stack Mode value in metadata {0} ".format(mode))
+            vmscripts_status=False
+        log("INFO - <Return> {0}".format(vmscripts_status))
     except Exception as ex:
         log("[{0}] [{1}]".format(str(ex), traceback.format_exc()))
         sys.exit(3)
