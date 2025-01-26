@@ -154,7 +154,7 @@ class CommandHelper(object):
             jvm_args = jvm.get_unsorted_args_list()
             for args in jvm_args:
                 if infra_constants.WLS_MANAGED_SERVER_PROCESS_KEY in args:
-                    _logger.finest("found a Weblogic JVM",class_name=_class_name, method_name=_method_name)
+                    _logger.fine("found a Weblogic JVM",class_name=_class_name, method_name=_method_name)
                     jvm_processes.append(jvm)
         _logger.exiting(class_name=_class_name, method_name=_method_name)
         return jvm_processes
@@ -313,9 +313,13 @@ class CommandHelper(object):
 
     def get_unique_paths_in_jvms(self, jvms, exclude_patterns):
         """list unique OS directory paths in a provided list of jvms"""
+        _method_name="get_unique_paths_in_jvms"
+        _logger.entering(class_name=_class_name, method_name=_method_name)
         paths=self._get_paths_in_jvms(jvms, exclude_patterns)
         unique_paths = [path for path in paths.iterkeys()]
-        return self.cmd_builder.get_unique_paths(unique_paths)
+        unique_fs_paths=self.get_unique_paths(unique_paths)
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=unique_fs_paths)
+        return unique_fs_paths
 
 
     def list_paths_in_jvms(self,jvms):
@@ -328,7 +332,7 @@ class CommandHelper(object):
         """From a list of JVMArgument objects iterates to find OS file paths (i.e /opt/weblogic) and add them to a unique list of paths"""
 
         _method_name = "_get_paths_in_jvms"
-        _logger.entering(class_name=_class_name, method_name=_method_name)
+        _logger.entering(jvms, exclude_patterns,class_name=_class_name, method_name=_method_name)
         unique_paths=OrderedDict()
         #
         # jvm.get_xx_args_dict()
@@ -349,23 +353,52 @@ class CommandHelper(object):
 
     def __add_path_except_pattern(self,dictionary,path,key,exclude_patterns):
         import re
+        _method_name="__add_path_except_pattern"
+        _logger.entering(path,class_name=_class_name, method_name=_method_name)
         dir_pattern = self.cmd_builder.get_directory_regexp()
         if path is not None:
             if re.match(dir_pattern, path):
                 # Python syntax does not work in jython
-                # if all([not path.startswith(item) for item in exclude_patterns]):
-                if not string_utils.is_empty(path) and os.path.isfile(path):
+                if not self.is_remote and not os.path.exists(path):
+                    _logger.fine('path {0} does not exist in fs. ',
+                                 path,class_name=_class_name,method_name=_method_name)
+                    return;
+
+                if not self.is_remote and os.path.isfile(path):
+                    file = path
                     path = self._path_helper.get_parent_directory(path)
+                    _logger.fine('path is a file. with parent dir {0}',
+                                 path,class_name=_class_name,method_name=_method_name)
+                if self.is_remote and not len(path) > 2:
+                    _logger.fine('it is assume it is a bogus file {0}. not including',
+                                 path,class_name=_class_name,method_name=_method_name)
+                    return;
+
+                # if all([not path.startswith(item) for item in exclude_patterns]):
                 for item in exclude_patterns:
                     if path.startswith(item):
+                        _logger.fine('path {0} starts with item {1}',
+                                            path,item,class_name=_class_name,method_name=_method_name)
                         return;
                     if item.startswith(path):
+                        _logger.fine('item {0} starts with path {1}',
+                                            item,path,class_name=_class_name,method_name=_method_name)
+
                         return;
                     if self._path_helper.is_relative_path(path):
+                        _logger.fine('path {0} is relative',
+                                            path,class_name=_class_name,method_name=_method_name)
                         return;
                 # parent=self._path_helper.get_parent_directory(path)
                 # discoverer.add_to_model(dictionary, parent, key)
+                # Last check if it is something to add
+                # if file:
+                #     path=file
+
+                _logger.fine('adding paht to the dictionary {0} with key {1}',
+                                    path,key, class_name=_class_name,method_name=_method_name)
                 discoverer.add_to_model(dictionary, path, key)
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=path)
 
     def _find_unique_dirs_except_pattern(self,unique_paths,value,key,exclude_patterns):
         if isinstance(value, (str,unicode)):
@@ -376,6 +409,7 @@ class CommandHelper(object):
 
     def filter_top_dir(self, f_list):
         _method_name="filter_top_dir"
+        _logger.entering(f_list,class_name=_class_name, method_name=_method_name)
         file_list = list()
         for item in f_list:
             if not string_utils.is_empty(item) and len(string_utils.rsplit(item,":")) == 1 :
@@ -385,6 +419,7 @@ class CommandHelper(object):
 
     def get_server_hostname(self):
         _method_name="get_server_hostname"
+        _logger.entering(class_name=_class_name, method_name=_method_name)
         hostname=""
         if self.is_remote:
             hostname=self.ssh_context._ssh_client.getRemoteHostname()
@@ -395,3 +430,30 @@ class CommandHelper(object):
                 hostname = hostname[0]
         _logger.exiting(class_name=_class_name, method_name=_method_name, result=hostname)
         return hostname
+
+    def get_unique_paths(self,input_list):
+        """
+        This function takes a list of Linux-style paths and returns a list of unique paths,
+        excluding paths that are subfolders of other paths.
+
+        Args:
+            input_list: A list of strings representing Linux-style paths.
+
+        Returns:
+            A list of strings representing unique paths, excluding subfolders.
+        """
+        _method_name="get_unique_paths"
+        _logger.entering(input_list,class_name=_class_name, method_name=_method_name)
+        unique_paths = []
+        for path in input_list:
+            # Check if the path is a subfolder of any existing path
+            is_subfolder = False
+            for existing_path in unique_paths:
+                if path.startswith(existing_path + os.sep):
+                    is_subfolder = True
+                    break
+            # Add the path only if it's not a subfolder
+            if not is_subfolder:
+                unique_paths.append(path)
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=unique_paths)
+        return unique_paths

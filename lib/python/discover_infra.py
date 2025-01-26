@@ -264,30 +264,28 @@ def __discover(model, model_context, helper):
         # __logger.info("WLSDPLY-09005", machine_nodes, unix_machine_nodes, method_name=_method_name, class_name=_class_name)
         nodes=unix_machine_nodes
 
-    # Verify tool is running from the same host.
-    if len(nodes)==1 and not model_context.is_ssh():
-        admin_server_name = topology['AdminServerName']
-        if 'Machine' in topology['Server'][admin_server_name]:
-            admin_machine=topology['Server'][admin_server_name]["Machine"]
-            if admin_machine in nodes:
-                #Do local Discovery.  It should include any managed server registered.
-                host_result=InfraDiscoverer(model_context, OrderedDict(), base_location, model).discover()
-                discoverer.add_to_model_if_not_empty(hosts_details,admin_machine, host_result)
 
+    admin_server_name = topology['AdminServerName']
+    if 'Machine' in topology['Server'][admin_server_name]:
+        admin_machine=topology['Server'][admin_server_name]["Machine"]
+    for machine in nodes:
+        node_details = OrderedDict()
+        #if machine is admin server, then it is running locally. (current version)
+        if admin_machine == machine:
+            __logger.fine('Discovery of Admin Server machine initiated {0}', admin_machine, class_name=_class_name, method_name=_method_name)
+            #Do local Discovery.  It should include any managed server registered.
+            host_result=InfraDiscoverer(model_context, OrderedDict(), base_location, model).discover()
+            discoverer.add_to_model_if_not_empty(hosts_details,admin_machine, host_result)
         else:
-            #  Todo raise an exception. Could not discover.
-            return None
-    else:
-        for machine in nodes:
-            node_details = OrderedDict()
             listen_address=_traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
             global init_argument_map
+            __logger.fine('Discovery of  Managed Servers machines based on listen_address {0} to be initiated', listen_address, class_name=_class_name, method_name=_method_name)
             init_argument_map[CommandLineArgUtil.SSH_HOST_SWITCH]=listen_address
             is_encryption_supported = EncryptionUtils.isEncryptionSupported()
             if is_encryption_supported:
-                __logger.info('WLSDPLY-20044', init_argument_map, class_name=_class_name, method_name=_method_name)
+                __logger.fine('encryption supported {0}', init_argument_map, class_name=_class_name, method_name=_method_name)
             else:
-                __logger.info('WLSDPLY-20045', init_argument_map, class_name=_class_name, method_name=_method_name)
+                __logger.fine('encryption Not supported {0}', init_argument_map, class_name=_class_name, method_name=_method_name)
             per_machine_model_context=__process_args(init_argument_map,is_encryption_supported)
             host_result=InfraDiscoverer(per_machine_model_context, node_details, base_location, model).discover()
             discoverer.add_to_model_if_not_empty(hosts_details,machine, host_result)

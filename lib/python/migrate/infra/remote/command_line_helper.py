@@ -20,9 +20,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
 from wlsdeploy.util.ssh_command_line_helper import SSHCommandLineHelper
 from wlsdeploy.util.ssh_command_line_helper import SSHUnixCommandLineHelper
 from wlsdeploy.util import string_utils
+from wlsdeploy.logging.platform_logger import PlatformLogger
+
+
+_class_name = 'RemoteUnixCommandLineHelper'
+_logger = PlatformLogger('wlsdeploy.util')
 
 class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
-    __class_name = 'RemoteUnixCommandLineHelper'
+
+
 
     def __init__(self):
         """
@@ -149,6 +155,8 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
 
     def system_information_parser(self,uname_output):
         # Parse the output into a dictionary
+        _method_name="system_information_parser"
+        _logger.entering(uname_output,class_name=_class_name, method_name=_method_name)
         uname_info = {}
         # lines = uname_output.splitlines()
         lines = self.get_single_result(uname_output).split(infra_constants.DASH_STRING_SEPARATOR)
@@ -161,7 +169,7 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
                 os_spec=lines[6].split(infra_constants.DOT_STRING_SEPARATOR)
                 uname_info[infra_constants.HOSTING_SERVER_OS_VERSION] = os_spec[0]  # Example: 8
                 uname_info[infra_constants.HOSTING_SERVER_OS_RELEASE] = os_spec[1]  # Example: 7
-
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=uname_info)
         return uname_info
 
 
@@ -176,6 +184,8 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
         return command,args
 
     def get_compress_commands(self, file_name,folder):
+        _method_name="get_compress_commands"
+        _logger.entering(file_name,folder,class_name=_class_name, method_name=_method_name)
         filters_os="--exclude='.pid' --exclude='.state' --exclude='.core' --exclude='diag/ofm/*/*/lck/*.lck'"
         filters_logs="--exclude='servers/*/logs/*.*' --exclude='*.log*[0-9]' --exclude='*.log' --exclude='*.out' --exclude='*.out*[0-9]'"
         filters_diagnostics="--exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*'"
@@ -185,44 +195,9 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
             args='czf %s %s %s %s %s' % (file_name,filters_os, filters_logs, filters_diagnostics, " ".join(folder))
         else:
             args='czf %s %s %s %s %s' % (file_name,filters_os, filters_logs, filters_diagnostics, folder)
+        _logger.exiting(class_name=_class_name, method_name=_method_name, result=args)
         return command,args
 
-    # def get_common_root(self,paths):
-    #     # Split each path into its components
-    #     split_paths = [p.split('/') for p in paths]
-    #     # Find the common prefix among these lists
-    #     common_components = []
-    #     for i in range(len(min(split_paths, key=lambda x: len(x)))):
-    #         component = set([sp[i] for sp in split_paths])
-    #
-    #         # If there's more than one unique component at this level, stop searching
-    #         if len(component) > 1: break
-    #
-    #         common_components.extend(list(component))
-    #
-    #     return '/'.join(common_components) + '/'
 
-    def get_unique_paths(self,input_list):
-        """
-        This function takes a list of Linux-style paths and returns a list of unique paths,
-        excluding paths that are subfolders of other paths.
-
-        Args:
-            input_list: A list of strings representing Linux-style paths.
-
-        Returns:
-            A list of strings representing unique paths, excluding subfolders.
-        """
-        unique_paths = []
-        for path in input_list:
-            # Check if the path is a subfolder of any existing path
-            is_subfolder = False
-            for existing_path in unique_paths:
-                if path.startswith(existing_path + os.sep):
-                    is_subfolder = True
-                    break
-            # Add the path only if it's not a subfolder
-            if not is_subfolder:
-                unique_paths.append(path)
-        return unique_paths
-
+    def get_fs_root(self):
+        return "/"

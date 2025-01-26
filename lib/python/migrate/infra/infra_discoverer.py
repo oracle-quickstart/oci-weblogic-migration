@@ -137,6 +137,7 @@ class InfraDiscoverer(Discoverer):
         discoverer.add_to_model(self._dictionary, model_top_folder_name, jdk_home)
 
         domain_jvms=node_mgr_jvm + domain_only_jvms
+
         model_top_folder_name, fs = self.find_wls_extra_dir(app_deployments , domain_jvms,unique_paths, domain_name)
 
 
@@ -186,7 +187,6 @@ class InfraDiscoverer(Discoverer):
         """
         _method_name = 'get_host_details'
         _logger.entering(class_name=_class_name, method_name=_method_name)
-        #Todo get IP  # get Hostname
         result = self._cmd_helper.get_server_details()
         hostname= self._cmd_helper.get_server_hostname()
         result[infra_constants.HOSTING_SERVER_KEY]=hostname
@@ -208,21 +208,27 @@ class InfraDiscoverer(Discoverer):
         return infra_constants.OWNER, result
 
     def find_wls_extra_dir(self, app_deployments, jvms, exclude_paths, domain_name):
-        _method_name = 'get_wls_extra_dir'
+        _method_name = 'find_wls_extra_dir'
         _logger.entering(class_name=_class_name, method_name=_method_name)
         extra_dirs=[]
-        if len(jvms) > 0:
-                jvm_paths=self._cmd_helper.get_unique_paths_in_jvms(jvms, exclude_paths)
-                extra_dirs = extra_dirs + jvm_paths
-        if app_deployments and not self._model_context.is_ssh():
+        if app_deployments is not None and not self._model_context.is_ssh():
             # get Library and Application
+            # for each element inside Library and Application get Attribute SourcePath
+            # if SourcePath is not None: (found)
+            #    if SourcePath startswith @@ORACLE_HOME@@   - ignore as this will be included in Middleware Archive
+            #    if SourcePath is a full path - starts /   -
+            #       then check if it does not start with domain_path or oracle_path add it to the list.
+            #            extra_dirs.append(SourcePath)
             libraries = app_deployments[model_constants.LIBRARY]
             applications = app_deployments[model_constants.APPLICATION]
-
-            for application_name in applications:
+            _logger.fine('appDeployments found. Applications deployed? {0}',
+                         applications,class_name=_class_name,method_name=_method_name)
+            for application_name in applications or []:
                 application=dictionary_utils.get_dictionary_element(applications, application_name)
                 deployment_source_path = dictionary_utils.get_element(application, SOURCE_PATH)
                 is_custom_path,custom_path = self._is_custom_dir(deployment_source_path)
+                _logger.fine('application {0}, source path {1} , custom_path {2}',
+                             application_name, deployment_source_path, custom_path,class_name=_class_name,method_name=_method_name)
                 if is_custom_path:
                     extra_dirs.append(custom_path)
                 deployment_plan_path= self._get_combined_model_plan_path(application)
@@ -230,12 +236,11 @@ class InfraDiscoverer(Discoverer):
                 if is_custom_path:
                     extra_dirs.append(custom_path)
 
-            # for each element inside Library and Application get Attribute SourcePath
-            # if SourcePath is not None: (found)
-            #    if SourcePath startswith @@ORACLE_HOME@@   - ignore as this will be included in Middleware Archive
-            #    if SourcePath is a full path - starts /   -
-            #       then check if it does not start with domain_path or oracle_path add it to the list.
-            #            extra_dirs.append(SourcePath)
+           # Clean duplicated paths.
+
+        if len(jvms) > 0:
+            jvm_paths=self._cmd_helper.get_unique_paths_in_jvms(jvms, exclude_paths)
+            extra_dirs = extra_dirs + jvm_paths
 
         _logger.exiting(class_name=_class_name, method_name=_method_name, result=extra_dirs)
         return infra_constants.FILESYSTEM, extra_dirs

@@ -115,6 +115,8 @@ scriptPath=$(dirname "$0")
 
 . "$scriptPath/common.sh"
 
+WLSDEPLOY_LOG_DIRECTORY="$toolHome/logs"; export  WLSDEPLOY_LOG_DIRECTORY
+
 umask 27
 
 checkArgs "$@"
