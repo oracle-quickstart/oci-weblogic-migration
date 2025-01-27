@@ -90,7 +90,7 @@ def restore(archive_file,skip_file=False, change_to_dir="/"):
         remote_exec.retry_count = 2
         remote_exec.retry_interval = 5
         # results, status = remote_exec.exec_local('tar xzf {0} -C {1} && tar --compare --file={0} --exclude=provCompletedMarker -C {1}'.format(wls_artifacts_file, "/"))
-        untar_file_command='tar xzf {0} -C {1} 2>&1'.format(archive_file, change_to_dir)
+        untar_file_command='tar xzfp {0} -C {1} 2>&1'.format(archive_file, change_to_dir)
         logger.info("0144",untar_file_command)
         results, status = remote_exec.exec_local(untar_file_command)
         logger.info('<{0}> results {1}'.format(method_name,str(results)))

@@ -163,7 +163,7 @@ function set_fs_ownership() {
 
 check_fs | log >> $log_file
 set_fs_ownership;
-output=$(sudo -u ${user} -E python /opt/scripts/restore-archives.py)
+python /opt/scripts/restore-archives.py
 exit_code=$?
 echo $output | log >> $log_file
 if [[ $exit_code -ne 0 ]]; then
