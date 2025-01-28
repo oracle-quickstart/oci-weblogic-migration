@@ -274,7 +274,7 @@ def __discover(model, model_context, helper):
         if admin_machine == machine:
             __logger.fine('Discovery of Admin Server machine initiated {0}', admin_machine, class_name=_class_name, method_name=_method_name)
             #Do local Discovery.  It should include any managed server registered.
-            host_result=InfraDiscoverer(model_context, OrderedDict(), base_location, model).discover()
+            host_result=InfraDiscoverer(model_context, OrderedDict(), base_location, model, machine).discover()
             discoverer.add_to_model_if_not_empty(hosts_details,admin_machine, host_result)
         else:
             listen_address=_traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
@@ -287,7 +287,7 @@ def __discover(model, model_context, helper):
             else:
                 __logger.fine('encryption Not supported {0}', init_argument_map, class_name=_class_name, method_name=_method_name)
             per_machine_model_context=__process_args(init_argument_map,is_encryption_supported)
-            host_result=InfraDiscoverer(per_machine_model_context, node_details, base_location, model).discover()
+            host_result=InfraDiscoverer(per_machine_model_context, node_details, base_location, model, machine).discover()
             discoverer.add_to_model_if_not_empty(hosts_details,machine, host_result)
 
     if len(hosts_details) == 0 :

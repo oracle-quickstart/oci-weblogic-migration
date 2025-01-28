@@ -89,7 +89,7 @@ locals {
   wls_managed_server_static_ports = distinct(compact(flatten([
   for name, ms in local.wls_managed_server_details :
   [
-    try(ms["ListenPort"], local.MS_DEFAULT_LISTEN_PORT),
+      try(ms["ListenPortEnabled"], true) ? try(ms["ListenPort"], local.MS_DEFAULT_LISTEN_PORT) : null,
     #try(ms["AdministrationPortEnabled"], false) ? try(ms["AdministrationPort"], local.MS_DEFAULT_ADMINISTRATIVE_PORT) : null,
     anytrue([
       contains(keys(ms),"AdministrationPort"),
@@ -102,30 +102,40 @@ locals {
   ])))
 
   ####################################################################
+  # Discover Network Channel Ports from Managed Servers
+  ####################################################################
+
+  _wls_managed_server_network_channel_port_definition = distinct(compact(flatten([
+    for name, ms in local.wls_managed_server_details :
+    [
+      for name, channel in try(ms["NetworkAccessPoint"], {}) :
+      [
+        try(channel["PublicPort"], null),
+        try(channel["ListenPort"], null)
+      ]
+    ]
+  ])))
+
+  ####################################################################
   #  Get all Application Ports from Managed Servers
   ####################################################################
+  # Differentiate Listen Port on or off to switch to SSL Listen Ports.
 
-  __wls_managed_server_listen_ports_not_unique = [for name, ms in local.wls_managed_server_details : try(ms["ListenPort"], local.MS_DEFAULT_LISTEN_PORT)]
-  wls_managed_server_listen_ports              = distinct(local.__wls_managed_server_listen_ports_not_unique)
+  __wls_managed_server_plain_listen_ports_not_unique = [for name, ms in local.wls_managed_server_details :
+    try(ms["ListenPort"], local.MS_DEFAULT_LISTEN_PORT) if try(ms["ListenPortEnabled"], true)
+  ]
+
+  __wls_managed_server_ssl_listen_ports_not_unique = [for name, ms in local.wls_managed_server_details :
+    try(ms["SSL"]["ListenPort"], local.MS_DEFAULT_SSL_LISTEN_PORT)  if try(ms["SSL"]["Enabled"], false)
+  ]
+
+  __wls_managed_server_listen_ports_not_unique = concat(local.__wls_managed_server_plain_listen_ports_not_unique,local.__wls_managed_server_ssl_listen_ports_not_unique)
+
   # ListenPort value could be the same on each managed server. We need only unique ports to add as backends and or firewall rules
-  ####################################################################
-  # Get all Listen Ports from Managed Servers and format it as  port = instance
-  ####################################################################
-  #  wls_managed_server_listen_ports_by_instance = distinct(flatten([
-  #    for name, ms in local.wls_managed_server_details : {
-  #      port     = try(ms["ListenPort"], local.MS_DEFAULT_LISTEN_PORT)
-  #      instance = try(ms["Machine"], null)
-  #    }
-  #  ]))
+  wls_managed_server_listen_ports              = distinct(local.__wls_managed_server_listen_ports_not_unique)
 
-#  wls_managed_server_listen_ports_by_instance = distinct(flatten(
-#    [
-#    for pair in setproduct(local.oci_instance_ips, local.wls_managed_server_listen_ports ) : {
-#      port     = pair[1]
-#      instance = pair[0]
-#    }
-#    ]
-#  ))
+
+
   #########################################################
   ## DYNAMIC SERVER FROM DYNAMIC TEMPLATES CONFIG
   ###########################################################################
@@ -204,7 +214,7 @@ locals {
   ####################################################################
   # Merge All Ports found in Dynamic Server and Weblogic Managed Server found in configuration.
   ####################################################################
-  wls_domain_all_discovered_ports = distinct(concat(local.wls_managed_server_static_ports, local.__wls_dynamic_server_ports))
+  wls_domain_all_discovered_ports = distinct(concat(local.wls_managed_server_static_ports, local._wls_managed_server_network_channel_port_definition, local.__wls_dynamic_server_ports))
 
 }
 

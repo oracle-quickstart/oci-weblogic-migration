@@ -40,7 +40,12 @@ from wlsdeploy.aliases.model_constants import MODULE_TYPE
 from wlsdeploy.aliases.model_constants import SOURCE_PATH
 from wlsdeploy.aliases.model_constants import PLAN_DIR
 from wlsdeploy.aliases.model_constants import PLAN_PATH
-
+from wlsdeploy.aliases.model_constants import SERVER
+from wlsdeploy.aliases.model_constants import TOPOLOGY
+from wlsdeploy.aliases.model_constants import MACHINE
+from wlsdeploy.aliases.model_constants import CUSTOM_IDENTITY_KEYSTORE_FILE
+from wlsdeploy.aliases.model_constants import CUSTOM_TRUST_KEYSTORE_FILE
+from wlsdeploy.aliases.model_constants import SSL
 
 _class_name = 'InfraDiscoverer'
 _logger = platform_logger.PlatformLogger(discoverer.get_discover_logger_name())
@@ -57,8 +62,8 @@ class InfraDiscoverer(Discoverer):
     including clusters, servers, server templates, machines and migratable targets,
     """
 
-    def __init__(self, model_context, deployments_dictionary, base_location, discovered_model
-                 ,wlst_mode=WlstModes.OFFLINE, aliases=None, credential_injector=None, extra_tokens=None):
+    def __init__(self, model_context, deployments_dictionary, base_location, discovered_model,
+                machine_to_discover,wlst_mode=WlstModes.OFFLINE, aliases=None, credential_injector=None, extra_tokens=None):
         """
         Instantiate an instance of the TopologyDiscoverer class with the runtime information provided by
         the init parameters.
@@ -76,7 +81,7 @@ class InfraDiscoverer(Discoverer):
                 # Todo :  Add WindowsCommandLineHelper
                 self._os_helper = RemoteUnixCommandLineHelper()
         self._cmd_helper=CommandHelper(model_context.is_ssh(), self._os_helper, ssh_context)
-
+        self.machine=machine_to_discover
 
     def discover(self):
         """
@@ -138,7 +143,7 @@ class InfraDiscoverer(Discoverer):
 
         domain_jvms=node_mgr_jvm + domain_only_jvms
 
-        model_top_folder_name, fs = self.find_wls_extra_dir(app_deployments , domain_jvms,unique_paths, domain_name)
+        model_top_folder_name, fs = self.find_wls_extra_dir(app_deployments=app_deployments , jvms=domain_jvms,exclude_paths=unique_paths, domain_name=domain_name)
 
 
         discoverer.add_to_model(self._dictionary, model_top_folder_name, fs)
@@ -207,6 +212,8 @@ class InfraDiscoverer(Discoverer):
         _logger.exiting(class_name=_class_name, method_name=_method_name)
         return infra_constants.OWNER, result
 
+    #Takes App_Deployments, jvms, and filesystem paths to be excluded due to mass archiving like Oracle_home, jvm_home and creates a list of
+    # custom directories to archive.
     def find_wls_extra_dir(self, app_deployments, jvms, exclude_paths, domain_name):
         _method_name = 'find_wls_extra_dir'
         _logger.entering(class_name=_class_name, method_name=_method_name)
@@ -242,6 +249,44 @@ class InfraDiscoverer(Discoverer):
             jvm_paths=self._cmd_helper.get_unique_paths_in_jvms(jvms, exclude_paths)
             extra_dirs = extra_dirs + jvm_paths
 
+        #"managedserver1" : {
+        #   "SSL" : {
+        #       "TrustedCAFileName" : "/u01/data/keystores/trust.p12",
+
+        #   "CustomIdentityKeyStoreFileName" : "/opt/domains/keystores/identity.p12",
+        #   "AdministrationPortEnabled" : true,
+        #   "Machine" : "machinename1",
+        #   "KeyStores" : "CustomIdentityAndCustomTrust",
+        #   "CustomIdentityKeyStoreType" : "PKCS12",
+        #   "CustomTrustKeyStoreFileName" : "/opt/domains/keystores/trust.p12",
+        security_configuration_extra_dirs = OrderedDict()
+        # topology_folder = dictionary_utils.get_dictionary_element(self._discovered_model, TOPOLOGY)
+        topology_folder = self._discovered_model.get_model_topology()
+        servers_folder = dictionary_utils.get_dictionary_element(topology_folder, SERVER)
+        _logger.fine("joi server folder servers {0}",servers_folder,class_name=_class_name, method_name=_method_name)
+        for server in servers_folder:
+            _logger.fine("found a servers",class_name=_class_name, method_name=_method_name)
+            machine_folder = servers_folder[server]
+            machine_name = dictionary_utils.get_element(machine_folder, MACHINE)
+            if machine_name and (machine_name == self.machine ):
+                _logger.fine("found a machine match {0}",machine_name,class_name=_class_name, method_name=_method_name)
+                custom_identity_keystore_file_name = dictionary_utils.get_element(machine_folder, CUSTOM_IDENTITY_KEYSTORE_FILE)
+                custom_trust_keystore_file = dictionary_utils.get_element(machine_folder, CUSTOM_TRUST_KEYSTORE_FILE)
+                is_custom_path,custom_path = self._is_custom_dir(custom_trust_keystore_file)
+                _logger.fine("found a extra dir in trust_keystore? {0}",custom_path,class_name=_class_name, method_name=_method_name)
+                if is_custom_path:
+                    discoverer.add_to_model(security_configuration_extra_dirs,custom_path, CUSTOM_IDENTITY_KEYSTORE_FILE)
+                is_custom_path,custom_path = self._is_custom_dir(custom_identity_keystore_file_name)
+                _logger.fine("found a extra dir in identity keystore? {0}",custom_path,class_name=_class_name, method_name=_method_name)
+                if is_custom_path:
+                    discoverer.add_to_model(security_configuration_extra_dirs,custom_path, CUSTOM_TRUST_KEYSTORE_FILE)
+                unique_paths = [path for path in security_configuration_extra_dirs.iterkeys()]
+                extra_dirs = extra_dirs + unique_paths
+
+                # FUTURE VERSION SUPPORT FOR TrustedCAFileName attribute
+                # ssl_folder = dictionary_utils.get_dictionary_element(machine_folder, SSL)
+                # trusted_ca_file = dictionary_utils.get_element(ssl_folder, "TrustedCAFileName")
+        extra_dirs=self._cmd_helper.get_unique_paths(extra_dirs)
         _logger.exiting(class_name=_class_name, method_name=_method_name, result=extra_dirs)
         return infra_constants.FILESYSTEM, extra_dirs
 
