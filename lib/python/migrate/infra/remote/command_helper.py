@@ -445,6 +445,9 @@ class CommandHelper(object):
         _method_name="get_unique_paths"
         _logger.entering(input_list,class_name=_class_name, method_name=_method_name)
         unique_paths = []
+        if input_list is None:
+            return unique_paths
+        input_list = list(set(input_list))
         for path in input_list:
             # Check if the path is a subfolder of any existing path
             is_subfolder = False

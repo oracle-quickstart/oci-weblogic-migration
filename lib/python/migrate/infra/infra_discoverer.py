@@ -263,9 +263,9 @@ class InfraDiscoverer(Discoverer):
         # topology_folder = dictionary_utils.get_dictionary_element(self._discovered_model, TOPOLOGY)
         topology_folder = self._discovered_model.get_model_topology()
         servers_folder = dictionary_utils.get_dictionary_element(topology_folder, SERVER)
-        _logger.fine("joi server folder servers {0}",servers_folder,class_name=_class_name, method_name=_method_name)
+        _logger.fine("server folder servers {0}",servers_folder,class_name=_class_name, method_name=_method_name)
         for server in servers_folder:
-            _logger.fine("found a servers",class_name=_class_name, method_name=_method_name)
+            _logger.fine("found a server",class_name=_class_name, method_name=_method_name)
             machine_folder = servers_folder[server]
             machine_name = dictionary_utils.get_element(machine_folder, MACHINE)
             if machine_name and (machine_name == self.machine ):
@@ -280,12 +280,18 @@ class InfraDiscoverer(Discoverer):
                 _logger.fine("found a extra dir in identity keystore? {0}",custom_path,class_name=_class_name, method_name=_method_name)
                 if is_custom_path:
                     discoverer.add_to_model(security_configuration_extra_dirs,custom_path, CUSTOM_TRUST_KEYSTORE_FILE)
+                _logger.fine("found a extra dir in CAFileName? {0}",custom_path,class_name=_class_name, method_name=_method_name)
+                ssl_folder = dictionary_utils.get_dictionary_element(machine_folder, SSL)
+                trusted_ca_file = dictionary_utils.get_element(ssl_folder, "TrustedCAFileName")
+                is_custom_path,custom_path = self._is_custom_dir(trusted_ca_file)
+                _logger.fine("found a extra dir in Trusted CA FileName? {0}",custom_path,class_name=_class_name, method_name=_method_name)
+                if is_custom_path:
+                    discoverer.add_to_model(security_configuration_extra_dirs,custom_path, CUSTOM_TRUST_KEYSTORE_FILE)
+                _logger.fine("extra dirs list ? {0}",security_configuration_extra_dirs,class_name=_class_name, method_name=_method_name)
                 unique_paths = [path for path in security_configuration_extra_dirs.iterkeys()]
+                _logger.fine("extra dirs unique list ? {0}",unique_paths,class_name=_class_name, method_name=_method_name)
                 extra_dirs = extra_dirs + unique_paths
 
-                # FUTURE VERSION SUPPORT FOR TrustedCAFileName attribute
-                # ssl_folder = dictionary_utils.get_dictionary_element(machine_folder, SSL)
-                # trusted_ca_file = dictionary_utils.get_element(ssl_folder, "TrustedCAFileName")
         extra_dirs=self._cmd_helper.get_unique_paths(extra_dirs)
         _logger.exiting(class_name=_class_name, method_name=_method_name, result=extra_dirs)
         return infra_constants.FILESYSTEM, extra_dirs
