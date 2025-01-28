@@ -12,11 +12,18 @@ locals {
   os_uid              = one(distinct([for owner in local.wls_data.resources.Machines : owner.Owner.uid]))
   os_gid              = one(distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gid]))
   jdk_home            = one(distinct([for machine in local.wls_data.resources.Machines : machine.JavaPath]))
+}
+
+#GLOBAL SETTINGS
+#"AdministrationPortEnabled" : true,
+#"ProductionModeEnabled" : true,
+locals{
   domain_path         = local.wls_topology.DomainPath
   domain_mount_point  = dirname(local.domain_path)
   oracle_home         = local.wls_topology.OraclePath
-  wls_domain_name     = basename(local.domain_path)
+  wls_domain_name     = coalesce(try(local.wls_topology["Name"],null),basename(local.domain_path))
   num_oci_instances = length(local.wls_machines)
+  wls_global_administration_port_enabled = try(local.wls_topology["AdministrationPortEnabled"],false)
 }
 
 # ADMIN SERVER DETAILS
@@ -41,8 +48,20 @@ locals {
   #    "ListenPort" : 8676,
   #    "Enabled" : true
   #  },
-  wls_admin_administrative_port_enabled = try(lookup(local.wls_adminserver_details, "AdministrationPortEnabled", false), false)
-  wls_admin_administrative_port         = local.wls_admin_administrative_port_enabled ? try(lookup(local.wls_adminserver_details, "AdministrationPort", null), local.ADMIN_DEFAULT_ADMINISTRATIVE_PORT) : null # Defaults 9002
+  wls_admin_administrative_port_enabled = try(local.wls_adminserver_details["AdministrationPortEnabled"], false)
+  #Rules for Administrative Port
+  # Global AdministrationPortEnabled and AdministrationPort (not defined) = Default Port 9002
+  # NO Global AdministrationPortEnabled and Admin Server AdministrationPortEnabled (defined) and  NO AdminPort= Default Port 9002
+  # AdministrationPort (defined) = AdministrationPort
+
+  _wls_admin_admin_port_tmp=try(local.wls_adminserver_details["AdministrationPort"],local.ADMIN_DEFAULT_ADMINISTRATIVE_PORT) # Defaults 9002
+  wls_admin_administrative_port=anytrue([
+    contains(keys(local.wls_adminserver_details),"AdministrationPort"),
+    local.wls_admin_administrative_port_enabled,
+    local.wls_global_administration_port_enabled
+  ]) ? local._wls_admin_admin_port_tmp : null
+
+
   wls_admin_t3_port                     = local.ADMIN_DEFAULT_T3_PORT
   wls_admin_t3_ssl_port                 = local.ADMIN_DEFAULT_T3_SSL_PORT
   wls_admin_server_non_unique_ports     = [local.wls_admin_administrative_port, local.wls_admin_listen_port, local.wls_admin_ssl_port, local.wls_admin_t3_port, local.wls_admin_t3_ssl_port]
@@ -71,7 +90,12 @@ locals {
   for name, ms in local.wls_managed_server_details :
   [
     try(ms["ListenPort"], local.MS_DEFAULT_LISTEN_PORT),
-    try(ms["AdministrationPortEnabled"], false) ? try(ms["AdministrationPort"], local.MS_DEFAULT_ADMINISTRATIVE_PORT) : null,
+    #try(ms["AdministrationPortEnabled"], false) ? try(ms["AdministrationPort"], local.MS_DEFAULT_ADMINISTRATIVE_PORT) : null,
+    anytrue([
+      contains(keys(ms),"AdministrationPort"),
+      try(ms["AdministrationPortEnabled"], false),
+      local.wls_global_administration_port_enabled
+    ]) ? try(ms["AdministrationPort"],local.MS_DEFAULT_ADMINISTRATIVE_PORT) : null,
     try(ms["SSL"]["Enabled"], false) ? try(ms["SSL"]["ListenPort"], local.MS_DEFAULT_SSL_LISTEN_PORT) : null,
     lookup(ms, "CoherenceMemberConfig", null) != null ? try(ms["CoherenceMemberConfig"]["UnicastListenPort"], local.COHERENCE_DEFAULT_UNICAST_PORT) : null
   ]
@@ -197,23 +221,11 @@ locals {
             }
   },
   var.lbs.pub_lb,"backends"  should return a list of IPs when configured ["192.168.X.Y","192.168.Z.Z"]
-
   */
-
-
-#  __manual_backend_ips = [{for i, v in lookup(var.lbs.pub_lb, "backends", null) : "${local.wls_domain_name}-vms" => v ...}]
-
-
-#  instance_private_ips= [
-#      for i,v in concat(local.__manual_backend_ips,[one(module.wlsservers[*].wlsserver_pool_ips )]): lookup(v, "${local.wls_domain_name}-vms") if length (v) > 0
-#  ]
 
   instance_private_ips = one(module.wlsservers[*].wlsserver_pool_ips)
   oci_instance_ips = one(module.wlsservers[*].wlsserver_pool_ips)
-#  oci_instance_ips = local.instance_private_ips == null ? [] : flatten([for k,v in local.instance_private_ips: values(v)])
-#  oci_instance_ips = flatten([for k,v in local.instance_private_ips: values(v)])
 
-  #  single_or_multi_port = try(one(local.wls_managed_server_listen_ports_by_instance).port,)
 }
 
 
@@ -221,16 +233,9 @@ locals {
 # Locals for Machine and DNS names
 ##############
 locals {
-  #  hostnames = try([for machine in local.wls_machines : machine.DETAILS.Hostname],[])
-  #  display_name   = format("%s-%s",local.wls_domain_name,n)
-  #  hostname_label =  ! can(regex(local.ValidIpAddressRegex,x.DETAILS.Hostname)) ? element(split(local.DOT,x.DETAILS.Hostname),0) : n
-  #  oci_instances = [for machines in local.wls_machines : merge(item, {newProp = "XYZ"})]
-  #  num_vm_instances = length(local.wls_machines)
 
-  #WHY IS servers and not machines?
 
   __machine_placement_wlsserver_view  = { for k, wls in local.wls_servers : wls.Machine => k ...}
-#  __machine_placement = { for k, wls in local.wls_servers : wls.Machine => k ...}
   __machine_placement = { for k, wls in try(local.wls_data.resources.Machines,{}) : k => try(lookup(local.__machine_placement_wlsserver_view,k), [])}
   __wls_machines_pivot = try(local.wls_data.resources.Machines, {})
   __host_details = [ for k, wls in local.__machine_placement : merge(
@@ -254,21 +259,6 @@ locals {
     )
   ]
 
-
-
-
-  #  testdomain-vm-instance = {
-  #    description = "Testdomain Instance",
-  #    mode        = "instance",
-  #    size        = 3,
-  #    #    node_labels = {
-  #    #      "role" = "wlsserver",
-  #    #      "domain" = "testdomain",
-  #    #      "type" = "adminserver"
-  #    #    },
-  #    #      hostnames = [[{hostlabel="first", host_type="admin" }],[{hostlabel="second", host_type="managed"}],[{hostlabel="third", host_type="both"}]]
-  #    host_details = [{hostlabel="first", host_type="adminserver" },{hostlabel="second", host_type="managedserver"},{hostlabel="third", host_type="both"}]
-  #  },
 
   wls_instance_params = {
     "${local.wls_domain_name}-vms" = {
