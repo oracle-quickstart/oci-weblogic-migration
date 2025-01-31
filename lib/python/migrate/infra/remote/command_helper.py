@@ -447,7 +447,8 @@ class CommandHelper(object):
         unique_paths = []
         if input_list is None:
             return unique_paths
-        input_list = list(set(input_list))
+        #input_list = list(set(input_list))
+        input_list = list(dict.fromkeys(input_list)) 
         for path in input_list:
             # Check if the path is a subfolder of any existing path
             is_subfolder = False
