@@ -20,7 +20,7 @@ locals {
     db_options_{{{datasourceName}}}= {
         "Edit JDBC String" = trimspace(var.oci_db_connection_string_{{{datasourceName}}}) != var.ds_{{{datasourceName}}} && length(trimspace(var.oci_db_connection_string_{{{datasourceName}}})) >0 ? var.oci_db_connection_string_{{{datasourceName}}} :"unchanged"
         "Autonomous Transaction Processing Database" = try(lookup(one(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).connection_strings).all_connection_strings,upper(var.atp_db_level_{{{datasourceName}}})),"none")
-        "Database System" = trimspace(var.oci_db_pdb_service_name_{{{datasourceName}}}) !="" ? replace(try(lookup(one(one(data.oci_database_database.ocidb_database_{{{datasourceName}}}).connection_strings,"cdb_default")),"none"),one(data.oci_database_database.ocidb_database_{{{datasourceName}}}).db_unique_name,var.oci_db_pdb_service_name_{{{datasourceName}}}) :try(lookup(one(one(data.oci_database_database.ocidb_database_{{{datasourceName}}}).connection_strings,"cdb_default")),"none")
+        "Database System" = trimspace(var.oci_db_pdb_service_name_{{{datasourceName}}}) !="" ? replace(tostring(data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].connection_strings[0].cdb_default),data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].db_unique_name,var.oci_db_pdb_service_name_{{{datasourceName}}}) :tostring(data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].connection_strings[0].cdb_default)
     }
 {{/datasources}}
 
