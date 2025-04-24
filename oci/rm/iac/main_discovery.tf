@@ -11,7 +11,7 @@ locals {
   os_groups           = one(distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gname]))
   os_uid              = one(distinct([for owner in local.wls_data.resources.Machines : owner.Owner.uid]))
   os_gid              = one(distinct([for owner in local.wls_data.resources.Machines : owner.Owner.gid]))
-  jdk_home            = one(distinct([for machine in local.wls_data.resources.Machines : machine.JavaPath]))
+  jdk_home            = element(concat(distinct([for machine in local.wls_data.resources.Machines : machine.JavaPath]), [""]), 0)
 }
 
 #GLOBAL SETTINGS
