@@ -28,7 +28,6 @@ variable "assign_dns" { type = bool }
 variable "bastion_allowed_cidrs" { type = set(string) }
 variable "bastion_is_public" { type = bool }
 variable "create_bastion" { type = bool }
-variable "drg_attachments" { type = any }
 variable "enable_waf" { type = bool }
 variable "ig_route_table_id" { type = string }
 variable "load_balancers" { type = string }
