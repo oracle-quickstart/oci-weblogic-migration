@@ -27,8 +27,7 @@ locals {
 
 module "vcn" {
   count          = var.create_vcn ? 1 : 0
-  source         = "oracle-terraform-modules/vcn/oci"
-  version        = "3.6.0"
+  source         = "./modules/network/vcn"
   compartment_id = coalesce(var.network_compartment_id, local.compartment_id)
 
   # Standard tags as defined if enabled for use, or freeform
@@ -45,8 +44,6 @@ module "vcn" {
   },
     local.network_freeform_tags,
   )
-
-  attached_drg_id = var.drg_id != null ? var.drg_id : (tobool(var.create_drg) ? module.drg[0].drg_id : null)
 
   create_internet_gateway = alltrue([
     var.vcn_create_internet_gateway != "never",    # always disable
@@ -78,31 +75,6 @@ module "vcn" {
   vcn_name                     = coalesce(var.vcn_name, "wls-${local.state_id}")
 }
 
-module "drg" {
-  count              = tobool(var.create_drg) || var.drg_id != null ? 1 : 0
-  source             = "oracle-terraform-modules/drg/oci"
-  version            = "1.0.6"
-  compartment_id     = coalesce(var.network_compartment_id, local.compartment_id)
-  drg_compartment_id = var.drg_compartment_id
-
-  drg_id              = one([var.drg_id]) # existing DRG ID or null
-  drg_display_name    = coalesce(var.drg_display_name, "oke-${local.state_id}")
-  drg_vcn_attachments = tobool(var.create_drg) || var.drg_id != null ? { for k, v in module.vcn : k => {
-    # gets the vcn_id values dynamically from the vcn module
-    vcn_id : v.vcn_id
-    vcn_transit_routing_rt_id : null
-    drg_route_table_id : null
-  }
-  } : var.drg_attachments
-
-  # rpc parameters
-  remote_peering_connections = { for k, v in var.remote_peering_connections : k => {
-    "rpc_acceptor_id"     = try(v.rpc_acceptor_id, null),
-    "rpc_acceptor_region" = try(v.rpc_acceptor_region, null)
-  }
-  }
-}
-
 module "network" {
   source           = "./modules/network"
   state_id         = local.state_id
@@ -128,8 +100,7 @@ module "network" {
   bastion_is_public            = var.bastion_is_public
   create_bastion               = var.create_bastion
   nsgs                         = var.nsgs
-#  create_operator              = false            #future use
-  drg_attachments              = var.drg_attachments
+  #  create_operator              = false            #future use
   enable_waf                   = false            #future use
   ig_route_table_id            = local.ig_route_table_id
   load_balancers               = var.load_balancers
@@ -231,12 +202,6 @@ output "fss_nsg_id" {
 output "network_security_rules" {
   value = var.output_detail ? try(module.network.network_security_rules, null) : null
 }
-
-# DRG
-# output "drg_id" {
-#   description = "Dynamic routing gateway ID"
-#   value       = try(one(module.drg[*].drg_id), null)
-# }
 
 # LPG
 output "lpg_all_attributes" {
