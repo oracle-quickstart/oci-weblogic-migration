@@ -2,7 +2,7 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
-  wlsdomain_group_name = format("wls-%s-%v", var.resource_name_prefix, var.state_id)
+  wlsdomain_group_name          = format("wls-%s-%v", var.resource_name_prefix, var.state_id)
   wlsserver_group_name          = format("wls-wlsservers-%v", var.state_id)
   wlsserver_compartments        = coalescelist(var.wlsserver_compartments, [var.compartment_id])
   wlsserver_compartment_matches = formatlist("instance.compartment.id = '%v'", local.wlsserver_compartments)
@@ -23,9 +23,33 @@ locals {
 
   # TODO support keys defined at wlsserver group level
   wlsserver_kms_volume_templates = tolist([
-#    "Allow service wls to USE key-delegates in compartment id %v where target.key.id = '%v'",
+    #    "Allow service wls to USE key-delegates in compartment id %v where target.key.id = '%v'",
     "Allow service blockstorage to USE keys in compartment id %v where target.key.id = '%v'",
     "Allow dynamic-group ${local.wlsserver_group_name} to USE key-delegates in compartment id %v where target.key.id = '%v'",
+  ])
+
+  #policies for migration
+  #compartment level
+  migration_compartment_policy_templates = tolist([
+    "Allow dynamic-group ${local.wlsserver_group_name} to inspect instance-image in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to use app-catalog-listing in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to manage instance-family in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to manage volume-family in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to manage load-balancers in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to manage logging-family in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to manage tag-namespaces in compartment id %v",
+
+  ])
+  #policies for migration
+  #tenancy level
+  migration_tenancy_policy_templates = tolist([
+    "Allow dynamic-group ${local.wlsserver_group_name} to inspect limits in tenancy",
+    "Allow dynamic-group ${local.wlsserver_group_name} to manage dynamic-groups in tenancy",
+    "Allow dynamic-group ${local.wlsserver_group_name} to manage policy in tenancy",
+    "Allow dynamic-group ${local.wlsserver_group_name} to inspect tenancies in tenancy",
+    "Allow dynamic-group ${local.wlsserver_group_name} to manage orm-family in tenancy"
   ])
 
 
@@ -37,16 +61,22 @@ locals {
 
   # Object Storage access  (OSS)
   wlsservers_object_storage_statements = flatten(tolist([
-  for statement in local.wlsservers_object_storage_templates :
-  formatlist(statement, local.wlsserver_compartments)
+    for statement in local.wlsservers_object_storage_templates :
+    formatlist(statement, local.wlsserver_compartments)
   ]))
+
+  migration_compartment_policy_statements = var.create_iam_wlsserver_policy ? flatten(tolist([
+    for statement in local.migration_compartment_policy_templates :
+    formatlist(statement, local.wlsserver_compartments)
+  ])) : []
 
   wlsserver_policy_statements = var.create_iam_wlsserver_policy ? tolist(concat(
     local.wlsservers_object_storage_statements,
     local.wlsserver_kms_volume_statements,
+    local.migration_compartment_policy_statements,
+    local.migration_tenancy_policy_templates
   )) : []
 }
-
 resource "oci_identity_dynamic_group" "wlsservers" {
   provider       = oci.home
   count          = var.create_iam_resources && var.create_iam_wlsserver_policy ? 1 : 0
