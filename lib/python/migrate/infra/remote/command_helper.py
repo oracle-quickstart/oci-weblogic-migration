@@ -289,6 +289,11 @@ class CommandHelper(object):
             __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
             raise ex
 
+    def get_canonical_path(self,path):
+        """Returns canonical path."""
+        _method_name = "get_canonical_path"
+        return os.path.realpath(path)
+
 
     def get_unique_java_homes(self, jvm_list):
         """Return a list of unique JAVA_HOMES found in a list of JVM OS processes."""
@@ -296,20 +301,24 @@ class CommandHelper(object):
         _logger.entering(class_name=_class_name, method_name=_method_name)
         # _path_helper = path_helper.get_path_helper()
         # unique_java_homes=OrderedDict()
-        for jvm in jvm_list:
-            #Attempting to find java homes by filtering out jvms unsorted arguments by bin/java (linux) or java.exe (windows)
-            java_cmd,_=self.cmd_builder.get_java_exec()
-            matches=self.find_partial_matches(jvm.get_unsorted_args_list(),java_cmd)
-            for java_cmd in matches:
-                bin_dir = self._path_helper.get_parent_directory(java_cmd)
-                jdk_home = self._path_helper.get_parent_directory(bin_dir)
-                # discoverer.add_to_model(unique_java_homes,jdk_home,infra_constants.EMPTY)
-                # Should find only one java_home.  Others maybe captured incorrectly.
-                _logger.exiting(class_name=_class_name, method_name=_method_name, result=jdk_home)
-                return jdk_home
-        _logger.exiting(class_name=_class_name, method_name=_method_name)
-        return infra_constants.EMPTY
-
+        jdk_home = os.environ.get("JAVA_HOME")
+        if jdk_home is None:
+            for jvm in jvm_list:
+                #Attempting to find java homes by filtering out jvms unsorted arguments by bin/java (linux) or java.exe (windows)
+                java_cmd,_=self.cmd_builder.get_java_exec()
+                matches=self.find_partial_matches(jvm.get_unsorted_args_list(),java_cmd)
+                for java_cmd in matches:
+                    bin_dir = self._path_helper.get_parent_directory(java_cmd)
+                    jdk_home = self._path_helper.get_parent_directory(bin_dir)
+                    # discoverer.add_to_model(unique_java_homes,jdk_home,infra_constants.EMPTY)
+                    # Should find only one java_home.  Others maybe captured incorrectly.
+                    _logger.exiting(class_name=_class_name, method_name=_method_name, result=jdk_home)
+                    return jdk_home
+            _logger.exiting(class_name=_class_name, method_name=_method_name)
+            return infra_constants.EMPTY
+        else:
+            _logger.exiting(class_name=_class_name, method_name=_method_name, result=jdk_home)
+            return jdk_home
 
     def get_unique_paths_in_jvms(self, jvms, exclude_patterns):
         """list unique OS directory paths in a provided list of jvms"""

@@ -161,6 +161,28 @@ function set_fs_ownership() {
     echo "<cloud-init><set_fs_ownership> change ownership completed" | log >> $log_file
 }
 
+function create_java_symlinks() {
+    echo "<cloud-init><create_java_symlinks> Checking Java paths" | log >> $log_file
+    if [ ${java_path} != ${canonical_java_path} ]; then
+        echo "<cloud-init><create_java_symlinks> Creating symlink: ${java_path} -> ${canonical_java_path}" | log >> $log_file
+
+        # Cleanup existing path (if any)
+        if [ -e ${java_path} ] || [ -L ${java_path} ]; then
+            echo "<cloud-init><create_java_symlinks> Removing existing: ${java_path}" | log >> $log_file
+            rm -rf ${java_path} | log >> $log_file
+        fi
+
+        # Create symlink (CANONICAL → JAVA_PATH)
+        ln -s ${canonical_java_path} ${java_path} | log >> $log_file
+
+        # Set ownership
+        chown -h ${user}:${group} ${java_path} | log >> $log_file
+        echo "<cloud-init><create_java_symlinks> Symlink created" | log >> $log_file
+    else
+        echo "<cloud-init><create_java_symlinks> No symlink needed for JDK" | log >> $log_file
+    fi
+}
+
 check_fs | log >> $log_file
 set_fs_ownership;
 python /opt/scripts/restore-archives.py
@@ -171,5 +193,7 @@ if [[ $exit_code -ne 0 ]]; then
   exit 1
 fi
 echo "Executed restore-archives via ${user} with exit code [$exit_code]" | log >> $log_file
+# Create Java symlinks after restore is complete
+create_java_symlinks | log >> $log_file
 echo "<cloud-init><restore_archives> Restore completed" | log >> $log_file
 

@@ -257,6 +257,8 @@ data "cloudinit_config" "wlsservers" {
         block_volume_jdk_mountpath = local.block_volume_jdk_mountpath
         block_volume_domain_mountpath = local.block_volume_domain_mountpath
         block_volume_mw_mountpath = local.block_volume_mw_mountpath
+        java_path = var.wls_data["resources"]["Machines"][each.value.wls_machine_name]["JavaPath"]
+        canonical_java_path = var.wls_data["resources"]["Machines"][each.value.wls_machine_name]["CanonicalJavaPath"]
       })
       filename     = "79-wls-restore-archives.sh"
       merge_type   = local.default_cloud_init_merge_type
