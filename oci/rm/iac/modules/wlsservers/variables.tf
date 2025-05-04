@@ -114,6 +114,10 @@ variable "adminserver_nsg_ids" {
   type        = list(string)
 }
 
+variable "wls_data" {
+  type =  any
+  description = "Weblogic Domain Inventory Data.JSON formated "
+}
 
 #
 # wlsservers: instance
