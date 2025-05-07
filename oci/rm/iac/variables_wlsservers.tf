@@ -112,7 +112,7 @@ variable "wlsserver_shape" {
 
     # https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/blockvolumeperformance.htm
     # Supported for mode = "cluster-network" | "instance-pool" | "instance" (self-managed) only
-    boot_volume_vpus_per_gb = 10 # 10: Balanced, 20: High, 30-120: Ultra High (requires multipath)
+#    boot_volume_vpus_per_gb = 10 # 10: Balanced, 20: High, 30-120: Ultra High (requires multipath)
 #  }
 #  description = "Default shape of the created wlsserver instance when unspecified on a pool."
 #  type        = map(any)
