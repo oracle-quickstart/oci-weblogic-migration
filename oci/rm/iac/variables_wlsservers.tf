@@ -98,9 +98,10 @@ variable "wlsserver_shape" {
   description = "shape of worker nodes"
   default     = {
     "instanceShape" = "VM.Standard.E4.Flex",
-    "ocpus" = "1",
-    "memory" = "16"
+    "ocpus"         = "1",
+    "memory"        = "16"
   }
+}
 
 #variable "wlsserver_shape" {
 #  default = {
