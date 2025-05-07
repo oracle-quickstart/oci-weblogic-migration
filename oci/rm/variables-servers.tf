@@ -25,7 +25,10 @@ variable "wlsserver_pool_size" {
 
 # Workers: instance
 
-variable "wlsserver_block_volume_type" { type = string }
+variable "wlsserver_block_volume_type" {
+  default = "iscsi"
+  type = string
+}
 variable "wlsserver_node_labels" {
   default = {}
   type    = map(string)

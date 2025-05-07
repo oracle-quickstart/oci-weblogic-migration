@@ -43,7 +43,7 @@ variable "wlsserver_pools" {
 #
 
 variable "wlsserver_block_volume_type" {
-  default     = "paravirtualized"
+  default     = "iscsi"
   description = "Default block volume attachment type for Instance Configurations when unspecified on a pool."
   type        = string
   validation {
