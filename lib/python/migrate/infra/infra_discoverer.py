@@ -192,6 +192,10 @@ class InfraDiscoverer(Discoverer):
         return infra_constants.JAVA_DIR,jdk_homes
 
     def find_canonical_jdk_path(self,jdk_home):
+        """
+        :param jdk_home: path to the JDK home
+        :return: constant representing the canonical JDK path and canonical JDK path
+        """
         jdk_home = self._cmd_helper.get_canonical_path(jdk_home)
         return infra_constants.CANONICAL_JAVA_DIR,jdk_home
 
