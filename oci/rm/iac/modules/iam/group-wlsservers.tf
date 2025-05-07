@@ -31,27 +31,24 @@ locals {
   #policies for migration
   #compartment level
   migration_compartment_policy_templates = tolist([
-    "Allow dynamic-group ${local.wlsserver_group_name} to inspect instance-image in compartment id %v",
-    "Allow dynamic-group ${local.wlsserver_group_name} to use app-catalog-listing in compartment id %v",
-    "Allow dynamic-group ${local.wlsserver_group_name} to manage instance-family in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to use instance-family in compartment id %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to manage volume-family in compartment id %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v",
-    "Allow dynamic-group ${local.wlsserver_group_name} to manage load-balancers in compartment id %v",
-    "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %v",
-    "Allow dynamic-group ${local.wlsserver_group_name} to manage logging-family in compartment id %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to manage tag-namespaces in compartment id %v",
-
-  ])
-  #policies for migration
-  #tenancy level
-  migration_tenancy_policy_templates = tolist([
-    "Allow dynamic-group ${local.wlsserver_group_name} to inspect limits in tenancy",
-    "Allow dynamic-group ${local.wlsserver_group_name} to manage dynamic-groups in tenancy",
-    "Allow dynamic-group ${local.wlsserver_group_name} to manage policy in tenancy",
-    "Allow dynamic-group ${local.wlsserver_group_name} to inspect tenancies in tenancy",
-    "Allow dynamic-group ${local.wlsserver_group_name} to manage orm-family in tenancy"
+    "Allow dynamic-group ${local.wlsserver_group_name} to use app-catalog-listing in compartment id %v",
   ])
 
+  # Define the optional templates based on conditions
+  optional_policy_templates = compact(concat(
+    var.add_load_balancer ? [
+      "Allow dynamic-group ${local.wlsserver_group_name} to manage load-balancers in compartment id %v"
+    ] : [],
+    lower(trimspace(var.db_strategy_0)) == "autonomous transaction processing database"
+    ? [
+      "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %v"
+    ]
+    : []
+  ))
 
   # Block volume encryption using OCI Key Management System (KMS)
   wlsserver_kms_volume_statements = coalesce(var.wlsserver_volume_kms_key_id, "none") != "none" ? flatten(tolist([
@@ -70,13 +67,20 @@ locals {
     formatlist(statement, local.wlsserver_compartments)
   ])) : []
 
+  # Use the templates only if the flag is enabled
+  optional_policy_statements = var.create_iam_wlsserver_policy ? flatten([
+    for statement in local.optional_policy_templates :
+    formatlist(statement, local.wlsserver_compartments)
+  ]) : []
+
   wlsserver_policy_statements = var.create_iam_wlsserver_policy ? tolist(concat(
     local.wlsservers_object_storage_statements,
     local.wlsserver_kms_volume_statements,
     local.migration_compartment_policy_statements,
-    local.migration_tenancy_policy_templates
+    local.optional_policy_statements
   )) : []
 }
+
 resource "oci_identity_dynamic_group" "wlsservers" {
   provider       = oci.home
   count          = var.create_iam_resources && var.create_iam_wlsserver_policy ? 1 : 0

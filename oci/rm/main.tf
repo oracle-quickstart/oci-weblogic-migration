@@ -65,7 +65,6 @@ module "wls" {
     #      newbits = var.operator_subnet_newbits,
     #      id      = var.operator_subnet_id
     #    }
-
     int_lb = {
       create  = var.int_lb_subnet_create ? "always" : "never",
       newbits = var.int_lb_subnet_newbits,
@@ -159,8 +158,7 @@ module "wls" {
 
   #Weblogic Domain Common  - LoadBalancer, labels
   add_load_balancer=  var.add_load_balancer
-
-
+  db_strategy_0 = var.db_strategy_0
   lbs = {
     pub_lb = { create = var.add_load_balancer ? "always" : "never", id = var.existing_load_balancer_id , backends=var.custom_backends}
   }
