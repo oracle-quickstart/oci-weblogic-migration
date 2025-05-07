@@ -29,3 +29,16 @@ variable "create_iam_wlsserver_policy" { type = bool }
 # KMS
 
 variable "wlsserver_volume_kms_key_id" { type = string }
+
+#load_balancer
+variable "add_load_balancer" {
+  type    = bool
+  default = false
+}
+
+#ATPDB
+variable "db_strategy_0" {
+  type    = string
+}
+
+
