@@ -12,8 +12,8 @@ resource "oci_core_subnet" "wls-subnet" {
   #dhcp_options_id            = var.dhcp_options_id
   prohibit_public_ip_on_vnic = var.prohibit_public_ip
 
-  defined_tags               = var.defined_tags
-  freeform_tags              = var.freeform_tags
+  defined_tags     = var.defined_tags
+  freeform_tags    = var.freeform_tags
 
   lifecycle {
     ignore_changes = [
