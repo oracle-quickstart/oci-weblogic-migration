@@ -1061,10 +1061,13 @@ variables:
 
   terms_and_conditions:
     visible:
-      and:
+      or:
         - eq:
             - wlsserver_image_type
-            - "Oracle Weblogic Server UCM Image"
+            - "Oracle WebLogic Server Enterprise Edition UCM Image"
+        - eq:
+            - wlsserver_image_type
+            - "Oracle Weblogic Suite UCM Image"
     type: boolean
     default: false
     title: "I have reviewed and accept the Oracle Terms of Use"
