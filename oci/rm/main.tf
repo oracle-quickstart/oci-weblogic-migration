@@ -125,7 +125,8 @@ module "wls" {
   create_domain          = var.create_domain  #true
   wlsserver_pools=  var.wlsserver_pools
   image_instance_requirements = local.vm_instance_image_requirements
-  wlsserver_image_type       = lower(local.wlsserver_image_type)
+  #wlsserver_image_type       = lower(local.wlsserver_image_type)
+  wlsserver_image_type        = var.wlsserver_image_type
   wlsserver_image_id         = local.vm_instance_image_id
   wlsserver_image_os         = var.wlsserver_image_os
   #TODO JOI: wlsserver image os version need to be locked with host found.
