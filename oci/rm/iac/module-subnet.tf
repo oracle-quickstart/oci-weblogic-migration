@@ -1,7 +1,5 @@
 locals {
   network_compartment_id       = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
-  wlsservers_freeform_tags     = merge(lookup(var.freeform_tags, "wlsservers", {}), var.wlsservers_freeform_tags)
-  wlsservers_defined_tags      = merge(lookup(var.defined_tags, "wlsservers", {}), var.wlsservers_defined_tags)
 }
 
   /* Create back end  private subnet for wls */
