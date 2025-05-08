@@ -27,13 +27,13 @@ module "wls" {
   compartment_id = var.compartment_ocid
   network_compartment_id = var.network_compartment_id
 
-  create_iam_resources         = true
+  create_iam_resources         = var.create_oci_policies
   create_iam_tag_namespace = var.create_iam_tag_namespace
   create_iam_defined_tags  = var.create_iam_tag_namespace || var.create_iam_defined_tags
   use_defined_tags         = var.use_defined_tags
   tag_namespace            = var.tag_namespace
   create_iam_autoscaler_policy = "never"
-#   create_iam_wlsserver_policy     = var.create_iam_wlsserver_policy ? "always" : "never"
+  #   create_iam_wlsserver_policy     = var.create_iam_wlsserver_policy ? "always" : "never"
 
   #Network
   # Network
@@ -65,7 +65,6 @@ module "wls" {
     #      newbits = var.operator_subnet_newbits,
     #      id      = var.operator_subnet_id
     #    }
-
     int_lb = {
       create  = var.int_lb_subnet_create ? "always" : "never",
       newbits = var.int_lb_subnet_newbits,
@@ -159,8 +158,7 @@ module "wls" {
 
   #Weblogic Domain Common  - LoadBalancer, labels
   add_load_balancer=  var.add_load_balancer
-
-
+  db_strategy_0 = var.db_strategy_0
   lbs = {
     pub_lb = { create = var.add_load_balancer ? "always" : "never", id = var.existing_load_balancer_id , backends=var.custom_backends}
   }
