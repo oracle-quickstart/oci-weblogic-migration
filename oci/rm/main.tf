@@ -52,6 +52,7 @@ module "wls" {
   create_drg                  = var.create_drg
   drg_id                      = var.drg_id
   drg_display_name            = var.drg_display_name
+  wlsserver_subnet_cidr       = var.wlsserver_subnet_cidr
 
   subnets = {
     bastion = {
@@ -78,11 +79,11 @@ module "wls" {
       id      = var.pub_lb_subnet_id
     }
 
-    wlsservers = {
-      create  = var.wlsserver_subnet_create ? "always" : "never",
-      newbits = var.wlsserver_subnet_newbits,
-      id      = var.wlsserver_subnet_id
-    }
+#    wlsservers = {
+#      create  = var.wlsserver_subnet_create ? "always" : "never",
+#      newbits = var.wlsserver_subnet_newbits,
+#      id      = var.wlsserver_subnet_id
+#    }
 
   }
 
