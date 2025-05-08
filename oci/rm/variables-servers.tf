@@ -36,11 +36,11 @@ variable "wlsserver_node_labels" {
 
 variable "wlsserver_image_type" {
   type        = string
-  description = "Type of image used for provisioning. Image type must be Oracle WebLogic Server BYOL or Oracle WebLogic Server UCM"
-  default     = "Oracle Weblogic Server UCM Image"
+  description = "Type of image used for provisioning. Image type must be Oracle WebLogic Server BYOL or Enterprise Edition UCM or Suite UCM"
+  default     = "Oracle WebLogic Server Enterprise Edition UCM Image"
   validation {
-    condition     = contains(["Oracle WebLogic Server BYOL Image", "Oracle WebLogic Server UCM Image", "custom", "platform"], var.wlsserver_image_type)
-    error_message = "WLSC-ERROR: Allowed values for Image type are 'Oracle WebLogic Server BYOL Image' or 'Oracle WebLogic Server UCM Image' "
+    condition     = contains(["Oracle WebLogic Server BYOL Image", "Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Suite UCM Image", "custom", "platform"], var.wlsserver_image_type)
+    error_message = "WLSC-ERROR: Allowed values for Weblogic Edition are 'Oracle WebLogic Server BYOL' or 'Oracle Weblogic Suite UCM' or 'Oracle WebLogic Server Enterprise Edition UCM' "
   }
 }
 
