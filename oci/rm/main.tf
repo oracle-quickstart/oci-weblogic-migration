@@ -79,11 +79,11 @@ module "wls" {
       id      = var.pub_lb_subnet_id
     }
 
-#    wlsservers = {
-#      create  = var.wlsserver_subnet_create ? "always" : "never",
-#      newbits = var.wlsserver_subnet_newbits,
-#      id      = var.wlsserver_subnet_id
-#    }
+    wlsservers = {
+      create  = var.wlsserver_subnet_create ? "always" : "never",
+      newbits = var.wlsserver_subnet_newbits,
+      id      = var.wlsserver_subnet_id
+    }
 
   }
 
