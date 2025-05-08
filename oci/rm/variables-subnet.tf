@@ -11,6 +11,12 @@ variable "int_lb_subnet_newbits" { default = 11 }
 variable "pub_lb_subnet_newbits" { default = 11 }
 #variable "wlsserver_subnet_newbits" { default = 2 }
 
+variable "wlsserver_subnet_cidr" {
+  type        = string
+  description = "CIDR for weblogic subnet"
+  default     = ""
+}
+
 variable "bastion_subnet_id" {
   type    = string
   default = null
