@@ -15,8 +15,6 @@ module "network-wls-private-subnet" {
   cidr_block         = var.wlsserver_subnet_cidr
   prohibit_public_ip = true
 
-  tags = {
-    defined_tags  = var.defined_tags
-    freeform_tags = var.freeform_tags
-  }
+  defined_tags  = var.defined_tags
+  freeform_tags = var.freeform_tags
 }

@@ -38,3 +38,6 @@ variable "prohibit_public_ip" {
   type        = bool
   description = "Set to true to create a private subnet"
 }
+
+variable "defined_tags" { type = map(string) }
+variable "freeform_tags" { type = map(string) }
