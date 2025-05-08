@@ -40,7 +40,7 @@ variable "wlsserver_image_type" {
   default     = "Oracle Weblogic Server UCM Image"
   validation {
     condition     = contains(["Oracle WebLogic Server BYOL Image", "Oracle WebLogic Server UCM Image", "custom", "platform"], var.wlsserver_image_type)
-    error_message = "WLSC-ERROR: Allowed values for Weblogic Edition are 'Oracle WebLogic Server BYOL' or 'Oracle Weblogic Suite UCM' or 'Oracle WebLogic Server Enterprise Edition UCM' "
+    error_message = "WLSC-ERROR: Allowed values for Image type are 'Oracle WebLogic Server BYOL Image' or 'Oracle WebLogic Server UCM Image' "
   }
 }
 
