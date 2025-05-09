@@ -84,7 +84,7 @@ module "vcn" {
 }
 
 /* Create back end  private subnet for wls */
-module "subnet" {
+module "network-wls-private-subnet" {
   source          = "./modules/network/subnet"
   compartment_id  = local.network_compartment_id
   vcn_id          = local.vcn_id
@@ -176,7 +176,7 @@ output "bastion_subnet_cidr" {
 #}
 output "wlsserver_subnet_id" {
   #value = try(module.network.wlsserver_subnet_id, null)
-  value = try(module.subnet.subnet_id)
+  value = try(module.network-wls-private-subnet.subnet_id)
 }
 output "wlsserver_subnet_cidr" {
   value = try(module.network.wlsserver_subnet_cidr, null)

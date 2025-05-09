@@ -297,6 +297,7 @@ variables:
     description: Display name of the new Virtual Cloud Network (VCN). Defaults to 'wls' suffixed with the generated Terraform 'state_id' value.
     type: string
     visible: ${create_vcn}
+    required: true
   assign_dns:
     title: Assign DNS records
     type: boolean
@@ -599,7 +600,7 @@ variables:
   create_bastion:
     title: Provision Bastion Instance
     type: boolean
-    default: false
+    default: true
     required: true
     description: Provision a bastion compute instance on a public subnet to provide access to the WebLogic Server compute instances on a private subnet.
   bastion_availability_domain:
@@ -727,7 +728,7 @@ variables:
     title: SSH Public Key
     type: oci:core:ssh:publickey
     pattern: "((^(ssh-rsa AAAAB3NzaC1yc2|ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNT|ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzOD|ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1Mj|ssh-ed25519 AAAAC3NzaC1lZDI1NTE5|ssh-dss AAAAB3NzaC1kc3)[0-9A-Za-z+\/]+[=]{0,3})( [^,]*)?)(,((ssh-rsa AAAAB3NzaC1yc2|ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNT|ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzOD|ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1Mj|ssh-ed25519 AAAAC3NzaC1lZDI1NTE5|ssh-dss AAAAB3NzaC1kc3)[0-9A-Za-z+\/]+[=]{0,3})( [^,]*)?)*$"
-    required: false
+    required: true
   ssh_kms_vault_id:
     title: SSH Vault
     description: The OCI Vault where private SSH key pair is stored.
@@ -1213,7 +1214,7 @@ variables:
       - "Autonomous Transaction Processing Database"
       - "Database System"
       - "Edit JDBC String"
-    default: "Autonomous Transaction Processing Database"
+    default: "Edit JDBC String"
     required: true
 
   oci_db_connection_string_{{{datasourceName}}}:
