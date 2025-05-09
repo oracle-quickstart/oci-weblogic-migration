@@ -46,6 +46,7 @@ locals {
 module "wlsservers" {
   count  = local.create_domain_enabled ? 1 : 0
   source = "./modules/wlsservers"
+  wls_data = local.wls_data
 
   # Common
   compartment_id      = local.wlsserver_compartment_id

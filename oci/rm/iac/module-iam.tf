@@ -62,6 +62,9 @@ module "iam" {
   tag_namespace            = var.tag_namespace
   use_defined_tags         = var.use_defined_tags
 
+  add_load_balancer = var.add_load_balancer
+  db_strategy_0     = var.db_strategy_0
+
   wlsserver_volume_kms_key_id   = var.wlsserver_volume_kms_key_id
 
   wlsserver_compartments     = local.wlsserver_compartments
@@ -88,3 +91,4 @@ output "policy_statements" {
   description = "Cluster IAM policy statements"
   value       = module.iam.policy_statements
 }
+

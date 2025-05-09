@@ -65,3 +65,8 @@ variable "defined_tags" {
   }
   type = any
 }
+
+variable "create_oci_policies" {
+  default = true
+  type =bool
+}

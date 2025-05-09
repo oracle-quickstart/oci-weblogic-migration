@@ -180,7 +180,7 @@ class WLSMigrationArchiver(object):
         ###Directory Archiving ####
     def __process_java_home(self,domain_name,ssh_download_dir):
         _method_name="__process_java_home"
-        dir_to_compress=self._model.get_model_topology()["NMProperties"]["JavaHome"]
+        dir_to_compress = self._model.get_model_resources()["Machines"][self._machine]["CanonicalJavaPath"]
         _logger.entering(self._machine, dir_to_compress, ssh_download_dir,
                          class_name=_class_name, method_name=_method_name)
 
