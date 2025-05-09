@@ -176,7 +176,7 @@ output "bastion_subnet_cidr" {
 #}
 output "wlsserver_subnet_id" {
   #value = try(module.network.wlsserver_subnet_id, null)
-  value = try(module.network-wls-private-subnet.subnet_id)
+  value = try(module.network-wls-private-subnet.subnet_id, null)
 }
 output "wlsserver_subnet_cidr" {
   value = try(module.network.wlsserver_subnet_cidr, null)
