@@ -137,9 +137,15 @@ class InfraDiscoverer(Discoverer):
         domain_only_jvms = self._get_domain_jvms(wls_servers_jvm,domain_name)
         discoverer.add_to_model(self._dictionary, infra_constants.WLS_SERVER_VM, [jvm.get_arguments_string() for jvm in domain_only_jvms])
 
+        # find jdk_home
         model_top_folder_name, jdk_home = self.find_jdk_homes(all_running_jvms)
         unique_paths.append(jdk_home)
         discoverer.add_to_model(self._dictionary, model_top_folder_name, jdk_home)
+
+        # find canonical_jdk_path
+        model_top_folder_name, canonical_jdk_path = self.find_canonical_jdk_path(jdk_home)
+        unique_paths.append(canonical_jdk_path)
+        discoverer.add_to_model(self._dictionary, model_top_folder_name, canonical_jdk_path)
 
         domain_jvms=node_mgr_jvm + domain_only_jvms
 
@@ -184,6 +190,14 @@ class InfraDiscoverer(Discoverer):
     def find_jdk_homes(self,jvms):
         jdk_homes = self._cmd_helper.get_unique_java_homes(jvms)
         return infra_constants.JAVA_DIR,jdk_homes
+
+    def find_canonical_jdk_path(self,jdk_home):
+        """
+        :param jdk_home: path to the JDK home
+        :return: constant representing the canonical JDK path and canonical JDK path
+        """
+        jdk_home = self._cmd_helper.get_canonical_path(jdk_home)
+        return infra_constants.CANONICAL_JAVA_DIR,jdk_home
 
     def get_host_details(self):
         """

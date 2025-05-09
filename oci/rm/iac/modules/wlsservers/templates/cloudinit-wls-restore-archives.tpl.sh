@@ -161,6 +161,47 @@ function set_fs_ownership() {
     echo "<cloud-init><set_fs_ownership> change ownership completed" | log >> $log_file
 }
 
+function create_java_symlinks() {
+    echo "<cloud-init><create_java_symlinks> Checking Java paths" | log >> $log_file
+    if [ ${java_path} != ${canonical_java_path} ]; then
+        echo "<cloud-init><create_java_symlinks> Creating symlink: ${java_path} -> ${canonical_java_path}" | log >> $log_file
+
+        # Cleanup existing path (if any)
+        if [ -e ${java_path} ] || [ -L ${java_path} ]; then
+            echo "<cloud-init><create_java_symlinks> Removing existing: ${java_path}" | log >> $log_file
+            rm -rf ${java_path} | log >> $log_file
+        fi
+
+        # Create symlink (CANONICAL → JAVA_PATH)
+        ln -s ${canonical_java_path} ${java_path} | log >> $log_file
+
+        # Set ownership
+        chown -h ${user}:${group} ${java_path} | log >> $log_file
+        echo "<cloud-init><create_java_symlinks> Symlink created" | log >> $log_file
+    else
+        echo "<cloud-init><create_java_symlinks> No symlink needed for JDK" | log >> $log_file
+    fi
+}
+
+function set_java_home() {
+    echo "<cloud-init><set_java_home> Setting JAVA_HOME in .bashrc" | log >> $log_file
+    bashrc_file="/home/${user}/.bashrc"
+
+    # Ensure the file exists
+    touch "$bashrc_file"
+
+    # Remove existing JAVA_HOME and related PATH lines
+    sed -i '/^export JAVA_HOME=/d' "$bashrc_file"
+    sed -i '/^export PATH=.*\/jdk.*\/bin.*$/d' "$bashrc_file"
+    sed -i '/^export PATH=.*JAVA_HOME.*\/bin.*$/d' "$bashrc_file"
+
+    # Add updated JAVA_HOME and PATH entries
+    echo "export JAVA_HOME=${java_path}" >> "$bashrc_file"
+    echo 'export PATH=$JAVA_HOME/bin:$PATH' >> "$bashrc_file"
+
+    echo "<cloud-init><set_java_home> JAVA_HOME set to ${java_path} for user ${user}" | log >> $log_file
+}
+
 check_fs | log >> $log_file
 set_fs_ownership;
 python /opt/scripts/restore-archives.py
@@ -171,5 +212,9 @@ if [[ $exit_code -ne 0 ]]; then
   exit 1
 fi
 echo "Executed restore-archives via ${user} with exit code [$exit_code]" | log >> $log_file
+# Create Java symlinks after restore is complete
+create_java_symlinks | log >> $log_file
+# set JAVA_HOME for the user
+set_java_home | log >> $log_file
 echo "<cloud-init><restore_archives> Restore completed" | log >> $log_file
 
