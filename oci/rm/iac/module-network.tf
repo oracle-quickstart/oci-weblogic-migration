@@ -23,6 +23,14 @@ locals {
 
   # Created route table if enabled, else var.nat_route_table_id
   nat_route_table_id = var.create_vcn ? try(one(module.vcn[*].nat_route_id), var.ig_route_table_id) : var.nat_route_table_id
+
+  network_compartment_id       = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
+  # Map of configured subnets to specified/generated dns_label when enabled
+  # If `assign_dns = true`, use dns_label for subnet if specified or first 2 characters of subnet key
+  subnet_dns_labels = { for k, v in var.subnets :
+    k => coalesce(lookup(v, "dns_label", null), substr(k, 0, 2))
+    if var.assign_dns
+  }
 }
 
 module "vcn" {
@@ -76,7 +84,7 @@ module "vcn" {
 }
 
 /* Create back end  private subnet for wls */
-module "network-wls-private-subnet" {
+module "subnet" {
   source          = "./modules/network/subnet"
   compartment_id  = local.network_compartment_id
   vcn_id          = local.vcn_id
@@ -168,7 +176,7 @@ output "bastion_subnet_cidr" {
 #}
 output "wlsserver_subnet_id" {
   #value = try(module.network.wlsserver_subnet_id, null)
-  value = try(module.network-wls-private-subnet.subnet_id)
+  value = try(module.subnet.subnet_id)
 }
 output "wlsserver_subnet_cidr" {
   value = try(module.network.wlsserver_subnet_cidr, null)
