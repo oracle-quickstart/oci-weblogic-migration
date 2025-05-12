@@ -65,7 +65,14 @@ variable "wlsserver_image_os_version" {
 }
 
 
-variable "wlsserver_shape" { default = {"instanceShape" = "VM.Standard.E4.Flex", "ocpus" = "1", "memory" = "16" } }
+variable "wlsserver_shape" {
+  type        = map(any)
+  default     = {
+    "instanceShape" = "VM.Standard.E4.Flex",
+    "ocpus" = "1",
+    "memory" = "16"
+  }
+}
 variable "wlsserver_ocpus" { default = 2 }
 variable "wlsserver_memory" { default = 16 }
 variable "wlsserver_boot_volume_size" { default = 50 }
