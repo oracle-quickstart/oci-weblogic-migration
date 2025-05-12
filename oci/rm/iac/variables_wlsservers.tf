@@ -99,7 +99,7 @@ variable "wlsserver_shape" {
     "ocpus"         = "1",
     "memory"        = "16"
     }
-    boot_volume_size = 50
+    #boot_volume_size = 50
 
     # https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/blockvolumeperformance.htm
     # Supported for mode = "cluster-network" | "instance-pool" | "instance" (self-managed) only

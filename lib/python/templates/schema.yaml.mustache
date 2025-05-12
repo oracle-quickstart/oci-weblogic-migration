@@ -297,7 +297,7 @@ variables:
     description: Display name of the new Virtual Cloud Network (VCN). Defaults to 'wls' suffixed with the generated Terraform 'state_id' value.
     type: string
     visible: ${create_vcn}
-    required: true
+    required: false
   assign_dns:
     title: Assign DNS records
     type: boolean
