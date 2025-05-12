@@ -27,3 +27,8 @@ variable "wlsserver_subnet_id" {
   type    = string
   default = null
 }
+variable "wlsserver_subnet_cidr" {
+  type        = string
+  description = "CIDR for weblogic subnet"
+  default     = ""
+}
