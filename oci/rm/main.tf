@@ -136,12 +136,13 @@ module "wls" {
   #release = "DEV"
   #Weblogic Server Instance Details
   wlsserver_cloud_init       = local.wlsserver_cloud_init
-  wlsserver_shape = {
-    shape            = var.wlsserver_shape
+  wlsserver_shape = var.wlsserver_shape
+  #wlsserver_shape = {
+    #shape            = var.wlsserver_shape
     #ocpus            = var.wlsserver_ocpus
     #memory           = var.wlsserver_memory
-    boot_volume_size = var.wlsserver_boot_volume_size
-  }
+    #boot_volume_size = var.wlsserver_boot_volume_size
+  #}
 
   #TODO: (joi) pass freeform tags to resource manager and load balancers
   freeform_tags = {
