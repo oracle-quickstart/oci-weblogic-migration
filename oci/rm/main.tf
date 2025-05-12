@@ -138,8 +138,8 @@ module "wls" {
   wlsserver_cloud_init       = local.wlsserver_cloud_init
   wlsserver_shape = {
     shape            = var.wlsserver_shape
-    ocpus            = var.wlsserver_ocpus
-    memory           = var.wlsserver_memory
+    #ocpus            = var.wlsserver_ocpus
+    #memory           = var.wlsserver_memory
     boot_volume_size = var.wlsserver_boot_volume_size
   }
 
