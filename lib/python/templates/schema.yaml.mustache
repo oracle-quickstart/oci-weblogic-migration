@@ -977,9 +977,11 @@ variables:
     type: oci:core:instanceshapewithflex:name
     #type: oci:core:instanceshape:name
     #default: "VM.Standard.E4.Flex"
+    default: "{\"instanceShape\":\"VM.Standard.E4.Flex\",\"ocpus\":1,\"memory\":16}"
     required: true
     dependsOn:
       compartmentId: ${compartment_ocid}
+      imageId: ${instance_image_id}
     description: The number of CPUs and the amount of memory allocated to each WebLogic Server compute instance.
   wlsserver_ocpus:
     visible: false
