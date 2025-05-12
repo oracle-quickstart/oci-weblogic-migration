@@ -1,9 +1,6 @@
 # Copyright (c) 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-# Copyright (c) 2017, 2023 Oracle Corporation and/or its affiliates.
-# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
-
 data "oci_core_vcn" "oke" {
   count  = var.create_vcn ? 0 : 1
   vcn_id = coalesce(var.vcn_id, "none")
@@ -24,7 +21,7 @@ locals {
   # Created route table if enabled, else var.nat_route_table_id
   nat_route_table_id = var.create_vcn ? try(one(module.vcn[*].nat_route_id), var.ig_route_table_id) : var.nat_route_table_id
 
-  network_compartment_id       = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
+  network_compartment_id = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
   # Map of configured subnets to specified/generated dns_label when enabled
   # If `assign_dns = true`, use dns_label for subnet if specified or first 2 characters of subnet key
   subnet_dns_labels = { for k, v in var.subnets :
@@ -43,13 +40,13 @@ module "vcn" {
   defined_tags = merge(var.use_defined_tags ? {
     "${var.tag_namespace}.state_id" = local.state_id,
     "${var.tag_namespace}.role"     = "network",
-  } : {},
+    } : {},
     local.network_defined_tags,
   )
   freeform_tags = merge(var.use_defined_tags ? {} : {
     "state_id" = local.state_id,
     "role"     = "network",
-  },
+    },
     local.network_freeform_tags,
   )
 
@@ -63,10 +60,10 @@ module "vcn" {
   ])
 
   create_nat_gateway = alltrue([
-    var.vcn_create_nat_gateway != "never",                # always disable
-    anytrue([                                             # enable for configurations that generally utilize it
-      var.vcn_create_nat_gateway == "always",             # always enable
-      !var.wlsserver_is_public,                              # enable for private wlsservers
+    var.vcn_create_nat_gateway != "never",    # always disable
+    anytrue([                                 # enable for configurations that generally utilize it
+      var.vcn_create_nat_gateway == "always", # always enable
+      !var.wlsserver_is_public,               # enable for private wlsservers
       #var.create_operator,                                # enable for operator
       contains(["internal", "both"], var.load_balancers), # enable for cluster w/ private load balancers
     ])
@@ -85,11 +82,9 @@ module "vcn" {
 
 /* Create back end  private subnet for wls */
 module "network-wls-private-subnet" {
-  source          = "./modules/network/subnet"
-  compartment_id  = local.network_compartment_id
-  vcn_id          = local.vcn_id
-  #dhcp_options_id = module.network-vcn-config[0].dhcp_options_id
-  #This is to prevent Terraform from resetting the route table on reapply. Peering module will set a new route table
+  source             = "./modules/network/subnet"
+  compartment_id     = local.network_compartment_id
+  vcn_id             = local.vcn_id
   route_table_id     = local.nat_route_table_id
   subnet_name        = format("wlsservers-%v", local.state_id)
   dns_label          = lookup(local.subnet_dns_labels, "wlsservers", null)
@@ -118,32 +113,32 @@ module "network" {
   use_defined_tags = var.use_defined_tags
 
   #allow_node_port_access       = var.allow_node_port_access
-  allow_rules_internal_lb      = var.allow_rules_internal_lb
-  allow_rules_public_lb        = var.allow_rules_public_lb
-  allow_rules_wlsservers          = var.allow_rules_wlsservers
-  allow_rules_adminserver = var.allow_rules_adminserver
+  allow_rules_internal_lb           = var.allow_rules_internal_lb
+  allow_rules_public_lb             = var.allow_rules_public_lb
+  allow_rules_wlsservers            = var.allow_rules_wlsservers
+  allow_rules_adminserver           = var.allow_rules_adminserver
   allow_adminserver_internet_access = var.allow_adminserver_internet_access
   allow_adminserver_ssh_access      = var.allow_adminserver_ssh_access
-  allow_wlsserver_internet_access = var.allow_wlsservers_internet_access
-  allow_wlsserver_ssh_access      = var.allow_wlsservers_ssh_access
-  allow_bastion_domain_access = var.allow_bastion_domain_access
-  allow_bastion_adminserver_access = var.allow_bastion_adminserver_access
-  assign_dns                   = var.assign_dns
-  bastion_allowed_cidrs        = var.bastion_allowed_cidrs
-  bastion_is_public            = var.bastion_is_public
-  create_bastion               = var.create_bastion
-  nsgs                         = var.nsgs
+  allow_wlsserver_internet_access   = var.allow_wlsservers_internet_access
+  allow_wlsserver_ssh_access        = var.allow_wlsservers_ssh_access
+  allow_bastion_domain_access       = var.allow_bastion_domain_access
+  allow_bastion_adminserver_access  = var.allow_bastion_adminserver_access
+  assign_dns                        = var.assign_dns
+  bastion_allowed_cidrs             = var.bastion_allowed_cidrs
+  bastion_is_public                 = var.bastion_is_public
+  create_bastion                    = var.create_bastion
+  nsgs                              = var.nsgs
   #  create_operator              = false            #future use
-  enable_waf                   = false            #future use
-  ig_route_table_id            = local.ig_route_table_id
-  load_balancers               = var.load_balancers
-  nat_route_table_id           = local.nat_route_table_id
-  subnets                      = var.subnets
-  vcn_cidrs                    = local.vcn_cidrs
-  vcn_id                       = local.vcn_id
-  wlsserver_is_public             = var.wlsserver_is_public
-  wlsserver_ports = local.wls_domain_all_discovered_ports
-  adminserver_ports = local.wls_admin_server_ports
+  enable_waf           = false #future use
+  ig_route_table_id    = local.ig_route_table_id
+  load_balancers       = var.load_balancers
+  nat_route_table_id   = local.nat_route_table_id
+  subnets              = var.subnets
+  vcn_cidrs            = local.vcn_cidrs
+  vcn_id               = local.vcn_id
+  wlsserver_is_public  = var.wlsserver_is_public
+  wlsserver_ports      = local.wls_domain_all_discovered_ports
+  adminserver_ports    = local.wls_admin_server_ports
   resource_name_prefix = local.wls_domain_name
 }
 

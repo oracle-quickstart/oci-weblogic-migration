@@ -221,7 +221,7 @@ variables:
   # Stack Configuration
   create_oci_policies:
     title: OCI Policies
-    description: "Create policies to read Secrets from Vault and manage Autonomous Transaction Processing Database (if applicable). Deselecting this option is for Advanced users only.  Before you deselect the check box, see <a target=\"_blank\" href=\"https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/paas/weblogic-cloud&id=WLCUG-GUID-4E2AD7BF-592D-4C2C-AF66-D98CB26379A5\">Create Root Policies</a> to create the required groups and relevant policies."
+    description: "Create policies to read Object Storage Bucket and manage Autonomous Transaction Processing Database (if applicable). Deselecting this option is for Advanced users only.  Before you deselect the check box, see <a target=\"_blank\" href=\"https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/paas/weblogic-cloud&id=WLCUG-GUID-4E2AD7BF-592D-4C2C-AF66-D98CB26379A5\">Create Root Policies</a> to create the required groups and relevant policies."
     required: true
     type: boolean
     default: true
@@ -272,7 +272,7 @@ variables:
     title: Create a Virtual Cloud Network
     type: boolean
     default: true
-    description: Create a Virtual Cloud Network and subnets
+    description: Create a Virtual Cloud Network and subnets.
   network_compartment_id:
     visible: ${orm_create_mode}
     type: oci:identity:compartment:id
@@ -449,7 +449,7 @@ variables:
     pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
     required: true
     title: "WebLogic Server Subnet CIDR"
-    description: "The CIDR of the new subnet to create for WebLogic Server compute instances. This field is required only if you want to use new subnets. The new subnet's CIDR should not overlap with any other subnet CIDRs."
+    description: "The CIDR of the new subnet to create for WebLogic Server compute instances. In case of an existing VCN, the new subnet's CIDR should not overlap with any other subnet CIDRs."
 
   wlsserver_subnet_id:
     title: Existing WebLogic Server subnet
@@ -982,7 +982,7 @@ variables:
     dependsOn:
       compartmentId: ${compartment_ocid}
       #imageId: ${instance_image_id}
-    description: The number of CPUs and the amount of memory allocated to each WebLogic Server compute instance.
+    description: The shape for WebLogic Server compute instances.
   wlsserver_ocpus:
     visible: false
     title: OCPUs

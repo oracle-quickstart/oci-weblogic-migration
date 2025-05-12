@@ -1,3 +1,6 @@
+# Copyright (c) 2024 Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+
 locals {
   dns_label = replace(var.dns_label, "-", "")
 }
@@ -9,7 +12,6 @@ resource "oci_core_subnet" "wls-subnet" {
   compartment_id             = var.compartment_id
   vcn_id                     = var.vcn_id
   route_table_id             = var.route_table_id
-  #dhcp_options_id            = var.dhcp_options_id
   prohibit_public_ip_on_vnic = var.prohibit_public_ip
 
   defined_tags     = var.defined_tags
