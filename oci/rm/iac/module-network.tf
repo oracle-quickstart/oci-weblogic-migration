@@ -90,7 +90,7 @@ module "network-wls-private-subnet" {
   vcn_id          = local.vcn_id
   #dhcp_options_id = module.network-vcn-config[0].dhcp_options_id
   #This is to prevent Terraform from resetting the route table on reapply. Peering module will set a new route table
-  route_table_id     = var.nat_route_table_id
+  route_table_id     = local.nat_route_table_id
   subnet_name        = format("wlsservers-%v", local.state_id)
   dns_label          = lookup(local.subnet_dns_labels, "wlsservers", null)
   cidr_block         = var.wlsserver_subnet_cidr
