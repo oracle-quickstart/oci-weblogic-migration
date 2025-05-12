@@ -115,7 +115,7 @@ variableGroups:
       #      - wlsserver_cloud_init_byon
       #      - wlsserver_cloud_init_wls
       - wlsserver_subnet_create
-#      - wlsserver_subnet_cidr
+      - wlsserver_subnet_cidr
       - wlsserver_subnet_id
 
   - title: "Operating System Image"
@@ -436,7 +436,7 @@ variables:
              - or:
                 - ${create_vcn}
                 - ${wlsserver_subnet_create}
-  wls_subnet_cidr:
+  wlsserver_subnet_cidr:
     visible:
       and:
         - ${orm_create_mode}
@@ -974,8 +974,8 @@ variables:
     visible: false
   wlsserver_shape:
     title: Compute Shape
-    type: oci:core:instanceshapewithflex:name
-    #type: oci:core:instanceshape:name
+    #type: oci:core:instanceshapewithflex:name
+    type: oci:core:instanceshape:name
     #default: "VM.Standard.E4.Flex"
     required: true
     dependsOn:
