@@ -57,7 +57,7 @@ module "wls" {
   subnets = {
     bastion = {
       create  = var.bastion_subnet_create ? "always" : "never",
-      cidr = var.bastion_subnet_cidr,
+      cidr    = var.bastion_subnet_cidr,
       id      = var.bastion_subnet_id
     }
 
@@ -165,9 +165,9 @@ module "wls" {
 
 
   #Bastion
-  create_bastion = var.create_bastion
-  bastion_shape = var.bastion_shape
-  boot_volume_size = var.bastion_shape_boot
+  create_bastion              = var.create_bastion
+  bastion_shape               = var.bastion_shape
+  boot_volume_size            = var.bastion_shape_boot
   bastion_allowed_cidrs       = var.bastion_allowed_cidrs
   bastion_is_public           = var.bastion_is_public
   bastion_public_ip           = null # Ignored when create_bastion = true

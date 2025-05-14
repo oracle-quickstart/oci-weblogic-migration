@@ -42,13 +42,13 @@ variable "bastion_image_os_version" {
 variable "bastion_shape" {
   type = object({
     instanceShape     = string
-    ocpus     = number
-    memory    = number
+    ocpus             = number
+    memory            = number
   })
   default = {
     instanceShape     = "VM.Standard.E4.Flex"
-    ocpus     = 1
-    memory    = 16
+    ocpus             = 1
+    memory            = 16
   }
 }
 
