@@ -436,14 +436,9 @@ variables:
              - or:
                 - ${create_vcn}
                 - ${wlsserver_subnet_create}
+
   wlsserver_subnet_cidr:
-    visible:
-      and:
-        - ${orm_create_mode}
-        - and:
-             - or:
-                - ${create_new_vcn}
-                - ${wlsserver_subnet_create}
+    visible: ${orm_create_mode}
     type: string
     default: 10.0.2.0/24
     pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
