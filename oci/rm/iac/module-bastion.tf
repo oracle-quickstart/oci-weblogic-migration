@@ -24,11 +24,10 @@ locals {
   : var.bastion_public_ip
   )
 
-  bastion_images    = one(data.oci_core_images.bastion[*].images) # Data source result or null
-  bastion_image_ids = local.bastion_images[*].id                  # Image OCIDs from data source
-  bastion_image_id = (var.bastion_image_type == "custom"
-  ? var.bastion_image_id : element(coalescelist(local.bastion_image_ids, ["none"]), 0)
-  )
+#   bastion_images    = one(data.oci_core_images.bastion[*].images) # Data source result or null
+#   bastion_image_ids = local.bastion_images[*].id                  # Image OCIDs from data source
+#   bastion_image_id = (var.bastion_image_type == "custom" ? var.bastion_image_id : element(coalescelist(local.bastion_image_ids, ["none"]), 0))
+#   bastion_image_id = var.bastion_image_id
 
   # Bastion SSH ProxyCommand argument used in e.g. ssh_to_operator command output if created/provided
   bastion_ssh_user_ip = join("@", compact([var.bastion_user, local.bastion_public_ip]))
@@ -48,7 +47,7 @@ module "bastion" {
   # Bastion
   assign_dns          = var.assign_dns
   availability_domain = coalesce(var.bastion_availability_domain, lookup(local.ad_numbers_to_names, local.ad_numbers[0]))
-  image_id            = local.bastion_image_id
+  image_id            = var.bastion_image_id
   nsg_ids             = try(compact(flatten([var.bastion_nsg_ids, [try(module.network.bastion_nsg_id, null)]])), [])
   is_public           = var.bastion_is_public
   shape               = var.bastion_shape

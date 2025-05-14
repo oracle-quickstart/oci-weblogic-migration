@@ -6,9 +6,9 @@ variable "int_lb_subnet_create" { default = false }
 variable "pub_lb_subnet_create" { default = true }
 variable "wlsserver_subnet_create" { default = false }
 
-variable "int_lb_subnet_newbits" { default = 11 }
-variable "pub_lb_subnet_newbits" { default = 11 }
-variable "wlsserver_subnet_newbits" { default = 2 }
+variable "int_lb_subnet_newbits" { default = 12 }
+variable "pub_lb_subnet_newbits" { default = 10 }
+variable "wlsserver_subnet_newbits" { default = 12 }
 
 variable "bastion_subnet_id" {
   type    = string
@@ -25,9 +25,4 @@ variable "pub_lb_subnet_id" {
 variable "wlsserver_subnet_id" {
   type    = string
   default = null
-}
-variable "wlsserver_subnet_cidr" {
-  type        = string
-  description = "CIDR for weblogic subnet"
-  default     = ""
 }
