@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2022, 2024 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
@@ -15,7 +15,7 @@ locals {
 
   create_domain_enabled            = var.create_domain #|| coalesce(var.cluster_id, "none") != "none"
   weblogic_server_instance_details = length(try(var.wlsserver_pools, {})) > 0 ? var.wlsserver_pools : local.wls_instance_params
-  os_user = local.os_users
+  os_user                          = local.os_users
 
   #Images
 
@@ -25,13 +25,13 @@ locals {
       volume_mount_point = local.oracle_home
       display_name       = "mw"
       device             = "/dev/oracleoci/oraclevdb"
-      size               =  var.wlsserver_mw_volume_size
+      size               = var.wlsserver_mw_volume_size
     },
     "jdk" = {
       volume_mount_point = local.jdk_home
       display_name       = "javaHome"
       device             = "/dev/oracleoci/oraclevdc"
-      size               =  var.wlsserver_jdk_volume_size
+      size               = var.wlsserver_jdk_volume_size
     },
     "domain" = {
       volume_mount_point = local.domain_mount_point
@@ -44,8 +44,8 @@ locals {
 
 # Default wlsservers sub-module implementation for Weblogic Domain nodes
 module "wlsservers" {
-  count  = local.create_domain_enabled ? 1 : 0
-  source = "./modules/wlsservers"
+  count    = local.create_domain_enabled ? 1 : 0
+  source   = "./modules/wlsservers"
   wls_data = local.wls_data
 
   # Common
@@ -56,8 +56,8 @@ module "wlsservers" {
   ad_numbers_to_names = local.ad_numbers_to_names
 
   # Domain-wide
-  wlsdomain_dns        = var.custom_dns
-  wlsserver_pools      = local.weblogic_server_instance_details
+  wlsdomain_dns   = var.custom_dns
+  wlsserver_pools = local.weblogic_server_instance_details
 
 
   # wlsservers
@@ -68,26 +68,26 @@ module "wlsservers" {
   cloud_init                 = var.wlsserver_cloud_init
   disable_default_cloud_init = var.wlsserver_disable_default_cloud_init
   image_id                   = var.wlsserver_image_id
-#  image_ids                  = local.image_ids
-  image_ids = {}
-  image_os                   = var.wlsserver_image_os
-  image_os_version           = var.wlsserver_image_os_version
-  image_type                 = var.wlsserver_image_type
-  node_labels                = var.wlsserver_node_labels
-  node_metadata              = var.wlsserver_node_metadata
-  platform_config            = var.platform_config
-  pv_transit_encryption      = var.wlsserver_pv_transit_encryption
-  shape                      = var.wlsserver_shape
-  ssh_public_key             = local.ssh_public_key
-  timezone                   = var.timezone
-  volume_kms_key_id          = var.wlsserver_volume_kms_key_id
-#  managedserver_nsg_ids      = concat(var.managedserver_nsg_ids, [try(module.network.wlsserver_nsg_id, null)])
-  managedserver_nsg_ids       = coalescelist([module.network.wlsserver_nsg_id])
-#  adminserver_nsg_ids        = concat(var.adminserver_nsg_ids, [try(module.network.adminserver_nsg_id, null)])
-  adminserver_nsg_ids         = coalescelist([module.network.adminserver_nsg_id])
-  wlsserver_subnet_id        = try(module.network.wlsserver_subnet_id, "") # safe destroy; validated in submodule
-  wlsserver_ports            = local.wls_domain_all_discovered_ports
-  adminserver_ports          = local.wls_admin_server_ports
+  #  image_ids                  = local.image_ids
+  image_ids             = {}
+  image_os              = var.wlsserver_image_os
+  image_os_version      = var.wlsserver_image_os_version
+  image_type            = var.wlsserver_image_type
+  node_labels           = var.wlsserver_node_labels
+  node_metadata         = var.wlsserver_node_metadata
+  platform_config       = var.platform_config
+  pv_transit_encryption = var.wlsserver_pv_transit_encryption
+  shape                 = var.wlsserver_shape
+  ssh_public_key        = local.ssh_public_key
+  timezone              = var.timezone
+  volume_kms_key_id     = var.wlsserver_volume_kms_key_id
+  #  managedserver_nsg_ids      = concat(var.managedserver_nsg_ids, [try(module.network.wlsserver_nsg_id, null)])
+  managedserver_nsg_ids = coalescelist([module.network.wlsserver_nsg_id])
+  #  adminserver_nsg_ids        = concat(var.adminserver_nsg_ids, [try(module.network.adminserver_nsg_id, null)])
+  adminserver_nsg_ids = coalescelist([module.network.adminserver_nsg_id])
+  wlsserver_subnet_id = try(module.network-wls-private-subnet.subnet_id, "")
+  wlsserver_ports     = local.wls_domain_all_discovered_ports
+  adminserver_ports   = local.wls_admin_server_ports
 
   # Volumes
   wls_archived_volumes = local.block_volume_devices
@@ -101,7 +101,7 @@ module "wlsservers" {
   use_defined_tags = var.use_defined_tags
 
   #WLS Domain Details
-  wls_domain_home =  local.domain_path
+  wls_domain_home      = local.domain_path
   resource_name_prefix = local.wls_domain_name
 
 
@@ -115,10 +115,10 @@ module "wlsservers" {
   wls_datasources_config = var.wls_configured_datasource_text
 
   #Changes on WebLogic config due to new OCI Environment.
-  text_to_replace_in_config=local.wls_config_text_changes
+  text_to_replace_in_config = local.wls_config_text_changes
   # Development Mode Prod or Development
-  is_development = contains(["DEV"], var.release )
-  mode = var.release
+  is_development  = contains(["DEV"], var.release)
+  mode            = var.release
   vm_scripts_path = var.vm_script_path
 
   depends_on = [
@@ -146,7 +146,7 @@ output "wls_domain_name" {
 
 output "ssh_to_nodes" {
   description = "SSH command to Weblogic Server Instances"
-  value= local.wlsserver_count_expected > 0 ? [for ip,id in try(one(module.wlsservers[*].wlsserver_pool_ips), null) : join(" ", concat(["ssh"],
-    local.bastion_proxy_command, [ip] ))] : null
+  value = local.wlsserver_count_expected > 0 ? [for ip, id in try(one(module.wlsservers[*].wlsserver_pool_ips), null) : join(" ", concat(["ssh"],
+  local.bastion_proxy_command, [ip]))] : null
 }
 

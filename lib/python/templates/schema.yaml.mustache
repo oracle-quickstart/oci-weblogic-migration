@@ -2,8 +2,8 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 title: "Weblogic Migration: Restore a Weblogic Domain in Oracle Cloud Infrastructure"
-description: Restore a Weblogic Domain in OCI from a Weblogic Migration Inventory.
-informationalText: Creates OCI resources based on a discovered Weblogic Domain on-premise.
+description: Restore a Weblogic Domain in OCI from a Weblogic Migration Inventory
+informationalText: Creates OCI resources based on a discovered Weblogic Domain on-premise
 schemaVersion: 1.1.0
 version: "20230304"
 locale: "en"
@@ -47,11 +47,12 @@ variableGroups:
       - ssh_kms_secret_id
       - wlsoci_vmscripts_zip_bundle_path
       - wls_discovery_folder
-
+      - wls_discovery_filename
+      - compartment_ocid
+      - wlsserver_subnet_newbits
 
   - title: "Stack Configuration"
     variables:
-      - compartment_ocid
       - ssh_public_key
       - create_oci_policies
       - create_vcn
@@ -114,7 +115,7 @@ variableGroups:
       #      - wlsserver_cloud_init_byon
       #      - wlsserver_cloud_init_wls
       - wlsserver_subnet_create
-      - wlsserver_subnet_newbits
+      - wlsserver_subnet_cidr
       - wlsserver_subnet_id
 
   - title: "Operating System Image"
@@ -126,12 +127,12 @@ variableGroups:
       - wlsserver_image_platform_id
       - wlsserver_image_custom_id
 
-  - title: "Weblogic Domain Common"
-    variables:
-      - use_existing_loadbalancer
-      - wlsserver_node_labels
-      - existing_load_balancer_id
-      - create_demo_certificate
+#  - title: "Weblogic Domain Common"
+#    variables:
+#      - use_existing_loadbalancer
+#      - wlsserver_node_labels
+#      - existing_load_balancer_id
+#      - create_demo_certificate
 
   - title: "Loadbalancer"
     variables:
@@ -220,7 +221,7 @@ variables:
   # Stack Configuration
   create_oci_policies:
     title: OCI Policies
-    description: Create policies to read Secrets from Vault and manage Autonomous Transaction Processing Database (if applicable). Deselecting this option is for Advanced users only. Before you deselect the check box, see Create Root Policies Refer to <a href=https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/paas/weblogic-cloud</a> to create the required groups and relevant policies.
+    description: "Create policies to read Object Storage Bucket and manage Autonomous Transaction Processing Database (if applicable). Deselecting this option is for Advanced users only.  Before you deselect the check box, see <a target=\"_blank\" href=\"https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/paas/weblogic-cloud&id=WLCUG-GUID-4E2AD7BF-592D-4C2C-AF66-D98CB26379A5\">Create Root Policies</a> to create the required groups and relevant policies."
     required: true
     type: boolean
     default: true
@@ -268,10 +269,10 @@ variables:
   # VCN
   create_vcn:
     visible: ${orm_create_mode}
-    title: Create Virtual Cloud Network
+    title: Create a Virtual Cloud Network
     type: boolean
     default: true
-    description: Create a new Virtual Cloud Network and subnets
+    description: Create a Virtual Cloud Network and subnets.
   network_compartment_id:
     visible: ${orm_create_mode}
     type: oci:identity:compartment:id
@@ -292,10 +293,11 @@ variables:
         - not:
           - ${create_vcn}
   vcn_name:
-    title: VCN name
-    description: Display name for the created VCN. Defaults to 'wls' suffixed with the generated Terraform 'state_id' value.
+    title: "Virtual Cloud Network Name"
+    description: Display name of the new Virtual Cloud Network (VCN). Defaults to 'wls' suffixed with the generated Terraform 'state_id' value.
     type: string
     visible: ${create_vcn}
+    required: false
   assign_dns:
     title: Assign DNS records
     type: boolean
@@ -304,15 +306,15 @@ variables:
   vcn_dns_label:
     title: DNS label
     description: DNS label for the created VCN. Defaults to the generated Terraform 'state_id' value.
-    visible:
-      and:
-        - ${create_vcn}
-        - ${assign_dns}
+    visible: false
+    required: false
   vcn_cidrs:
-    title: CIDR ranges
-    description: Comma-separated list of CIDR blocks for the created VCN.
     type: string
+    default: 10.0.0.0/16
     required: true
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
+    title: "Virtual Cloud Network CIDR"
+    description: "The CIDR to assign to the new Virtual Cloud Network (VCN)."
     visible: ${create_vcn}
   lockdown_default_seclist:
     title: Secure default security list
@@ -323,17 +325,17 @@ variables:
     title: Create internet gateway
     type: boolean
     required: true
-    visible: ${create_vcn}
+    visible: false
   vcn_create_nat_gateway:
     title: Create service gateway
     type: boolean
     required: true
-    visible: ${create_vcn}
+    visible: false
   vcn_create_service_gateway:
     title: Create NAT gateway
     type: boolean
     required: true
-    visible: ${create_vcn}
+    visible: false
   local_peering_gateways:
     title: Local peering gateways
     visible: false
@@ -375,6 +377,7 @@ variables:
     type: boolean
     default: true
     required: true
+    visible: false
   managedserver_nsg_id:
     title: Weblogic Managed Server Network Security Group
     description: Network Security Groups for the created Weblogic Managed Server node(s), used to configure network access to instances. See <a href=https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengnetworkconfig.htm#securitylistconfig>Security Rule Configuration in ... Network Security Groups</a> for more information.
@@ -433,6 +436,15 @@ variables:
              - or:
                 - ${create_vcn}
                 - ${wlsserver_subnet_create}
+
+  wlsserver_subnet_cidr:
+    visible: ${orm_create_mode}
+    type: string
+    default: 10.0.2.0/24
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
+    required: true
+    title: "WebLogic Server Subnet CIDR"
+    description: "The CIDR of the new subnet to create for WebLogic Server compute instances. In case of an existing VCN, the new subnet's CIDR should not overlap with any other subnet CIDRs."
 
   wlsserver_subnet_id:
     title: Existing WebLogic Server subnet
@@ -536,7 +548,7 @@ variables:
     description: Existing Dynamic Routing Gateway to attach to the VCN.
     type: ocid
     required: false
-    visible: { not: [ create_drg ] }
+    visible: false
   drg_display_name:
     title: DRG display name
     visible: ${create_drg}
@@ -594,7 +606,7 @@ variables:
   create_bastion:
     title: Provision Bastion Instance
     type: boolean
-    default: false
+    default: true
     required: true
     description: Provision a bastion compute instance on a public subnet to provide access to the WebLogic Server compute instances on a private subnet.
   bastion_availability_domain:
@@ -722,7 +734,7 @@ variables:
     title: SSH Public Key
     type: oci:core:ssh:publickey
     pattern: "((^(ssh-rsa AAAAB3NzaC1yc2|ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNT|ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzOD|ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1Mj|ssh-ed25519 AAAAC3NzaC1lZDI1NTE5|ssh-dss AAAAB3NzaC1kc3)[0-9A-Za-z+\/]+[=]{0,3})( [^,]*)?)(,((ssh-rsa AAAAB3NzaC1yc2|ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNT|ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzOD|ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1Mj|ssh-ed25519 AAAAC3NzaC1lZDI1NTE5|ssh-dss AAAAB3NzaC1kc3)[0-9A-Za-z+\/]+[=]{0,3})( [^,]*)?)*$"
-    required: false
+    required: true
   ssh_kms_vault_id:
     title: SSH Vault
     description: The OCI Vault where private SSH key pair is stored.
@@ -753,8 +765,8 @@ variables:
   #Section: LoadBalancer Configuration
   ######################
   add_load_balancer:
-    title: Provision Public Load Balancer ?
-    description: Provision a load balancer in Oracle Cloud Infrastructure to distribute application traffic to the managed servers in the domain
+    title: Provision Public Load Balancer
+    description: Provision a load balancer in Oracle Cloud Infrastructure to distribute application traffic to the managed servers in the domain.
     default: false
     type: boolean
 
@@ -763,7 +775,7 @@ variables:
     description: Select an Existing LoadBalancer from Compartment in section "Identity"
     default: false
     type: boolean
-    visible: ${add_load_balancer}
+    visible: false
 
   existing_load_balancer_id:
     type: oci:loadbalancer:loadbalancer:id
@@ -773,10 +785,7 @@ variables:
     default: ""
     dependsOn:
       compartmentId: ${compartment_ocid}
-    visible:
-      and:
-        - use_existing_loadbalancer
-        - add_load_balancer
+    visible: false
 
 
   load_balancer_shape:
@@ -937,7 +946,7 @@ variables:
     description: A generated Test certificate will be configured on Loadbalancer port 443/https.
     default: false
     type: boolean
-    visible: ${add_load_balancer}
+    visible: false
 
   #########################
   ### End: LoadBalancer Configuration
@@ -951,6 +960,7 @@ variables:
     default: Instances
     enum: [Instances] # Instance Pool
     required: true
+    visible: false
   wlsserver_pool_size:
     title: Number of wlsserver nodes
     type: number
@@ -958,22 +968,25 @@ variables:
     required: true
     visible: false
   wlsserver_shape:
-    title: Shape
-    # type: oci:core:instanceshapewithflex:name
-    type: oci:core:instanceshape:name
-    default: "VM.Standard.E4.Flex"
+    title: Compute Shape
+    type: oci:core:instanceshapewithflex:name
+    #type: oci:core:instanceshape:name
+    #default: "VM.Standard.E4.Flex"
+    default: "{\"instanceShape\":\"VM.Standard.E4.Flex\",\"ocpus\":1,\"memory\":16}"
     required: true
     dependsOn:
       compartmentId: ${compartment_ocid}
-      imageId: ${instance_image_id}
+      #imageId: ${instance_image_id}
     description: The shape for WebLogic Server compute instances.
   wlsserver_ocpus:
+    visible: false
     title: OCPUs
     type: number
     default: 2
     required: false
     description: The number of OCPU count for instances. Only required for VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Optimized3.Flex, and VM.Standard3.Flex Shapes. The maximum number of ocpus for VM.Standard.E3.Flex and VM.Standard.E4.Flex is 64, for VM.Standard.E5.Flex is 94, while VM.Optimized3.Flex shape supports 18.
   wlsserver_memory:
+    visible: false
     title: Memory (GB)
     type: number
     default: 16
@@ -982,18 +995,22 @@ variables:
     title: Boot volume size (GB)
     type: number
     required: false
+    visible: false
   wlsserver_mw_volume_size:
     title: Middleware volume size (GB)
     type: number
     required: false
+    visible: false
   wlsserver_jdk_volume_size:
     title: JDK volume size (GB)
     type: number
     required: false
+    visible: false
   wlsserver_domain_volume_size:
     title: WebLogic Domain volume size (GB)
     type: number
     required: false
+    visible: false
   wlsserver_image_type:
     title: Image License Type
     description: The selected image is used for Weblogic instances.
@@ -1009,11 +1026,7 @@ variables:
     default: "Oracle Linux"
     enum: ["Oracle Linux"]
     required: true
-    visible:
-      not:
-        - eq:
-            - wlsserver_image_type
-            - "custom"
+    visible: false
 
   wlsserver_image_os_version:
     title: Operating system version
@@ -1021,11 +1034,7 @@ variables:
     default: "8"
     enum: ["7.9", "8"]  #TODO: JOI  set os.auto.tfvars os version to values from discovered OS version.
     required: true
-    visible:
-      not:
-        - eq:
-            - wlsserver_image_type
-            - "custom"
+    visible: false
 
   wlsserver_image_id:
     visible: false
@@ -1070,7 +1079,7 @@ variables:
             - "Oracle Weblogic Suite UCM Image"
     type: boolean
     default: false
-    title: "UCM Image type selected. Do you accept the Terms of use ?"
+    title: "I have reviewed and accept the Oracle Terms of Use"
     description: "I have reviewed and accept the <a target=\"_blank\" href=\"https://objectstorage.us-phoenix-1.oraclecloud.com/n/axxu7cichsnt/b/terms/o/wlsoci_ee_terms_and_conditions.txt\">Oracle terms of use</a>"
     required: true
 
@@ -1116,6 +1125,7 @@ variables:
     enum: [Paravirtualized, iSCSI]
     default: iSCSI
     required: true
+    visible: false
   wlsserver_node_labels:
     title: Node labels
     type: map
@@ -1126,6 +1136,7 @@ variables:
     type: boolean
     default: false
     required: true
+    visible: false
   wlsserver_volume_kms_vault_id:
     title: KMS volume encryption vault
     description: Vault containing operator volume encryption keys.
@@ -1189,10 +1200,10 @@ variables:
 
   edit_ds_{{{datasourceName}}}:
     type: boolean
-    title: Did the jdbc connection string changed after a Database migration to OCI?
+    title: Did the jdbc connection string change after the Database migration to OCI?
     description: Select this option to build the connection string from ATP service, OCI DB System, or Edit String directly.
     required: true
-    default: false
+    default: true
     visible:
       and:
         - update_any_ds
@@ -1210,7 +1221,7 @@ variables:
       - "Autonomous Transaction Processing Database"
       - "Database System"
       - "Edit JDBC String"
-    default: "Autonomous Transaction Processing Database"
+    default: "Edit JDBC String"
     required: true
 
   oci_db_connection_string_{{{datasourceName}}}:
