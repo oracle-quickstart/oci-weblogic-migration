@@ -1,11 +1,11 @@
-# Copyright (c) 2019, 2023 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2019, 2023, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
-  boot_volume_size = tonumber(lookup(var.shape, "boot_volume_size", 50))
+  boot_volume_size = var.boot_volume_size
   memory           = tonumber(lookup(var.shape, "memory", 4))
   ocpus            = max(1, tonumber(lookup(var.shape, "ocpus", 1)))
-  shape            = lookup(var.shape, "shape", "VM.Standard.E4.Flex")
+  shape            = lookup(var.shape, "instanceShape", "VM.Standard.E4.Flex")
 }
 
 output "id" {

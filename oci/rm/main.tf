@@ -1,4 +1,4 @@
-#Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+#Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
@@ -166,12 +166,8 @@ module "wls" {
 
   #Bastion
   create_bastion = var.create_bastion
-  bastion_shape = {
-    shape            = var.bastion_shape_name,
-    ocpus            = var.bastion_shape_ocpus,
-    memory           = var.bastion_shape_memory,
-    boot_volume_size = var.bastion_shape_boot
-  }
+  bastion_shape = var.bastion_shape
+  boot_volume_size = var.bastion_shape_boot
   bastion_allowed_cidrs       = var.bastion_allowed_cidrs
   bastion_is_public           = var.bastion_is_public
   bastion_public_ip           = null # Ignored when create_bastion = true

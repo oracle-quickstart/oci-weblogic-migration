@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 // Used to retrieve available bastion images when enabled
@@ -7,7 +7,7 @@ data "oci_core_images" "bastion" {
   compartment_id           = local.compartment_id
   operating_system         = var.bastion_image_os
   operating_system_version = var.bastion_image_os_version
-  shape                    = lookup(var.bastion_shape, "shape", "VM.Standard.E4.Flex")
+  shape                    = lookup(var.bastion_shape, "instanceShape", "VM.Standard.E4.Flex")
   state                    = "AVAILABLE"
   sort_by                  = "TIMECREATED"
   sort_order               = "DESC"
@@ -51,6 +51,7 @@ module "bastion" {
   nsg_ids             = try(compact(flatten([var.bastion_nsg_ids, [try(module.network.bastion_nsg_id, null)]])), [])
   is_public           = var.bastion_is_public
   shape               = var.bastion_shape
+  boot_volume_size    = var.boot_volume_size
   ssh_private_key     = sensitive(local.ssh_private_key) # to await cloud-init completion
   ssh_public_key      = local.ssh_public_key
   subnet_id           = try(module.network.bastion_subnet_id, "") # safe destroy; validated in submodule

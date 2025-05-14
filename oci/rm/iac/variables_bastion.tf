@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2023 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2017, 2023, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 variable "create_bastion" {
@@ -66,14 +66,20 @@ variable "bastion_image_os_version" {
 }
 
 variable "bastion_shape" {
+  type = object({
+    instanceShape     = string
+    ocpus     = number
+    memory    = number
+  })
   default = {
-    shape            = "VM.Standard.E4.Flex",
-    ocpus            = 1,
-    memory           = 4,
-    boot_volume_size = 50
+    instanceShape     = "VM.Standard.E4.Flex"
+    ocpus     = 1
+    memory    = 16
   }
-  description = "The shape of bastion instance."
-  type        = map(any)
+}
+
+variable "boot_volume_size" {
+  default = 50
 }
 
 variable "bastion_is_public" {
