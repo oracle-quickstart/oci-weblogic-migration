@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Oracle and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 variable "create_vcn" {
@@ -129,9 +129,9 @@ variable "nat_gateway_public_ip_id" {
 
 variable "subnets" {
   default = {
-    bastion  = { cidr = "10.0.1.0/24" }
-    int_lb   = { newbits = 11 }
-    pub_lb   = { newbits = 11 }
+    bastion     = { cidr    = "10.0.1.0/24" }
+    int_lb      = { newbits = 11 }
+    pub_lb      = { newbits = 11 }
     wlsservers  = { newbits = 4 }
   }
   description = "Configuration for standard subnets. The 'create' parameter of each entry defaults to 'auto', creating subnets when other enabled components are expected to utilize them, and may be configured with 'never' or 'always' to force disabled/enabled."

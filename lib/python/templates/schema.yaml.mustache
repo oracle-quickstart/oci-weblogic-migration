@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 title: "Weblogic Migration: Restore a Weblogic Domain in Oracle Cloud Infrastructure"
@@ -40,7 +40,6 @@ variableGroups:
       - bastion_availability_domain
       - bastion_user
       - bastion_shape_boot
-      - bastion_shape
       - bastion_image_os
       - bastion_image_os_version
       - bastion_image_type
@@ -167,9 +166,7 @@ variableGroups:
   - title: "Bastion"
     variables:
       - bastion_subnet_cidr
-      - bastion_shape_name
-      - bastion_shape_ocpus
-      - bastion_shape_memory
+      - bastion_shape
 
   - title: Tagging
     visible: true
@@ -505,14 +502,12 @@ variables:
     type: boolean
     default: true
     required: true
-    visible: false
 
   allow_bastion_adminserver_console_access:
     title: Allow Bastion to access Admin Server Listen Ports
     type: boolean
     default: true
     required: true
-    visible: false
 
   allow_rules_internal_lb:
     title: Additional internal load balancer rules
@@ -558,20 +553,6 @@ variables:
 
   ########################################################################
   #Bastion
-  bastion_is_public:
-    title: Public network
-    description: Create a Bastion host on a Public Subnet and attach a public Ephimeral IP address.
-    type: boolean
-    default: true
-    required: true
-    visible: false
-
-  bastion_subnet_create:
-    title: Create bastion subnet
-    type: boolean
-    default: true
-    required: true
-    visible : false
 
   bastion_subnet_cidr:
     visible:
@@ -583,20 +564,20 @@ variables:
     pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
     required: true
     title: "Bastion Host Subnet CIDR"
-    description: "The CIDR of the new public subnet to create for a Bastion compute instance. The new subnet's CIDR should not overlap with any other subnet CIDRs."
+    description: "The new subnet's CIDR should not overlap with any other subnet CIDRs. In case of an existing VCN, the new subnet's CIDR should not overlap with any other subnet CIDRs."
 
-  bastion_subnet_id:
-    title: Bastion subnet
-    type: oci:core:subnet:id
+  bastion_shape:
+    title: Bastion Host Shape
+    type: oci:core:instanceshapewithflex:name
+    default: "{\"instanceShape\":\"VM.Standard.E4.Flex\",\"ocpus\":1,\"memory\":16}"
     required: true
     dependsOn:
       compartmentId: ${compartment_ocid}
-      vcnId: ${vcn_id}
-      hidePublicSubnet: { not: [ bastion_is_public ] }
-      hidePrivateSubnet: ${bastion_is_public}
-      hideRegionalSubnet: false
-      hideAdSubnet: false
-    visible: false
+    description: The shape for Bastion host.
+    visible:
+       and :
+            - ${orm_create_mode}
+            - ${create_bastion}
 
   create_bastion:
     title: Provision Bastion Instance
@@ -604,136 +585,6 @@ variables:
     default: true
     required: true
     description: Provision a bastion compute instance on a public subnet to provide access to the WebLogic Server compute instances on a private subnet.
-
-  bastion_availability_domain:
-    title: Availability domain
-    type: oci:identity:availabilitydomain:name
-    required: false
-    dependsOn:
-      compartmentId: ${compartment_ocid}
-    visible: false
-
-  bastion_allowed_cidrs:
-    type: array
-    title: "List of CIDR blocks allowed SSH access to the bastion host."
-    required: false
-    description: "Type each network address in cidr format Y.Y.Y.Y/XX followed by <Enter. Example Format: Network 192.168.1.0/24 or individual host by IP/32 . ex X.X.X.X/32"
-    items:
-      type: string
-    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
-    uniqueItems: true
-    default: [ 0.0.0.0/0 ]
-    visible: false
-
-  bastion_user:
-    title: User
-    type: string
-    default: opc
-    required: true
-    visible: false
-
-  bastion_shape_name:
-    title: Shape
-    type: oci:core:instanceshape:name
-    default: "VM.Standard.E4.Flex"
-    required: true
-    dependsOn:
-      compartmentId: ${compartment_ocid}
-    visible:
-       and :
-            - ${orm_create_mode}
-            - ${create_bastion}
-
-  bastion_shape_ocpus:
-    title: OCPUs (Cores)
-    type: number
-    default: 1
-    required: true
-    description: "The number of OCPU count for instances. Only required for VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Optimized3.Flex, and  VM.Standard3.Flex Shapes. The maximum number of ocpus for VM.Standard.E3.Flex and VM.Standard.E4.Flex is 64, for VM.Standard.E5.Flex is 94, while VM.Optimized3.Flex shape supports 18."
-    dependsOn:
-      compartmentId: ${compartment_ocid}
-    visible:
-       and :
-            - ${orm_create_mode}
-            - ${create_bastion}
-
-  bastion_shape_memory:
-    title: Memory (GB)
-    type: number
-    default: 16
-    required: true
-    dependsOn:
-      compartmentId: ${compartment_ocid}
-    visible:
-       and :
-            - ${orm_create_mode}
-            - ${create_bastion}
-
-  bastion_shape_boot:
-    title: Boot volume size (GB)
-    type: number
-    default: 50
-    required: true
-    dependsOn:
-      compartmentId: ${compartment_ocid}
-    visible: false
-
-  bastion_shape:
-    visible: false
-
-  bastion_image_os:
-    title: Image OS
-    description: Image operating system.
-    type: enum
-    default: "Oracle Linux"
-    enum: [ "Oracle Linux" ]
-    required: true
-    visible: false
-
-  bastion_image_os_version:
-    title: Image OS version
-    description: Image operating system version.
-    type: enum
-    default: "7.9"
-    enum: [ "7.9" ]
-    required: true
-    visible: false
-
-  bastion_image_type:
-    title: Image type
-    type: enum
-    default: platform
-    enum: [ platform ]
-    required: true
-    visible: false
-
-  bastion_image_id:
-    title: Image ID
-    type: oci:core:image:id
-    required: false
-    dependsOn:
-      compartmentId: ${compartment_ocid}
-      operatingSystem: ${bastion_image_os}
-      operatingSystemVersion: ${bastion_image_os_version}
-      shape: ${bastion_shape_name}
-    visible: false
-
-  bastion_upgrade:
-    title: Upgrade OS
-    description: Upgrade the operating system on boot.
-    type: boolean
-    default: false
-    required: true
-    visible: false
-
-  bastion_tags:
-    type: oci:identity:tag:value
-    required: false
-    title: Tagging
-    description: Tag values for created resources.
-    dependsOn:
-      compartmentId: ${compartment_ocid}
-    visible: false
 
   # SSH
   ssh_public_key:
