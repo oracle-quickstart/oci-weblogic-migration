@@ -293,3 +293,9 @@ variable "enable_waf" {
   type        = bool
   default     = false
 }
+
+variable "wlsserver_subnet_cidr" {
+  type        = string
+  description = "CIDR for weblogic subnet"
+  default     = ""
+}

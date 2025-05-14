@@ -19,19 +19,19 @@ locals {
 
 module "wls" {
   #source    = "github.com/oracle-quickstart/oci-weblogic-migration.git?ref=5.x&depth=1"
-  source="./iac"
-  providers = { oci.home = oci.home }
+  source             = "./iac"
+  providers          = { oci.home = oci.home }
   wls_inventory_data = local.wls_data
   # Identity
-  tenancy_id     = var.tenancy_ocid
-  compartment_id = var.compartment_ocid
+  tenancy_id             = var.tenancy_ocid
+  compartment_id         = var.compartment_ocid
   network_compartment_id = var.network_compartment_id
 
   create_iam_resources         = var.create_oci_policies
-  create_iam_tag_namespace = var.create_iam_tag_namespace
-  create_iam_defined_tags  = var.create_iam_tag_namespace || var.create_iam_defined_tags
-  use_defined_tags         = var.use_defined_tags
-  tag_namespace            = var.tag_namespace
+  create_iam_tag_namespace     = var.create_iam_tag_namespace
+  create_iam_defined_tags      = var.create_iam_tag_namespace || var.create_iam_defined_tags
+  use_defined_tags             = var.use_defined_tags
+  tag_namespace                = var.tag_namespace
   create_iam_autoscaler_policy = "never"
   #   create_iam_wlsserver_policy     = var.create_iam_wlsserver_policy ? "always" : "never"
 
@@ -52,6 +52,7 @@ module "wls" {
   create_drg                  = var.create_drg
   drg_id                      = var.drg_id
   drg_display_name            = var.drg_display_name
+  wlsserver_subnet_cidr       = var.wlsserver_subnet_cidr
 
   subnets = {
     bastion = {
@@ -87,46 +88,46 @@ module "wls" {
 
   # Network Security
   nsgs = {
-    bastion  = { create = var.create_nsgs ? "always" : "never" }
+    bastion = { create = var.create_nsgs ? "always" : "never" }
     #operator = { create = var.create_nsgs ? "always" : "never" }
-    int_lb   = { create = var.create_nsgs ? "always" : "never" }
-    pub_lb   = { create = var.create_nsgs ? "always" : "never" } #TODO: JOI - Future release include existing Public LB NSG.
-    managedserver  = {
+    int_lb = { create = var.create_nsgs ? "always" : "never" }
+    pub_lb = { create = var.create_nsgs ? "always" : "never" } #TODO: JOI - Future release include existing Public LB NSG.
+    managedserver = {
       create = var.create_nsgs ? "always" : "never",
-      id = var.managedserver_nsg_id
+      id     = var.managedserver_nsg_id
     }
-    adminserver  = {
-      create = var.create_nsgs ? "always" : "never" ,
-      id = var.adminserver_nsg_id
+    adminserver = {
+      create = var.create_nsgs ? "always" : "never",
+      id     = var.adminserver_nsg_id
     }
   }
 
   #Network Security
-  allow_node_port_access       = var.allow_node_port_access
+  allow_node_port_access           = var.allow_node_port_access
   allow_wlsservers_ssh_access      = var.allow_wlsserver_ssh_access
   allow_wlsservers_internet_access = var.allow_wlsserver_internet_access
-  allow_adminserver_ssh_access = var.allow_adminserver_ssh_access
+  allow_adminserver_ssh_access     = var.allow_adminserver_ssh_access
   allow_bastion_adminserver_access = var.allow_bastion_adminserver_console_access
-  allow_bastion_domain_access = var.allow_bastion_domain_access
-  enable_waf                   = var.enable_waf #TODO: JOI - Future release
+  allow_bastion_domain_access      = var.allow_bastion_domain_access
+  enable_waf                       = var.enable_waf #TODO: JOI - Future release
 
 
-  allow_rules_internal_lb      = var.allow_rules_internal_lb  #TODO: JOI - Future release include internal lb rules
-  allow_rules_public_lb        = var.allow_rules_public_lb
+  allow_rules_internal_lb = var.allow_rules_internal_lb #TODO: JOI - Future release include internal lb rules
+  allow_rules_public_lb   = var.allow_rules_public_lb
 
 
   # SSH Access
-  ssh_public_key   = local.ssh_public_key
+  ssh_public_key      = local.ssh_public_key
   ssh_public_key_path = var.ssh_public_key_path
-  ssh_private_key = sensitive(local.ssh_key_bundle_content)
+  ssh_private_key     = sensitive(local.ssh_key_bundle_content)
 
   #Weblogic Servers Images
-  create_domain          = var.create_domain  #true
-  wlsserver_pools=  var.wlsserver_pools
+  create_domain               = var.create_domain #true
+  wlsserver_pools             = var.wlsserver_pools
   image_instance_requirements = local.vm_instance_image_requirements
-  wlsserver_image_type       = lower(local.wlsserver_image_type)
-  wlsserver_image_id         = local.vm_instance_image_id
-  wlsserver_image_os         = var.wlsserver_image_os
+  wlsserver_image_type        = lower(local.wlsserver_image_type)
+  wlsserver_image_id          = local.vm_instance_image_id
+  wlsserver_image_os          = var.wlsserver_image_os
   #TODO JOI: wlsserver image os version need to be locked with host found.
   wlsserver_image_os_version = var.wlsserver_image_os_version
   # Development or Release
@@ -134,13 +135,8 @@ module "wls" {
   vm_script_path = local.vm_scripts_path_selected
   #release = "DEV"
   #Weblogic Server Instance Details
-  wlsserver_cloud_init       = local.wlsserver_cloud_init
-  wlsserver_shape = {
-    shape            = var.wlsserver_shape
-    ocpus            = var.wlsserver_ocpus
-    memory           = var.wlsserver_memory
-    boot_volume_size = var.wlsserver_boot_volume_size
-  }
+  wlsserver_cloud_init = local.wlsserver_cloud_init
+  wlsserver_shape      = var.wlsserver_shape
 
   #TODO: (joi) pass freeform tags to resource manager and load balancers
   freeform_tags = {
@@ -152,18 +148,18 @@ module "wls" {
   }
 
   #Object Storage Archive Repository
-  bucket_name = var.bucket_name
+  bucket_name          = var.bucket_name
   restore_wls_archives = "none" #all
   await_node_readiness = "none" #all
 
   #Weblogic Domain Common  - LoadBalancer, labels
-  add_load_balancer=  var.add_load_balancer
-  db_strategy_0 = var.db_strategy_0
+  add_load_balancer = var.add_load_balancer
+  db_strategy_0     = var.db_strategy_0
   lbs = {
-    pub_lb = { create = var.add_load_balancer ? "always" : "never", id = var.existing_load_balancer_id , backends=var.custom_backends}
+    pub_lb = { create = var.add_load_balancer ? "always" : "never", id = var.existing_load_balancer_id, backends = var.custom_backends }
   }
   lb_shape = {
-    pub_lb = { shape=var.load_balancer_shape, min = var.lb_min_bandwidth, max=var.lb_max_bandwidth}
+    pub_lb = { shape = var.load_balancer_shape, min = var.lb_min_bandwidth, max = var.lb_max_bandwidth }
   }
 
 
@@ -176,16 +172,16 @@ module "wls" {
     memory           = var.bastion_shape_memory,
     boot_volume_size = var.bastion_shape_boot
   }
-  bastion_allowed_cidrs = var.bastion_allowed_cidrs
-  bastion_is_public = var.bastion_is_public
-  bastion_public_ip           = null           # Ignored when create_bastion = true
+  bastion_allowed_cidrs       = var.bastion_allowed_cidrs
+  bastion_is_public           = var.bastion_is_public
+  bastion_public_ip           = null # Ignored when create_bastion = true
   bastion_availability_domain = var.bastion_availability_domain
-  bastion_user = var.bastion_user
-  bastion_image_os = var.bastion_image_os
-  bastion_image_os_version = var.bastion_image_os_version
-  bastion_image_type          = var.bastion_image_type     # platform/custom
-  bastion_image_id = var.bastion_image_id
-  bastion_upgrade = false
+  bastion_user                = var.bastion_user
+  bastion_image_os            = var.bastion_image_os
+  bastion_image_os_version    = var.bastion_image_os_version
+  bastion_image_type          = var.bastion_image_type # platform/custom
+  bastion_image_id            = var.bastion_image_id
+  bastion_upgrade             = false
   #bastion_tags = var.bastion_tags
 
   #datasources

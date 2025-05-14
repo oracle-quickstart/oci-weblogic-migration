@@ -25,7 +25,11 @@ variable "wlsserver_pool_size" {
 
 # Workers: instance
 
-variable "wlsserver_block_volume_type" { type = string }
+variable "wlsserver_block_volume_type" {
+  default = "iSCSI"
+  type    = string
+}
+
 variable "wlsserver_node_labels" {
   default = {}
   type    = map(string)
@@ -61,7 +65,14 @@ variable "wlsserver_image_os_version" {
 }
 
 
-variable "wlsserver_shape" { default = "VM.Standard.E4.Flex" }
+variable "wlsserver_shape" {
+  type = map(any)
+  default = {
+    "instanceShape" = "VM.Standard.E4.Flex",
+    "ocpus"         = "1",
+    "memory"        = "16"
+  }
+}
 variable "wlsserver_ocpus" { default = 2 }
 variable "wlsserver_memory" { default = 16 }
 variable "wlsserver_boot_volume_size" { default = 50 }
@@ -75,7 +86,7 @@ variable "wlsserver_domain_volume_size" { default = 253 }
 variable "wlsserver_pv_transit_encryption" { default = false }
 
 variable "wlsserver_cloud_init_configure" {
-  type = bool
+  type    = bool
   default = false
 }
 variable "wlsserver_cloud_init_wls" {
@@ -112,12 +123,12 @@ variable "wlsserver_tags" {
 
 variable "create_domain" {
   default = true
-  type = bool
+  type    = bool
 }
 
 variable "add_load_balancer" {
   default = false
-  type = bool
+  type    = bool
 }
 
 #Pools is just a grouping of WLS Servers. Create either by pool definition for common attributes or per instance
