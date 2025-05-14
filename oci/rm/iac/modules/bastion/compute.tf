@@ -22,7 +22,7 @@ resource "oci_core_instance" "bastion" {
   display_name        = "bastion-${var.state_id}"
   defined_tags        = var.defined_tags
   freeform_tags       = var.freeform_tags
-  shape               = lookup(var.shape, "shape")
+  shape               = lookup(var.shape, "instanceShape")
 
   agent_config {
     are_all_plugins_disabled = false
