@@ -112,6 +112,12 @@ variable "network_compartment_id" {
   default     = ""
 }
 
+variable "bastion_subnet_cidr" {
+  type        = string
+  description = "The CIDR of the new public subnet to create for a Bastion compute instance. The new subnet's CIDR should not overlap with any other subnet CIDRs."
+  default     = "10.0.1.0/24"
+}
+
 #TODO: Future version support multi-compartment
 ## Variable used in UI only
 #variable "subnet_compartment_id" {

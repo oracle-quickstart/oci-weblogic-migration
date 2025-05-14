@@ -57,7 +57,7 @@ module "wls" {
   subnets = {
     bastion = {
       create  = var.bastion_subnet_create ? "always" : "never",
-      newbits = var.bastion_subnet_newbits,
+      cidr = var.bastion_subnet_cidr,
       id      = var.bastion_subnet_id
     }
 

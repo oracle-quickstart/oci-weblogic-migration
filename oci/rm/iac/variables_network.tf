@@ -129,7 +129,7 @@ variable "nat_gateway_public_ip_id" {
 
 variable "subnets" {
   default = {
-    bastion  = { newbits = 13 }
+    bastion  = { cidr = "10.0.1.0/24" }
     int_lb   = { newbits = 11 }
     pub_lb   = { newbits = 11 }
     wlsservers  = { newbits = 4 }

@@ -31,6 +31,22 @@ variableGroups:
       - assign_dns
       - bastion_listing_id
       - bastion_listing_resource_version
+      - bastion_subnet_create
+      - bastion_is_public
+      - bastion_subnet_id
+      - bastion_allowed_cidrs
+      - allow_bastion_domain_access
+      - allow_bastion_adminserver_console_access
+      - bastion_availability_domain
+      - bastion_user
+      - bastion_shape_boot
+      - bastion_shape
+      - bastion_image_os
+      - bastion_image_os_version
+      - bastion_image_type
+      - bastion_image_id
+      - bastion_upgrade
+      - bastion_tags
       - listing_id
       - listing_resource_version
       - suite_ucm_instance_image_id
@@ -150,26 +166,10 @@ variableGroups:
 
   - title: "Bastion"
     variables:
-      - bastion_subnet_create
-      - bastion_subnet_newbits
-      - bastion_is_public
-      - bastion_subnet_id
-      - bastion_allowed_cidrs
-      - allow_bastion_domain_access
-      - allow_bastion_adminserver_console_access
-      - bastion_availability_domain
-      - bastion_user
+      - bastion_subnet_cidr
       - bastion_shape_name
       - bastion_shape_ocpus
       - bastion_shape_memory
-      - bastion_shape_boot
-      - bastion_shape
-      - bastion_image_os
-      - bastion_image_os_version
-      - bastion_image_type
-      - bastion_image_id
-      - bastion_upgrade
-      - bastion_tags
 
   - title: Tagging
     visible: true
@@ -499,24 +499,21 @@ variables:
     default: true
     required: true
     visible: ${create_nsgs}
+
   allow_bastion_domain_access:
     title: Allow Bastion Server egress Traffic
     type: boolean
     default: true
     required: true
-    visible:
-      and:
-        - ${create_nsgs}
-        - ${create_bastion}
+    visible: false
+
   allow_bastion_adminserver_console_access:
     title: Allow Bastion to access Admin Server Listen Ports
     type: boolean
     default: true
     required: true
-    visible:
-    and:
-    - ${create_nsgs}
-    - ${create_bastion}
+    visible: false
+
   allow_rules_internal_lb:
     title: Additional internal load balancer rules
     additionalProps:
@@ -567,25 +564,27 @@ variables:
     type: boolean
     default: true
     required: true
-    visible:
-      and:
-        - ${bastion_subnet_create}
-        - ${create_bastion}
+    visible: false
+
   bastion_subnet_create:
     title: Create bastion subnet
     type: boolean
     default: true
     required: true
-    visible : ${create_bastion}
+    visible : false
 
-  bastion_subnet_newbits:
-    title: Bastion subnet size
-    description: The number of network prefix bits added to the VCN CIDR block for the created subnet address range (i.e. a higher value is smaller). Refer to the Terraform <a href=https://developer.hashicorp.com/terraform/language/functions/cidrsubnets>cidrsubnets</a> function for more information.
-    type: number
+  bastion_subnet_cidr:
     visible:
-      and:
-        - ${bastion_subnet_create}
-        - ${create_bastion}
+       and :
+            - ${orm_create_mode}
+            - ${create_bastion}
+    type: string
+    default: 10.0.1.0/24
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
+    required: true
+    title: "Bastion Host Subnet CIDR"
+    description: "The CIDR of the new public subnet to create for a Bastion compute instance. The new subnet's CIDR should not overlap with any other subnet CIDRs."
+
   bastion_subnet_id:
     title: Bastion subnet
     type: oci:core:subnet:id
@@ -597,25 +596,23 @@ variables:
       hidePrivateSubnet: ${bastion_is_public}
       hideRegionalSubnet: false
       hideAdSubnet: false
-    visible:
-      not:
-        - or:
-            - ${bastion_subnet_create}
-            - not:
-                - ${create_bastion}
+    visible: false
+
   create_bastion:
     title: Provision Bastion Instance
     type: boolean
     default: true
     required: true
     description: Provision a bastion compute instance on a public subnet to provide access to the WebLogic Server compute instances on a private subnet.
+
   bastion_availability_domain:
     title: Availability domain
     type: oci:identity:availabilitydomain:name
     required: false
     dependsOn:
       compartmentId: ${compartment_ocid}
-    visible: ${create_bastion}
+    visible: false
+
   bastion_allowed_cidrs:
     type: array
     title: "List of CIDR blocks allowed SSH access to the bastion host."
@@ -626,14 +623,15 @@ variables:
     pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
     uniqueItems: true
     default: [ 0.0.0.0/0 ]
-    visible: ${create_bastion}
+    visible: false
 
   bastion_user:
     title: User
     type: string
     default: opc
     required: true
-    visible: ${create_bastion}
+    visible: false
+
   bastion_shape_name:
     title: Shape
     type: oci:core:instanceshape:name
@@ -641,15 +639,24 @@ variables:
     required: true
     dependsOn:
       compartmentId: ${compartment_ocid}
-    visible: ${create_bastion}
+    visible:
+       and :
+            - ${orm_create_mode}
+            - ${create_bastion}
+
   bastion_shape_ocpus:
     title: OCPUs (Cores)
     type: number
-    default: 4
+    default: 1
     required: true
+    description: "The number of OCPU count for instances. Only required for VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Optimized3.Flex, and  VM.Standard3.Flex Shapes. The maximum number of ocpus for VM.Standard.E3.Flex and VM.Standard.E4.Flex is 64, for VM.Standard.E5.Flex is 94, while VM.Optimized3.Flex shape supports 18."
     dependsOn:
       compartmentId: ${compartment_ocid}
-    visible: ${create_bastion}
+    visible:
+       and :
+            - ${orm_create_mode}
+            - ${create_bastion}
+
   bastion_shape_memory:
     title: Memory (GB)
     type: number
@@ -657,7 +664,11 @@ variables:
     required: true
     dependsOn:
       compartmentId: ${compartment_ocid}
-    visible: ${create_bastion}
+    visible:
+       and :
+            - ${orm_create_mode}
+            - ${create_bastion}
+
   bastion_shape_boot:
     title: Boot volume size (GB)
     type: number
@@ -665,9 +676,11 @@ variables:
     required: true
     dependsOn:
       compartmentId: ${compartment_ocid}
-    visible: ${create_bastion}
+    visible: false
+
   bastion_shape:
     visible: false
+
   bastion_image_os:
     title: Image OS
     description: Image operating system.
@@ -675,13 +688,8 @@ variables:
     default: "Oracle Linux"
     enum: [ "Oracle Linux" ]
     required: true
-    visible:
-      and:
-        - ${create_bastion}
-        - not:
-            - eq:
-                - ${bastion_image_type}
-                - custom
+    visible: false
+
   bastion_image_os_version:
     title: Image OS version
     description: Image operating system version.
@@ -689,13 +697,8 @@ variables:
     default: "7.9"
     enum: [ "7.9" ]
     required: true
-    visible:
-      and:
-        - ${create_bastion}
-        - not:
-            - eq:
-                - ${bastion_image_type}
-                - custom
+    visible: false
+
   bastion_image_type:
     title: Image type
     type: enum
@@ -703,6 +706,7 @@ variables:
     enum: [ platform ]
     required: true
     visible: false
+
   bastion_image_id:
     title: Image ID
     type: oci:core:image:id
@@ -712,14 +716,16 @@ variables:
       operatingSystem: ${bastion_image_os}
       operatingSystemVersion: ${bastion_image_os_version}
       shape: ${bastion_shape_name}
-    visible: ${create_bastion}
+    visible: false
+
   bastion_upgrade:
     title: Upgrade OS
     description: Upgrade the operating system on boot.
     type: boolean
     default: false
     required: true
-    visible: ${create_bastion}
+    visible: false
+
   bastion_tags:
     type: oci:identity:tag:value
     required: false
@@ -727,7 +733,7 @@ variables:
     description: Tag values for created resources.
     dependsOn:
       compartmentId: ${compartment_ocid}
-    visible: ${create_bastion}
+    visible: false
 
   # SSH
   ssh_public_key:
