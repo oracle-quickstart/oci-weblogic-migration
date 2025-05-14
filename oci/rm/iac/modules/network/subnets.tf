@@ -65,7 +65,7 @@ locals {
 
   # Map of configured subnets to specified/generated dns_label when enabled
   # If `assign_dns = true`, use the provided `dns_label` for each subnet (if specified),
-  # otherwise use "<subnet_key><state_id>" as the default DNS label to ensure uniqueness.
+  # otherwise use "<two characters of subnet key><state_id>" as the default DNS label to ensure uniqueness.
 
   subnet_dns_labels = { for k, v in var.subnets :
     k => coalesce(lookup(v, "dns_label", null), "${substr(k, 0, 2)}${var.state_id}")
