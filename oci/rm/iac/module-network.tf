@@ -25,7 +25,7 @@ locals {
   # Map of configured subnets to specified/generated dns_label when enabled
   # If `assign_dns = true`, use dns_label for subnet if specified or first 2 characters of subnet key
   subnet_dns_labels = { for k, v in var.subnets :
-    k => coalesce(lookup(v, "dns_label", null), substr(k, 0, 2))
+    k => coalesce(lookup(v, "dns_label", null), "${substr(k, 0, 2)}${local.state_id}")
     if var.assign_dns
   }
 }
