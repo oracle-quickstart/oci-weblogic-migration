@@ -200,12 +200,12 @@ variableGroups:
         - atp_db_id_{{{datasourceName}}}
         - atp_db_level_{{{datasourceName}}}
         - atp_db_uses_private_endpoint_{{{datasourceName}}}
-        - atp_db_network_compartment_id_{{{datasourceName}}}
-        - oci_db_connection_string_{{{datasourceName}}}
-        #  Database Service
-        - oci_db_network_compartment_id_{{{datasourceName}}}
+        - atp_db_private_endpoint_network_compartment_id_{{{datasourceName}}}
+        - atp_db_private_endpoint_network_id_{{{datasourceName}}}
         - oci_db_compartment_id_{{{datasourceName}}}
         - oci_db_dbsystem_id_{{{datasourceName}}}
+        - oci_db_network_compartment_id_{{{datasourceName}}}
+        - oci_db_system_network_id_{{{datasourceName}}}
         - oci_db_dbhome_id_{{{datasourceName}}}
         - oci_db_dbhome_major_version_{{{datasourceName}}}
         - oci_db_database_id_{{{datasourceName}}}
@@ -213,8 +213,6 @@ variableGroups:
         - oci_db_port_{{{datasourceName}}}
         - atp_db_existing_vcn_id_{{{datasourceName}}}
 {{/datasources}}
-  
-    
 
 ## VARIABLES Definitions
 variables:
@@ -1188,10 +1186,10 @@ variables:
     type: boolean
     required: false
     visible: false
-  # ATP DB Configuration
+    # DB Configuration
   ds_{{{datasourceName}}}:
     type: text
-    title: Unique jdbc connection string discovered
+    title: "Unique jdbc connection string discovered"
     required: true
     visible:
       and:
@@ -1200,10 +1198,10 @@ variables:
 
   edit_ds_{{{datasourceName}}}:
     type: boolean
-    title: Did the jdbc connection string change after the Database migration to OCI?
-    description: Select this option to build the connection string from ATP service, OCI DB System, or Edit String directly.
+    title: "Has the JDBC connection string changed following the migration of the database to OCI?"
+    description: "Select this option to build the connection string using ATP service, OCI DB System, or by manually editing the string."
     required: true
-    default: true
+    default: false
     visible:
       and:
         - update_any_ds
@@ -1216,48 +1214,15 @@ variables:
         - edit_ds_{{{datasourceName}}}
     type: enum
     title: "Database Strategy"
-    description: "Choose the database strategy for WebLogic Server or custom jdbc string"
+    description: "Choose the database strategy for WebLogic Server or custom jdbc string."
     enum:
       - "Autonomous Transaction Processing Database"
       - "Database System"
-      - "Edit JDBC String"
-    default: "Edit JDBC String"
+      - "Use Database Connection String"
+    default: "Autonomous Transaction Processing Database"
     required: true
 
-  oci_db_connection_string_{{{datasourceName}}}:
-    visible:
-      and:
-        - ${update_any_ds}
-        - ${update_ds_{{{datasourceName}}}}
-        - edit_ds{{{datasourceName}}}
-        - eq:
-            - ${db_strategy_{{{datasourceName}}}}
-            - "Edit JDBC String"
-#        - not:
-#            - ${create_vcn}
-    type: string
-    title: "Oracle Database Connection String"
-    description: "Oracle database connection string to connect to database. Example: //{scan_hostname}.{host_domain_name}:{db_port}/{pdb_or_sid}.{Host Domain Name}"
-#    pattern: ^(\/\/)
-    default: ${ds_{{{datasourceName}}}}
-    required: true
-
-  atp_db_network_compartment_id_{{{datasourceName}}}:
-    visible:
-      and:
-        - ${orm_create_mode}
-        - ${update_ds_{{{datasourceName}}}}
-        - edit_ds{{{datasourceName}}}
-        - and:
-            - eq:
-                - ${db_strategy{{{datasourceName}}}}
-                - "Autonomous Transaction Processing Database"
-            - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
-    type: oci:identity:compartment:id
-    required: true
-    title: "Autonomous Database Network Compartment"
-    description: "The compartment in which the ATP database Virtual Cloud Network is found"
-    default: ${compartment_ocid}
+  # ATP DB CONFIGURATION
 
   atp_db_compartment_id_{{{datasourceName}}}:
     visible:
@@ -1271,7 +1236,7 @@ variables:
     type: oci:identity:compartment:id
     required: true
     title: "Autonomous Database Compartment"
-    description: "The compartment in which the Autonomous Transaction Processing (ATP) database is found"
+    description: "The compartment in which the Autonomous Transaction Processing (ATP) database is found."
 
   atp_db_id_{{{datasourceName}}}:
     visible:
@@ -1288,7 +1253,7 @@ variables:
     required: true
     title: "Autonomous Database"
     default: ""
-    description: "The Autonomous Transaction Processing (ATP) database in which to provision the schemas for a JRF-enabled WebLogic Server domain"
+    description: "The Autonomous Transaction Processing (ATP) database in which to provision the schemas for a JRF-enabled WebLogic Server domain."
 
   atp_db_level_{{{datasourceName}}}:
     visible:
@@ -1306,7 +1271,7 @@ variables:
       - tpurgent
     default: low
     title: "Autonomous Database Service Level"
-    description: "The service level that the WebLogic Server domain should use to connect to the autonomous database. The default is low."
+    description: "Specifies the service level the WebLogic Server domain should use when connecting to the Autonomous Database. The default level is low."
 
   atp_db_uses_private_endpoint_{{{datasourceName}}}:
     visible:
@@ -1320,14 +1285,44 @@ variables:
     type: boolean
     default: false
     title: "Database uses private endpoint"
-    description: "The Autonomous Transaction Processing (ATP) database uses private endpoint for network access"
+    description: "Indicates whether the specified Autonomous Transaction Processing (ATP) database uses a private endpoint for network access."
 
-  atp_db_existing_vcn_id_{{{datasourceName}}}:
-    visible: false
-    type: string
-    default: ""
-    required: false
-    title: "The OCID of the VCN used by the ATP database private endpoint"
+  atp_db_private_endpoint_network_compartment_id_{{{datasourceName}}}:
+    visible:
+      and:
+         - ${orm_create_mode}
+         - ${update_ds_{{{datasourceName}}}}
+         - edit_ds_{{{datasourceName}}}
+         - and:
+            - eq:
+                - ${db_strategy_{{{datasourceName}}}}
+                - "Autonomous Transaction Processing Database"
+            - atp_db_uses_private_endpoint_{{{datasourceName}}}
+    type: oci:identity:compartment:id
+    required: true
+    title: "Autonomous Database Network Compartment"
+    description: "The compartment in which the Autonomous Transaction Processing(ATP) Database Virtual Cloud Network(VCN) is found."
+
+
+  atp_db_private_endpoint_network_id_{{{datasourceName}}}:
+    visible:
+      and:
+        - ${orm_create_mode}
+        - ${update_ds_{{{datasourceName}}}}
+        - edit_ds_{{{datasourceName}}}
+        - and:
+          - eq:
+              - ${db_strategy_{{{datasourceName}}}}
+              - "Autonomous Transaction Processing Database"
+          - atp_db_uses_private_endpoint_{{{datasourceName}}}
+    type: oci:core:vcn:id
+    dependsOn:
+      compartmentId: ${atp_db_private_endpoint_network_compartment_id_{{{datasourceName}}}}
+    required: true
+    default: ''
+    title: "Autonomous Database Network"
+    description: "An existing Virtual Cloud Network (VCN) is utilized by the Autonomous Transaction Processing (ATP) database configured with a private endpoint. If the selected VCN differs from the one used by the WebLogic Server, local VCN peering will be established. Please ensure that the CIDR blocks of both VCNs do not overlap, as overlapping CIDRs are not supported for VCN peering."
+
 
   ########
   # End section: ATP
@@ -1335,7 +1330,8 @@ variables:
   ########
   # Start section: Database Service
   ########
-  oci_db_network_compartment_id_{{{datasourceName}}}:
+
+  oci_db_compartment_id_{{{datasourceName}}}:
     visible:
       and:
         - ${orm_create_mode}
@@ -1345,35 +1341,10 @@ variables:
             - eq:
                 - ${db_strategy_{{{datasourceName}}}}
                 - "Database System"
-#            - or:
-#                - ${create_vcn}
-#                - not:
-#                    - ${use_oci_db_connection_string}
-    type: oci:identity:compartment:id
-    required: true
-    title: "DB System Network Compartment"
-    description: "The compartment in which the DB System Virtual Cloud Network is found"
-    default: ${compartment_ocid}
-
-  oci_db_compartment_id_{{{datasourceName}}}:
-    visible:
-      and:
-        - ${orm_create_mode}
-        - ${update_any_ds}
-        - edit_ds{{{datasourceName}}}
-        - and:
-            - eq:
-                - ${db_strategy_{{{datasourceName}}}}
-                - "Database System"
-#            - or:
-#                - ${create_vcn}
-#                - not:
-#                    - ${use_oci_db_connection_string}
     type: oci:identity:compartment:id
     required: true
     title: "DB System Compartment"
-    description: "The compartment in which the DB System is found"
-    default: ${compartment_ocid}
+    description: "The compartment in which the DB System is found."
 
   oci_db_dbsystem_id_{{{datasourceName}}}:
     visible:
@@ -1385,16 +1356,45 @@ variables:
             - eq:
                 - ${db_strategy_{{{datasourceName}}}}
                 - "Database System"
-#            - or:
-#                - ${create_vcn}
-#                - not:
-#                    - ${use_oci_db_connection_string}
     type: oci:database:dbsystem:id
     dependsOn:
-      compartmentId: ${oci_db_compartment_id_{{{datasourceName}}}}
+        compartmentId: ${oci_db_compartment_id_{{{datasourceName}}}}
     required: true
     title: "DB System"
-    description: "The Oracle Cloud Infrastructure DB System to use for this WebLogic Server domain"
+    description: "The Oracle Cloud Infrastructure DB System to use for this WebLogic Server domain."
+
+
+  oci_db_network_compartment_id_{{{datasourceName}}}:
+    visible:
+      and:
+        - ${orm_create_mode}
+        - ${update_any_ds}
+        - edit_ds_{{{datasourceName}}}
+        - and:
+            - eq:
+                - ${db_strategy_{{{datasourceName}}}}
+                - "Database System"
+    type: oci:identity:compartment:id
+    required: true
+    title: "DB System Network Compartment"
+    description: "The compartment in which the DB System Virtual Cloud Network (VCN) is found."
+
+  oci_db_system_network_id_{{{datasourceName}}}:
+    visible:
+      and:
+        - ${orm_create_mode}
+        - ${update_any_ds}
+        - edit_ds_{{{datasourceName}}}
+        - and:
+            - eq:
+                - ${db_strategy_{{{datasourceName}}}}
+                - "Database System"
+    type: oci:core:vcn:id
+    dependsOn:
+        compartmentId: ${oci_db_network_compartment_id_{{{datasourceName}}}}
+    required: true
+    title: "DB System Network"
+    description: "An existing Virtual Cloud Network (VCN) used by DB System. Since local VCN peering will be setup ensure that the VCNs being peered to non-overlapping CIDR blocks."
 
   oci_db_dbhome_id_{{{datasourceName}}}:
     visible:
@@ -1406,10 +1406,6 @@ variables:
             - eq:
                 - ${db_strategy_{{{datasourceName}}}}
                 - "Database System"
-#            - or:
-#                - ${create_vcn}
-#                - not:
-#                    - ${use_oci_db_connection_string}
     type: oci:database:dbhome:id
     required: true
     title: "Database home in the DB System"
@@ -1428,10 +1424,6 @@ variables:
             - eq:
                 - ${db_strategy_{{{datasourceName}}}}
                 - "Database System"
-#            - or:
-#                - ${create_vcn}
-#                - not:
-#                    - ${use_oci_db_connection_string}
     type: oci:database:dbhome:dbversion
     title: "Version of Database home in the DB System"
     description: "The version of database home within the DB System"
@@ -1448,10 +1440,6 @@ variables:
             - eq:
                 - ${db_strategy_{{{datasourceName}}}}
                 - "Database System"
-#            - or:
-#                - ${create_vcn}
-#                - not:
-#                    - ${use_oci_db_connection_string}
     type: oci:database:database:id
     dependsOn:
       compartmentId: ${oci_db_compartment_id_{{{datasourceName}}}}
@@ -1490,10 +1478,6 @@ variables:
             - eq:
                 - ${db_strategy_{{{datasourceName}}}}
                 - "Database System"
-#            - or:
-#                - ${create_vcn}
-#                - not:
-#                    - ${use_oci_db_connection_string}
     type: integer
     default: 1521
     title: "Database Listener Port"
