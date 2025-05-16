@@ -28,17 +28,11 @@ variable "atp_db_uses_private_endpoint_{{{datasourceName}}}" {
   default     = false
 }
 
-variable "atp_db_network_compartment_id_{{{datasourceName}}}" {
-  type        = string
-  description = "The OCID of the compartment in which the ATP database private endpoint VCN is found"
-  default     = ""
-}
-
-variable "atp_db_existing_vcn_id_{{{datasourceName}}}" {
-    type        = string
-    description = "The OCID of the VCN used by the ATP database private endpoint"
-    default     = ""
-}
+    #variable "atp_db_existing_vcn_id_{{{datasourceName}}}" {
+    #    type        = string
+    #    description = "The OCID of the VCN used by the ATP database private endpoint"
+    #    default     = ""
+    #}
 
 variable "atp_db_compartment_id_{{{datasourceName}}}" {
   type        = string
@@ -59,6 +53,18 @@ variable "atp_db_level_{{{datasourceName}}}" {
     condition     = contains(["low", "tp", "tpurgent"], var.atp_db_level_{{{datasourceName}}})
     error_message = "WLSC-ERROR: Invalid value for atp_db_level. Allowed values are low, tp and tpurgent."
   }
+}
+
+variable "atp_db_private_endpoint_network_compartment_id_{{{datasourceName}}}"{
+  type        = string
+  description = "The OCID of the compartment where the ATP database Virtual Cloud Network(VCN) is located."
+  default     = ""
+}
+
+variable "atp_db_private_endpoint_network_id_{{{datasourceName}}}"{
+  type        = string
+  description = ""
+  default     = "The OCID of the VCN utilized by ATP database configured with a private endpoint."
 }
 
 variable "db_strategy_{{{datasourceName}}}" {
@@ -94,6 +100,12 @@ variable "oci_db_network_compartment_id_{{{datasourceName}}}" {
   description = "The OCID of the compartment in which the DB System VCN is found"
   default     = ""
 }
+
+variable "oci_db_system_network_id_{{{datasourceName}}}" {
+  type        = string
+        description = "An existing Virtual Cloud Network (VCN) used by DB System."
+        default     = ""
+        }
 
 variable "oci_db_dbsystem_id_{{{datasourceName}}}" {
   type        = string
