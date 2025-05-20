@@ -42,7 +42,7 @@ resource "oci_core_local_peering_gateway" "dblpg_{{{datasourceName}}}" {
   #Required
   compartment_id = var.oci_db_compartment_id_{{{datasourceName}}}
   display_name   = "dblpg_{{{datasourceName}}}"
-  vcn_id = var.db_existing_vcn_id_{{{datasourceName}}}
+  vcn_id = var.oci_db_existing_vcn_id_{{{datasourceName}}}
 }
 
 resource "oci_core_local_peering_gateway" "wlslpg_{{{datasourceName}}}" {
