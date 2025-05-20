@@ -156,6 +156,9 @@ resource "oci_core_instance" "wlsservers" {
       secondary_vnics          = jsonencode(lookup(each.value, "secondary_vnics", {}))
       ssh_authorized_keys      = var.ssh_public_key
       user_data                = lookup(lookup(data.cloudinit_config.wlsservers, each.key, {}), "rendered", "")
+
+      wlsserver_vcn_id         = var.wlsserver_vcn_id
+      wlsserver_subnet_id      = var.wlsserver_subnet_id
     },
 
     # Extra user-defined fields merged last

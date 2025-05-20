@@ -59,6 +59,7 @@ variable "wlsdomain_dns" {
 variable "assign_dns" { type = bool }
 variable "assign_public_ip" { type = bool }
 variable "wlsserver_subnet_id" { type = string }
+variable "wlsserver_vcn_id" { type = string }
 
 # Weblogic Server pools is a TF grouping to defined common defaults for different Weblogic Machines.
 variable "wlsserver_pools" {
