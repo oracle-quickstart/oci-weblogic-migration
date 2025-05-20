@@ -38,7 +38,7 @@ resource "time_sleep" "wait_for_wls_vcn_dns_resolver" {
 }
 
 resource "oci_core_local_peering_gateway" "dblpg_{{{datasourceName}}}" {
-  count          = local.is_oci_db_{{{datasourceName}}} ? 1 : 0
+  #count          = local.is_oci_db_{{{datasourceName}}} ? 1 : 0
   #Required
   compartment_id = var.oci_db_compartment_id_{{{datasourceName}}}
   display_name   = "dblpg_{{{datasourceName}}}"
