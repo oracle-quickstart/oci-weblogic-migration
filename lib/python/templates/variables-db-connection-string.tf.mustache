@@ -95,6 +95,12 @@ variable "oci_db_network_compartment_id_{{{datasourceName}}}" {
   default     = ""
 }
 
+variable "oci_db_existing_vcn_id" {
+  type        = string
+  description = "The OCID of the VCN used by the OCI database"
+  default     = ""
+}
+
 variable "oci_db_dbsystem_id_{{{datasourceName}}}" {
   type        = string
   description = "The OCID of the OCI database system"
