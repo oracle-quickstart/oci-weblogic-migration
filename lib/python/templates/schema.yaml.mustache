@@ -1247,7 +1247,7 @@ variables:
     visible:
       and:
         - ${orm_create_mode}
-        - ${update_ds_{{{datasourceName}}}}
+        - ${update_any_ds}
         - edit_ds{{{datasourceName}}}
         - and:
             - eq:
