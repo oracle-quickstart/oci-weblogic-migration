@@ -1243,23 +1243,6 @@ variables:
     default: ${ds_{{{datasourceName}}}}
     required: true
 
-  atp_db_network_compartment_id_{{{datasourceName}}}:
-    visible:
-      and:
-        - ${orm_create_mode}
-        - ${update_any_ds}
-        - edit_ds{{{datasourceName}}}
-        - and:
-            - eq:
-                - ${db_strategy{{{datasourceName}}}}
-                - "Autonomous Transaction Processing Database"
-            - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
-    type: oci:identity:compartment:id
-    required: true
-    title: "Autonomous Database Network Compartment"
-    description: "The compartment in which the ATP database Virtual Cloud Network is found"
-    default: ${compartment_ocid}
-
   atp_db_compartment_id_{{{datasourceName}}}:
     visible:
       and:
@@ -1322,6 +1305,23 @@ variables:
     default: false
     title: "Database uses private endpoint"
     description: "The Autonomous Transaction Processing (ATP) database uses private endpoint for network access"
+
+  atp_db_network_compartment_id_{{{datasourceName}}}:
+    visible:
+      and:
+        - ${orm_create_mode}
+        - ${update_any_ds}
+        - edit_ds{{{datasourceName}}}
+        - and:
+            - eq:
+                - ${db_strategy{{{datasourceName}}}}
+                - "Autonomous Transaction Processing Database"
+            - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
+    type: oci:identity:compartment:id
+    required: true
+    title: "Autonomous Database Network Compartment"
+    description: "The compartment in which the ATP database Virtual Cloud Network is found"
+    default: ${compartment_ocid}
 
   atp_db_existing_vcn_id_{{{datasourceName}}}:
     visible:
