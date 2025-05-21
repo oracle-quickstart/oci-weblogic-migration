@@ -1308,20 +1308,21 @@ variables:
 
   atp_db_network_compartment_id_{{{datasourceName}}}:
     visible:
-      and:
-        - ${orm_create_mode}
-        - ${update_any_ds}
-        - ${update_ds_{{{datasourceName}}}}
-        - edit_ds{{{datasourceName}}}
-        - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
-        - eq:
-            - ${db_strategy{{{datasourceName}}}}
-            - "Autonomous Transaction Processing Database"
+        and:
+            - ${orm_create_mode}
+            - ${update_any_ds}
+            - ${update_ds_{{{datasourceName}}}}
+            - edit_ds_{{{datasourceName}}}
+            - and:
+                - eq:
+                    - ${db_strategy_{{{datasourceName}}}}
+                    - "Autonomous Transaction Processing Database"
+                - atp_db_uses_private_endpoint_{{{datasourceName}}}
     type: oci:identity:compartment:id
     required: true
-    title: "Autonomous Database Network Compartment"
-    description: "The compartment in which the ATP database Virtual Cloud Network is found"
     default: ${compartment_ocid}
+    title: "Autonomous Database Network Compartment"
+    description: "The compartment in which the Autonomous Transaction Processing(ATP) Database Virtual Cloud Network(VCN) is found."
 
   atp_db_existing_vcn_id_{{{datasourceName}}}:
     visible:
