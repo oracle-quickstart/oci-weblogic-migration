@@ -1312,11 +1312,10 @@ variables:
         - ${orm_create_mode}
         - ${update_any_ds}
         - edit_ds{{{datasourceName}}}
-        - and:
-            - eq:
-                - ${db_strategy{{{datasourceName}}}}
-                - "Autonomous Transaction Processing Database"
-            - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
+        - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
+        - eq:
+            - ${db_strategy{{{datasourceName}}}}
+            - "Autonomous Transaction Processing Database"
     type: oci:identity:compartment:id
     required: true
     title: "Autonomous Database Network Compartment"

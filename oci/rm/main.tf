@@ -26,11 +26,11 @@ locals {
 
   is_atp_db                     = local.db_strategy_is_atp_db ? trimspace(var.atp_db_id_0) != "" : false
   #is_atp_with_private_endpoints = local.is_atp_db && (length(data.oci_database_autonomous_database.atp_db) != 0 ? data.oci_database_autonomous_database.atp_db[0].subnet_id != null : false)
-  #atp_db_network_compartment_id = local.is_atp_with_private_endpoints && var.atp_db_network_compartment_id == "" ? var.atp_db_compartment_id : var.atp_db_network_compartment_id
+  atp_db_network_compartment_id = local.db_strategy_is_atp_db ? (var.atp_db_uses_private_endpoint_0 && var.atp_db_network_compartment_id_0 == "" ? var.atp_db_compartment_id_0 : var.atp_db_network_compartment_id_0) : ""
 
 
-  db_network_compartment_id = local.db_strategy_is_atp_db ||  local.db_strategy_is_oci_db ? (var.atp_db_uses_private_endpoint_0 ? var.atp_db_network_compartment_id_0 : local.oci_db_network_compartment_id) : ""
-  db_existing_vcn_id  = local.db_strategy_is_atp_db ||  local.db_strategy_is_oci_db ? (var.atp_db_uses_private_endpoint_0 ? var.atp_db_existing_vcn_id_0 : ( local.is_oci_db ? var.oci_db_existing_vcn_id_0 : "")) : ""
+  db_network_compartment_id = local.db_strategy_is_atp_db ? local.atp_db_network_compartment_id : local.oci_db_network_compartment_id
+  db_existing_vcn_id  = local.db_strategy_is_atp_db ||  local.db_strategy_is_oci_db ? ((local.is_atp_db ? (var.atp_db_uses_private_endpoint_0 ? var.atp_db_existing_vcn_id_0 : "") : ( local.is_oci_db ? var.oci_db_existing_vcn_id_0 : "" ))) : ""
 
   new_vcn_and_oci_db                    = local.db_strategy_is_oci_db ? (var.create_vcn && local.is_oci_db && var.oci_db_existing_vcn_id_0 != "") : false
   existing_vcn_and_oci_db_different_vcn = local.db_strategy_is_oci_db ? (var.vcn_id != "" && var.oci_db_existing_vcn_id_0 != "" && var.vcn_id != var.oci_db_existing_vcn_id_0) : false
