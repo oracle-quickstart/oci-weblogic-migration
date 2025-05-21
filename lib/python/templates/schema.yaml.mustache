@@ -1212,6 +1212,7 @@ variables:
       and:
         - ${update_any_ds}
         - edit_ds_{{{datasourceName}}}
+        - ${update_ds_{{{datasourceName}}}}
     type: enum
     title: "Database Strategy"
     description: "Choose the database strategy for WebLogic Server or custom jdbc string."
@@ -1229,6 +1230,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - eq:
             - ${db_strategy_{{{datasourceName}}}}
@@ -1243,6 +1245,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - eq:
             - ${db_strategy_{{{datasourceName}}}}
@@ -1260,6 +1263,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - eq:
             - ${db_strategy_{{{datasourceName}}}}
@@ -1278,6 +1282,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - eq:
             - ${db_strategy_{{{datasourceName}}}}
@@ -1291,6 +1296,7 @@ variables:
     visible:
       and:
          - ${orm_create_mode}
+         - ${update_any_ds}
          - ${update_ds_{{{datasourceName}}}}
          - edit_ds_{{{datasourceName}}}
          - and:
@@ -1308,6 +1314,7 @@ variables:
     visible:
       and:
         - ${orm_create_mode}
+        - ${update_any_ds}
         - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - and:
@@ -1327,6 +1334,7 @@ variables:
   ########
   # End section: ATP
   ########
+
   ########
   # Start section: Database Service
   ########
@@ -1336,6 +1344,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - and:
             - eq:
@@ -1351,6 +1360,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - and:
             - eq:
@@ -1369,6 +1379,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - and:
             - eq:
@@ -1384,6 +1395,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - and:
             - eq:
@@ -1401,6 +1413,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - and:
             - eq:
@@ -1419,6 +1432,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - and:
             - eq:
@@ -1435,6 +1449,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - and:
             - eq:
@@ -1453,6 +1468,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - and:
             - not:
@@ -1473,6 +1489,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds_{{{datasourceName}}}
         - and:
             - eq:
@@ -1483,9 +1500,33 @@ variables:
     title: "Database Listener Port"
     description: "The Listener Port for the Database"
     required: false
+
   ########
   # End section: Database Service
-  ########       
+  ########
+
+  ########
+  # Start Section: Use Database Connection String
+  ########
+
+  oci_db_connection_string{{{datasourceName}}}:
+    visible:
+        and:
+            - ${orm_create_mode}
+            - ${update_any_ds}
+            - ${update_ds_{{{datasourceName}}}}
+            - edit_ds_{{{datasourceName}}}
+            - eq:
+                - ${db_strategy_{{{datasourceName}}}}
+                - "Use Database Connection String"
+    type: string
+    required: true
+    title: "Oracle Database Connection String"
+    description: "Oracle database connection string to connect to database. Example: //<scan_hostname>.<host_domain_name>:<db_port>/<pdb_or_sid>.<Host Domain Name>"
+
+  ########
+  # End Section: Use Database Connection String
+  ########
     {{/datasources}}
 
 
