@@ -35,8 +35,8 @@ locals {
   new_vcn_and_oci_db                    = local.db_strategy_is_oci_db ? (var.create_vcn && local.is_oci_db && var.oci_db_existing_vcn_id_0 != "") : false
   existing_vcn_and_oci_db_different_vcn = local.db_strategy_is_oci_db ? (var.vcn_id != "" && var.oci_db_existing_vcn_id_0 != "" && var.vcn_id != var.oci_db_existing_vcn_id_0) : false
 
-  new_vcn_and_atp_db_private_endpoint                    = local.db_strategy_is_atp_db ? (var.create_vcn && var.is_atp_with_private_endpoints_0 && var.atp_db_existing_vcn_id_0 != "") : false
-  existing_vcn_and_atp_db_private_endpoint_different_vcn = local.db_strategy_is_atp_db ? (var.vcn_id != "" && var.is_atp_with_private_endpoints_0 && var.atp_db_existing_vcn_id_0 != "" && var.vcn_id != var.atp_db_existing_vcn_id_0) : false
+  new_vcn_and_atp_db_private_endpoint                    = local.db_strategy_is_atp_db ? (var.create_vcn && var.atp_db_uses_private_endpoint_0 && var.atp_db_existing_vcn_id_0 != "") : false
+  existing_vcn_and_atp_db_private_endpoint_different_vcn = local.db_strategy_is_atp_db ? (var.vcn_id != "" && var.atp_db_uses_private_endpoint_0 && var.atp_db_existing_vcn_id_0 != "" && var.vcn_id != var.atp_db_existing_vcn_id_0) : false
 
   is_vcn_peering = local.db_strategy_is_atp_db ||  local.db_strategy_is_oci_db ? (local.new_vcn_and_oci_db || local.new_vcn_and_atp_db_private_endpoint || local.existing_vcn_and_oci_db_different_vcn || local.existing_vcn_and_atp_db_private_endpoint_different_vcn) : false
 }
