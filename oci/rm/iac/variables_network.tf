@@ -299,3 +299,18 @@ variable "wlsserver_subnet_cidr" {
   description = "CIDR for weblogic subnet"
   default     = ""
 }
+
+variable "db_network_compartment_id" {
+  type        = string
+  description = "The OCID of the compartment in which the DB System VCN is found"
+}
+
+variable "db_existing_vcn_id" {
+  type        = string
+  description = "The OCID of the VCN used by the ATP database private endpoint"
+}
+
+variable "is_vcn_peering" {
+  description = "Indicates whether VCN peering will be set up"
+  type        = bool
+}

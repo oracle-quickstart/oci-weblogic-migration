@@ -32,27 +32,5 @@ data "oci_database_db_home" "ocidb_db_home_{{{datasourceName}}}" {
   #  db_home_id = data.oci_database_database.ocidb_database[0].db_home_id
   db_home_id = data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].db_home_id
 }
-
-resource "time_sleep" "wait_for_wls_vcn_dns_resolver" {
-  create_duration = "20s"
-}
-
-resource "oci_core_local_peering_gateway" "dblpg_{{{datasourceName}}}" {
-  #count          = local.is_oci_db_{{{datasourceName}}} ? 1 : 0
-  #Required
-  compartment_id = var.oci_db_compartment_id_{{{datasourceName}}}
-  display_name   = "dblpg_{{{datasourceName}}}"
-  vcn_id = var.oci_db_existing_vcn_id_{{{datasourceName}}}
-}
-
-resource "oci_core_local_peering_gateway" "wlslpg_{{{datasourceName}}}" {
-  #Required
-  depends_on = [time_sleep.wait_for_wls_vcn_dns_resolver]
-  compartment_id = var.network_compartment_id
-  display_name   = "wlslpg_{{{datasourceName}}}"
-  #vcn_id = var.vcn_id
-  vcn_id = var.create_vcn ? try(one(module.vcn[*].vcn_id), var.vcn_id) : var.vcn_id
-  peer_id = oci_core_local_peering_gateway.dblpg_{{{datasourceName}}}.id
-}
 /////////////////////# Datasource #{{{datasourceName}}}
 {{/datasources}}

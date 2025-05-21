@@ -142,6 +142,16 @@ module "network" {
   resource_name_prefix = local.wls_domain_name
 }
 
+/* Create LPGs for new VCN */
+module "lpg" {
+  count              = var.is_vcn_peering
+  source             = "./modules/network/lpg"
+  compartment_id     = local.network_compartment_id
+  vcn_id             = local.vcn_id
+  db_network_compartment_id = var.db_network_compartment_id
+  db_existing_vcn_id = var.db_existing_vcn_id
+}
+
 # VCN
 output "vcn_id" {
   description = "VCN ID"

@@ -9,6 +9,34 @@ locals {
     content_type = "text/x-shellscript",
     content      = var.wlsserver_cloud_init_byon
   }] : []
+  domain_type         = try(local.wls_data["resources"]["JDBCSystemResource"], {}) != {} ? "jrf" : "non-jrf"
+  unique_conn_strings = local.domain_type == "jrf" ? length(distinct([for owner in local.wls_data.resources.JDBCSystemResource : owner.JdbcResource.JDBCDriverParams.URL])) : 0
+
+  // Criteria for VCN peering:
+  // 1. Only when both WLS VCN name is provided (wls_vcn_name) and DB VCN ID is provided (either oci_db_existing_vcn_id or atp_db_existing_vcn_id)
+  // 2. or when both WLS VCN ID is provided (wls_existing_vcn_id) and DB VCN ID is provided (either oci_db_existing_vcn_id or atp_db_existing_vcn_id) and they are different IDs,
+  // and not using existing subnets (local.use_existing_subnets)
+
+  network_compartment_id        = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
+  is_oci_db                     = local.domain_type == "jrf" ? trimspace(var.oci_db_dbsystem_id_0) == "" ? false : true : false
+  oci_db_compartment_id         = local.domain_type == "jrf" ? (var.oci_db_compartment_id_0 == "" ? local.network_compartment_id : var.oci_db_compartment_id_0) : ""
+  oci_db_network_compartment_id = local.domain_type == "jrf" ? (local.is_oci_db && var.oci_db_network_compartment_id_0 == "" ? var.oci_db_compartment_id_0 : var.oci_db_network_compartment_id_0) : ""
+
+  is_atp_db                     = local.domain_type == "jrf" ? trimspace(var.atp_db_id_0) != "" : false
+  #is_atp_with_private_endpoints = local.is_atp_db && (length(data.oci_database_autonomous_database.atp_db) != 0 ? data.oci_database_autonomous_database.atp_db[0].subnet_id != null : false)
+  #atp_db_network_compartment_id = local.is_atp_with_private_endpoints && var.atp_db_network_compartment_id == "" ? var.atp_db_compartment_id : var.atp_db_network_compartment_id
+
+
+  db_network_compartment_id = local.domain_type == "jrf" ? (var.atp_db_uses_private_endpoint_0 ? var.atp_db_network_compartment_id_0 : local.oci_db_network_compartment_id) : ""
+  db_existing_vcn_id  = local.domain_type == "jrf" ? (var.atp_db_uses_private_endpoint_0 ? var.atp_db_existing_vcn_id_0 : ( local.is_oci_db ? var.oci_db_existing_vcn_id_0 : "")) : ""
+
+  new_vcn_and_oci_db                    = local.domain_type == "jrf" ? (var.create_vcn && local.is_oci_db && var.oci_db_existing_vcn_id_0 != "") : false
+  existing_vcn_and_oci_db_different_vcn = local.domain_type == "jrf" ? (var.vcn_id != "" && var.oci_db_existing_vcn_id_0 != "" && var.vcn_id != var.oci_db_existing_vcn_id_0) : false
+
+  new_vcn_and_atp_db_private_endpoint                    = local.domain_type == "jrf" ? (var.create_vcn && var.is_atp_with_private_endpoints_0 && var.atp_db_existing_vcn_id_0 != "") : false
+  existing_vcn_and_atp_db_private_endpoint_different_vcn = local.domain_type == "jrf" ? (var.vcn_id != "" && var.is_atp_with_private_endpoints_0 && var.atp_db_existing_vcn_id_0 != "" && var.vcn_id != var.atp_db_existing_vcn_id_0) : false
+
+  is_vcn_peering = local.domain_type == "jrf" ? (local.new_vcn_and_oci_db || local.new_vcn_and_atp_db_private_endpoint || local.existing_vcn_and_oci_db_different_vcn || local.existing_vcn_and_atp_db_private_endpoint_different_vcn) : false
 }
 
 
@@ -53,6 +81,7 @@ module "wls" {
   drg_id                      = var.drg_id
   drg_display_name            = var.drg_display_name
   wlsserver_subnet_cidr       = var.wlsserver_subnet_cidr
+  #domain_type                 = local.domain_type
 
   subnets = {
     bastion = {
@@ -147,6 +176,11 @@ module "wls" {
     wlsservers = lookup(var.wlsserver_tags, "definedTags", {})
   }
 
+  #DB
+  is_vcn_peering = local.is_vcn_peering
+  db_network_compartment_id = local.db_network_compartment_id
+  db_existing_vcn_id = local.db_existing_vcn_id
+
   #Object Storage Archive Repository
   bucket_name          = var.bucket_name
   restore_wls_archives = "none" #all
@@ -154,7 +188,7 @@ module "wls" {
 
   #Weblogic Domain Common  - LoadBalancer, labels
   add_load_balancer = var.add_load_balancer
-  db_strategy_0     = var.db_strategy_0
+  db_strategy_0 = local.unique_conn_strings > 0 ? var.db_strategy_0 : {}
   lbs = {
     pub_lb = { create = var.add_load_balancer ? "always" : "never", id = var.existing_load_balancer_id, backends = var.custom_backends }
   }
