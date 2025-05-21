@@ -1311,6 +1311,7 @@ variables:
       and:
         - ${orm_create_mode}
         - ${update_any_ds}
+        - ${update_ds_{{{datasourceName}}}}
         - edit_ds{{{datasourceName}}}
         - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
         - eq:
