@@ -1509,7 +1509,7 @@ variables:
   # Start Section: Use Database Connection String
   ########
 
-  oci_db_connection_string{{{datasourceName}}}:
+  oci_db_connection_string_{{{datasourceName}}}:
     visible:
         and:
             - ${orm_create_mode}
@@ -1521,6 +1521,7 @@ variables:
                 - "Use Database Connection String"
     type: string
     required: true
+    default: ds_{{{datasourceName}}}
     title: "Oracle Database Connection String"
     description: "Oracle database connection string to connect to database. Example: //<scan_hostname>.<host_domain_name>:<db_port>/<pdb_or_sid>.<Host Domain Name>"
 

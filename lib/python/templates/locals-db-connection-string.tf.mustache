@@ -72,7 +72,7 @@ locals {
     #  oci_db_compartment_id_{{{datasourceName}}}         = var.oci_db_compartment_id_{{{datasourceName}}} == "" ? local.network_compartment_id_{{{datasourceName}}} : var.oci_db_compartment_id_{{{datasourceName}}}
     #oci_db_compartment_id_{{{datasourceName}}}         = var.oci_db_compartment_id_{{{datasourceName}}} == "" ? var.oci_db_compartment_id_{{{datasourceName}}} : var.oci_db_compartment_id_{{{datasourceName}}}
     oci_db_network_compartment_id_{{{datasourceName}}} = local.is_oci_db_{{{datasourceName}}} && var.oci_db_network_compartment_id_{{{datasourceName}}} == "" ? var.oci_db_compartment_id_{{{datasourceName}}} : var.oci_db_network_compartment_id_{{{datasourceName}}}
-    db_network_compartment_id_{{{datasourceName}}} = local.is_atp_with_private_endpoints_{{{datasourceName}}} ? local.atp_db_network_compartment_id_{{{datasourceName}}} : local.oci_db_network_compartment_id_{{{datasourceName}}}
+    db_network_compartment_id_{{{datasourceName}}} = local.is_atp_with_private_endpoints_{{{datasourceName}}} ? local.atp_db_private_endpoint_network_compartment_id_{{{datasourceName}}} : local.oci_db_network_compartment_id_{{{datasourceName}}}
 
     #OCI DB
     is_oci_db_{{{datasourceName}}}                    = (trimspace(var.oci_db_dbsystem_id_{{{datasourceName}}}) != "") ? true : false

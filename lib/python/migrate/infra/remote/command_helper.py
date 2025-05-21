@@ -318,7 +318,7 @@ class CommandHelper(object):
         # Find paths matching 'bin/java' in the JVM args list and remove duplicates
         matching_java_paths = list(dict.fromkeys(self.find_partial_matches(jvms_unsorted_arguments,java_cmd)))
 
-        # Get the parent of 'bin' directory → leads to the Java home
+        # Get the parent of 'bin' directory -> leads to the Java home
         bin_dir = self._path_helper.get_parent_directory(matching_java_paths[0])
         jdk_home = self._path_helper.get_parent_directory(bin_dir)
 
