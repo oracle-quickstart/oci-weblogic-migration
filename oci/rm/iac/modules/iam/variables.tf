@@ -37,8 +37,8 @@ variable "add_load_balancer" {
 }
 
 #ATPDB
-variable "db_strategy_0" {
-  type    = string
+variable "db_strategy_is_atp" {
+  type = string
 }
 
 
