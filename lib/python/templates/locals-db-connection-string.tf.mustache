@@ -48,6 +48,7 @@ locals {
     is_atp_dedicated_{{{datasourceName}}} = try(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).is_dedicated,"none")
     is_atp_with_private_endpoints_{{{datasourceName}}} = local.is_atp_db_{{{datasourceName}}} && (length(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}) != 0 ? data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].subnet_id != null : false)
     atp_db_network_compartment_id_{{{datasourceName}}} = local.is_atp_with_private_endpoints_{{{datasourceName}}} && var.atp_db_network_compartment_id_{{{datasourceName}}} == "" ? var.atp_db_compartment_id_{{{datasourceName}}} : var.atp_db_network_compartment_id_{{{datasourceName}}}
+
     atp_db_{{{datasourceName}}} = {
         atp_type                      = local.is_atp_dedicated_{{{datasourceName}}}
         #compartment_id                = var.atp_db_compartment_id_{{{datasourceName}}}
