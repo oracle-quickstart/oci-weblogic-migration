@@ -17,8 +17,8 @@ locals {
   // 2. or when both WLS VCN ID is provided (wls_existing_vcn_id) and DB VCN ID is provided (either oci_db_existing_vcn_id or atp_db_existing_vcn_id) and they are different IDs,
   // and not using existing subnets (local.use_existing_subnets)
 
-  db_strategy_is_oci_db         = local.unique_conn_strings > 0 && var.db_strategy_0 == "Database System"
-  db_strategy_is_atp_db         = local.unique_conn_strings > 0 && var.db_strategy_0 == "Autonomous Transaction Processing Database"
+  db_strategy_is_oci_db         = local.domain_type == "jrf" ? local.unique_conn_strings > 0 && var.db_strategy_0 == "Database System" : false
+  db_strategy_is_atp_db         = local.domain_type == "jrf" ? local.unique_conn_strings > 0 && var.db_strategy_0 == "Autonomous Transaction Processing Database" : false
   network_compartment_id        = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
   is_oci_db                     = local.db_strategy_is_oci_db ? trimspace(var.oci_db_dbsystem_id_0) == "" ? false : true : false
   oci_db_compartment_id         = local.db_strategy_is_oci_db ? (var.oci_db_compartment_id_0 == "" ? local.network_compartment_id : var.oci_db_compartment_id_0) : ""
