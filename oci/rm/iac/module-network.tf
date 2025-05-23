@@ -142,7 +142,7 @@ module "network" {
   resource_name_prefix = local.wls_domain_name
 }
 
-/* Create LPGs for new VCN */
+/* Create LPGs for VCN Peering */
 module "lpg" {
   count              = var.is_vcn_peering ? 1 : 0
   source             = "./modules/network/lpg"

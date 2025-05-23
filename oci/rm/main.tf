@@ -9,37 +9,36 @@ locals {
     content_type = "text/x-shellscript",
     content      = var.wlsserver_cloud_init_byon
   }] : []
-  domain_type         = try(local.wls_data["resources"]["JDBCSystemResource"], {}) != {} ? "jrf" : "non-jrf"
-  unique_conn_strings = local.domain_type == "jrf" ? length(distinct([for owner in local.wls_data.resources.JDBCSystemResource : owner.JdbcResource.JDBCDriverParams.URL])) : 0
-  datasources_contain_atp = anytrue([for _, v in local.datasources : v.is_atp])
-  datasources_contain_oci_db = anytrue([for _, v in local.datasources : v.is_oci_db])
+  db_strategy_is_atp_db = local.datasources == null ? false : anytrue([for _, v in local.datasources : v.is_atp])
+  #domain_type         = try(local.wls_data["resources"]["JDBCSystemResource"], {}) != {} ? "jrf" : "non-jrf"
+  #unique_conn_strings = local.domain_type == "jrf" ? length(distinct([for owner in local.wls_data.resources.JDBCSystemResource : owner.JdbcResource.JDBCDriverParams.URL])) : 0
+  network_compartment_id        = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
+
+  db_strategy_0_is_atp_db = local.datasources == null ? false: local.datasources[0].is_atp
+  db_strategy_0_is_oci_db = local.datasources == null ? false: local.datasources[0].is_oci_db
   // Criteria for VCN peering:
   // 1. Only when both WLS VCN name is provided (wls_vcn_name) and DB VCN ID is provided (either oci_db_existing_vcn_id or atp_db_existing_vcn_id)
   // 2. or when both WLS VCN ID is provided (wls_existing_vcn_id) and DB VCN ID is provided (either oci_db_existing_vcn_id or atp_db_existing_vcn_id) and they are different IDs,
   // and not using existing subnets (local.use_existing_subnets)
 
-  db_strategy_is_oci_db         = local.unique_conn_strings > 0 ? local.datasources_contain_oci_db : false
-  db_strategy_is_atp_db         = local.unique_conn_strings > 0 ? local.datasources_contain_atp : false
-  network_compartment_id        = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
-  #is_oci_db                     = local.db_strategy_is_oci_db ? trimspace(var.oci_db_dbsystem_id_0) == "" ? false : true : false
-  oci_db_compartment_id         = local.db_strategy_is_oci_db ? local.oci_db_compartment_id_0 : ""
-  oci_db_network_compartment_id = local.db_strategy_is_oci_db ? local.oci_db_network_compartment_id_0 : ""
+  #oci_db_compartment_id_0         = local.db_strategy_0_is_oci_db ? local.oci_db_0.compartment_id : ""
+  oci_db_network_compartment_id_0 = local.db_strategy_0_is_oci_db ? local.oci_db_0.network_compartment_id : ""
+  oci_db_existing_vcn_id_0        = local.db_strategy_0_is_oci_db ? local.oci_db_0.existing_vcn_id : ""
 
-  #is_atp_db                     = local.db_strategy_is_atp_db ? trimspace(var.atp_db_id_0) != "" : false
-  #is_atp_with_private_endpoints = local.is_atp_db_0 && (length(data.oci_database_autonomous_database.atp_db) != 0 ? data.oci_database_autonomous_database.atp_db[0].subnet_id != null : false)
-  atp_db_network_compartment_id = local.db_strategy_is_atp_db && local.is_atp_with_private_endpoints_0 ? local.atp_db_network_compartment_id_0 : ""
+  is_atp_with_private_endpoints_0 = local.db_strategy_0_is_atp_db ? local.atp_db_0.is_atp_with_private_endpoints : false
+  atp_db_network_compartment_id_0 = local.db_strategy_0_is_atp_db ? local.atp_db_0.network_compartment_id : ""
+  atp_db_existing_vcn_id_0        = local.db_strategy_0_is_atp_db ? local.atp_db_0.existing_vcn_id : ""
 
+  db_network_compartment_id = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.is_atp_with_private_endpoints_0 ? local.atp_db_network_compartment_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_network_compartment_id_0 : false))
+  db_existing_vcn_id  = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.is_atp_with_private_endpoints_0 ? local.atp_db_existing_vcn_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_existing_vcn_id_0 : false))
 
-  db_network_compartment_id = local.db_strategy_is_atp_db ? local.atp_db_network_compartment_id : (local.db_strategy_is_oci_db ? local.oci_db_network_compartment_id : "")
-  db_existing_vcn_id  = local.db_strategy_is_atp_db ||  local.db_strategy_is_oci_db ? ((local.is_atp_db_0 ? (local.is_atp_with_private_endpoints_0 ? local.atp_db_existing_vcn_id_0 : "") : ( local.is_oci_db_0 ? local.oci_db_existing_vcn_id_0 : "" ))) : ""
+  new_vcn_and_oci_db                    = local.db_strategy_0_is_oci_db && var.create_vcn ? true  : false
+  existing_vcn_and_oci_db_different_vcn = local.db_strategy_0_is_oci_db && var.vcn_id != "" && var.vcn_id != local.oci_db_existing_vcn_id_0 ? true : false
 
-  new_vcn_and_oci_db                    = local.db_strategy_is_oci_db ? (var.create_vcn && local.is_oci_db_0 && local.oci_db_existing_vcn_id_0 != "") : false
-  existing_vcn_and_oci_db_different_vcn = local.db_strategy_is_oci_db ? (var.vcn_id != "" && local.oci_db_existing_vcn_id_0 != "" && var.vcn_id != local.oci_db_existing_vcn_id_0) : false
+  new_vcn_and_atp_db_private_endpoint                    = local.db_strategy_0_is_atp_db && var.create_vcn && local.is_atp_with_private_endpoints_0 ? true : false
+  existing_vcn_and_atp_db_private_endpoint_different_vcn = local.db_strategy_0_is_atp_db && var.vcn_id != "" && local.is_atp_with_private_endpoints_0 && (var.vcn_id != local.atp_db_existing_vcn_id_0)? true : false
 
-  new_vcn_and_atp_db_private_endpoint                    = local.db_strategy_is_atp_db ? (var.create_vcn && local.is_atp_with_private_endpoints_0 && local.atp_db_existing_vcn_id_0 != "") : false
-  existing_vcn_and_atp_db_private_endpoint_different_vcn = local.db_strategy_is_atp_db ? (var.vcn_id != "" && local.is_atp_with_private_endpoints_0 && local.atp_db_existing_vcn_id_0 != "" && var.vcn_id != local.atp_db_existing_vcn_id_0) : false
-
-  is_vcn_peering = local.db_strategy_is_atp_db ||  local.db_strategy_is_oci_db ? (local.new_vcn_and_oci_db || local.new_vcn_and_atp_db_private_endpoint || local.existing_vcn_and_oci_db_different_vcn || local.existing_vcn_and_atp_db_private_endpoint_different_vcn) : false
+  is_vcn_peering = local.db_strategy_0_is_atp_db ||  local.db_strategy_0_is_oci_db ? (local.new_vcn_and_oci_db || local.new_vcn_and_atp_db_private_endpoint || local.existing_vcn_and_oci_db_different_vcn || local.existing_vcn_and_atp_db_private_endpoint_different_vcn) : false
 }
 
 
