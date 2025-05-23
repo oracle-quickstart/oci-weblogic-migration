@@ -52,7 +52,7 @@ locals {
     atp_db_{{{datasourceName}}} = {
         atp_type                      = local.is_atp_dedicated_{{{datasourceName}}}
         compartment_id                = var.atp_db_compartment_id_{{{datasourceName}}}
-        is_atp_with_private_endpoints = var.atp_db_uses_private_endpoint{{{datasourceName}}}
+        is_atp_with_private_endpoints = var.atp_db_uses_private_endpoint_{{{datasourceName}}}
         network_compartment_id        = var.atp_db_network_compartment_id_{{{datasourceName}}}
         existing_vcn_id               = var.atp_db_existing_vcn_id_{{{datasourceName}}}
         #existing_vcn_add_seclist      = local.is_atp_with_private_endpoints_{{{datasourceName}}} ? var.db_existing_vcn_add_secrule : false
