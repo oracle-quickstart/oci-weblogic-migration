@@ -40,5 +40,8 @@ variable "add_load_balancer" {
 variable "db_strategy_is_atp" {
   type = string
 }
+variable "db_strategy_is_edit_string_atp" {
+  type = string
+}
 
 

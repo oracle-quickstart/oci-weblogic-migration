@@ -38,6 +38,7 @@ locals {
             atp_db = local.atp_db_0
             oci_db = local.oci_db_0
             custom_jdbc = local.is_db_connection_string_0
+            connection_string = var.oci_db_connection_string_0
         }
     1 = {
             on_prem = var.ds_1
