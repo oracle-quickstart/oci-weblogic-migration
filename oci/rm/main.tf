@@ -22,12 +22,12 @@ locals {
   // and not using existing subnets (local.use_existing_subnets)
 
   #oci_db_compartment_id_0         = local.db_strategy_0_is_oci_db ? local.oci_db_0.compartment_id : ""
-  oci_db_network_compartment_id_0 = local.db_strategy_0_is_oci_db ? local.oci_db_0.network_compartment_id : ""
-  oci_db_existing_vcn_id_0        = local.db_strategy_0_is_oci_db ? local.oci_db_0.existing_vcn_id : ""
+  oci_db_network_compartment_id_0 = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.network_compartment_id : ""
+  oci_db_existing_vcn_id_0        = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.existing_vcn_id : ""
 
-  is_atp_with_private_endpoints_0 = local.db_strategy_0_is_atp_db ? local.atp_db_0.is_atp_with_private_endpoints : false
-  atp_db_network_compartment_id_0 = local.db_strategy_0_is_atp_db ? local.atp_db_0.network_compartment_id : ""
-  atp_db_existing_vcn_id_0        = local.db_strategy_0_is_atp_db ? local.atp_db_0.existing_vcn_id : ""
+  is_atp_with_private_endpoints_0 = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.is_atp_with_private_endpoints : false
+  atp_db_network_compartment_id_0 = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.network_compartment_id : ""
+  atp_db_existing_vcn_id_0        = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.existing_vcn_id : ""
 
   db_network_compartment_id = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.is_atp_with_private_endpoints_0 ? local.atp_db_network_compartment_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_network_compartment_id_0 : false))
   db_existing_vcn_id  = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.is_atp_with_private_endpoints_0 ? local.atp_db_existing_vcn_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_existing_vcn_id_0 : false))
