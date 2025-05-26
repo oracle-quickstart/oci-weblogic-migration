@@ -151,6 +151,19 @@ module "lpg" {
   wls_existing_vcn_id                   = var.vcn_id
   db_network_compartment_id = var.db_network_compartment_id
   db_existing_vcn_id = var.db_existing_vcn_id
+  wlsserver_subnet_id = try(module.network-wls-private-subnet.subnet_id, "")
+  db_subnet_id        = var.db_subnet_id
+
+  # Standard tags as defined if enabled for use, or freeform
+  # User-provided tags are merged last and take precedence
+  defined_tags = merge(var.use_defined_tags ? {
+    "${var.tag_namespace}.state_id" = local.state_id,
+    "${var.tag_namespace}.role"     = "wlsservers",
+  } : {}, local.wlsservers_defined_tags)
+  freeform_tags = merge(var.use_defined_tags ? {} : {
+    "state_id" = local.state_id,
+    "role"     = "wlsservers",
+  }, local.wlsservers_freeform_tags)
 }
 
 # VCN

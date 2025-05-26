@@ -159,6 +159,10 @@ resource "oci_core_instance" "wlsservers" {
 
       wlsserver_vcn_id         = var.wlsserver_vcn_id
       wlsserver_subnet_id      = var.wlsserver_subnet_id
+      db_subnet_id             = var.db_subnet_id
+      is_vcn_peering           = var.is_vcn_peering
+      db_lpg                   = var.db_lpg
+      wlsserver_lpg            = var.wlsserver_lpg
     },
 
     # Extra user-defined fields merged last

@@ -314,3 +314,8 @@ variable "is_vcn_peering" {
   description = "Indicates whether VCN peering will be set up"
   type        = bool
 }
+
+variable "db_subnet_id" {
+  type        = string
+  description = "The OCID of the subnet for the OCI DB or ATP DB (when using private endpoint)"
+}

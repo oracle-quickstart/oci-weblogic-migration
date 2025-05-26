@@ -24,13 +24,16 @@ locals {
   #oci_db_compartment_id_0         = local.db_strategy_0_is_oci_db ? local.oci_db_0.compartment_id : ""
   oci_db_network_comp_id_0 = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.network_compartment_id : ""
   oci_db_existing_vcn_id_0        = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.existing_vcn_id : ""
+  oci_db_subnet_id_0        = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.subnet_id : ""
 
   atp_has_private_endpoints_0 = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.is_atp_with_private_endpoints : false
   atp_db_network_comp_id_0 = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.network_compartment_id : ""
   atp_db_existing_vcn_id_0        = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.existing_vcn_id : ""
+  atp_db_subnet_id_0        = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.subnet_id : ""
 
-  db_network_compartment_id = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_network_comp_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_network_comp_id_0 : false))
-  db_existing_vcn_id  = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_existing_vcn_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_existing_vcn_id_0 : false))
+  db_network_compartment_id = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_network_comp_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_network_comp_id_0 : ""))
+  db_existing_vcn_id  = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_existing_vcn_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_existing_vcn_id_0 : ""))
+  db_subnet_id        = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_subnet_id_0 : (local.db_strategy_0_is_oci_db ? local.atp_db_subnet_id_0 : ""))
 
   new_vcn_and_oci_db                    = local.db_strategy_0_is_oci_db && var.create_vcn ? true  : false
   existing_vcn_and_oci_db_different_vcn = local.db_strategy_0_is_oci_db && var.vcn_id != "" && var.vcn_id != local.oci_db_existing_vcn_id_0 ? true : false
@@ -182,6 +185,7 @@ module "wls" {
   is_vcn_peering = local.is_vcn_peering
   db_network_compartment_id = local.db_network_compartment_id
   db_existing_vcn_id = local.db_existing_vcn_id
+  db_subnet_id       = local.db_subnet_id
 
   #Object Storage Archive Repository
   bucket_name          = var.bucket_name

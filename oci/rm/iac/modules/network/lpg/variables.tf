@@ -19,3 +19,13 @@ variable "vcn_id" {
 }
 
 variable "wls_existing_vcn_id" { type = string }
+variable "wlsserver_subnet_id" { type = string }
+
+
+variable "db_subnet_id" {
+  type        = string
+  description = "The OCID of the subnet for the OCI DB or ATP DB (when using private endpoint)"
+}
+
+variable "defined_tags" { type = map(string) }
+variable "freeform_tags" { type = map(string) }
