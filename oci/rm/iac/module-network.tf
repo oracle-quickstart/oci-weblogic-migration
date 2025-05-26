@@ -148,6 +148,7 @@ module "lpg" {
   source             = "./modules/network/lpg"
   compartment_id     = local.network_compartment_id
   vcn_id             = local.vcn_id
+  wls_existing_vcn_id                   = var.vcn_id
   db_network_compartment_id = var.db_network_compartment_id
   db_existing_vcn_id = var.db_existing_vcn_id
 }

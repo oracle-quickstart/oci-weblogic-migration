@@ -20,3 +20,34 @@ resource "oci_core_local_peering_gateway" "wlslpg_0" {
   vcn_id = var.vcn_id
   peer_id = oci_core_local_peering_gateway.dblpg_0.id
 }
+
+data "oci_core_vcn_dns_resolver_association" "wls_vcn_resolver_association" {
+  count      = var.wls_existing_vcn_id != "" ? 1 : 0
+  vcn_id     = var.wls_existing_vcn_id
+}
+
+data "oci_core_vcn_dns_resolver_association" "db_vcn_resolver_association" {
+  count      = var.wls_existing_vcn_id != "" ? 1 : 0
+  vcn_id = var.db_existing_vcn_id
+}
+
+data "oci_dns_resolver" "db_vcn_resolver" {
+  count      = var.wls_existing_vcn_id != "" ? 1 : 0
+  resolver_id = data.oci_core_vcn_dns_resolver_association.db_vcn_resolver_association[0].dns_resolver_id
+  scope       = "PRIVATE"
+}
+
+# Add to the DNS resolver of the WebLogic VCN the default view of the DNS resolver of the DB VCN
+resource "oci_dns_resolver" "wls_oci_dsn_resolver" {
+  count      = var.wls_existing_vcn_id != "" ? 1 : 0
+  resolver_id = data.oci_core_vcn_dns_resolver_association.wls_vcn_resolver_association[0].dns_resolver_id
+  scope       = "PRIVATE"
+  attached_views {
+    view_id = data.oci_dns_resolver.db_vcn_resolver[0].default_view_id
+  }
+  # Prevent Terraform from resetting fields fields like attached_views and rules on reapply,
+  # removing changes done manually (e.g add another view)
+  lifecycle {
+    ignore_changes = all
+  }
+}

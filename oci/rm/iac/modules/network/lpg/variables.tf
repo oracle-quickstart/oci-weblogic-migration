@@ -17,3 +17,5 @@ variable "vcn_id" {
   description = "Optional ID of existing VCN. Takes priority over vcn_name filter. Ignored when `create_vcn = true`."
   type        = string
 }
+
+variable "wls_existing_vcn_id" { type = string }
