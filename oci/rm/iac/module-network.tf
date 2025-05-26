@@ -104,6 +104,30 @@ module "network-wls-private-subnet" {
   }, local.wlsservers_freeform_tags)
 }
 
+/* Create back end subnet for bastion subnet */
+module "network_bastion_subnet" {
+  source             = "./modules/network/subnet"
+  count              = var.create_bastion ? 1 : 0
+  compartment_id     = local.network_compartment_id
+  vcn_id             = local.vcn_id
+  route_table_id     = local.ig_route_table_id
+  subnet_name        = format("bastion-%v", local.state_id)
+  dns_label          = lookup(local.subnet_dns_labels, "bastion", null)
+  cidr_block         = var.bastion_subnet_cidr
+  prohibit_public_ip = false
+
+  # Standard tags as defined if enabled for use, or freeform
+  # User-provided tags are merged last and take precedence
+  defined_tags = merge(var.use_defined_tags ? {
+    "${var.tag_namespace}.state_id" = local.state_id,
+    "${var.tag_namespace}.role"     = "bastion",
+  } : {}, local.bastion_defined_tags)
+  freeform_tags = merge(var.use_defined_tags ? {} : {
+    "state_id" = local.state_id,
+    "role"     = "bastion",
+  }, local.bastion_freeform_tags)
+}
+
 module "network" {
   source           = "./modules/network"
   state_id         = local.state_id
@@ -159,7 +183,7 @@ output "nat_route_table_id" {
 
 # Subnets
 output "bastion_subnet_id" {
-  value = try(module.network.bastion_subnet_id, null)
+  value = try(module.network_bastion_subnet[0].subnet_id, null)
 }
 output "bastion_subnet_cidr" {
   value = try(module.network.bastion_subnet_cidr, null)

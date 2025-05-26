@@ -299,3 +299,9 @@ variable "wlsserver_subnet_cidr" {
   description = "CIDR for weblogic subnet"
   default     = ""
 }
+
+variable "bastion_subnet_cidr" {
+  type        = string
+  description = "CIDR for bastion subnet"
+  default     = ""
+}

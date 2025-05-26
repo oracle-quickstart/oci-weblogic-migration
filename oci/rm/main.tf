@@ -166,6 +166,7 @@ module "wls" {
 
   #Bastion
   create_bastion              = var.create_bastion
+  bastion_subnet_cidr         = var.bastion_subnet_cidr
   bastion_shape               = var.bastion_shape
   boot_volume_size            = var.bastion_shape_boot
   bastion_allowed_cidrs       = var.bastion_allowed_cidrs
