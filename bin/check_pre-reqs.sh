@@ -191,12 +191,12 @@ else
 
     # Check if the directory specified by domain_home exists
     if [[ -n "${env_vars[domain_home]:-}" && ! -d "${env_vars[domain_home]}" ]]; then
-        errors+=("The path specified for 'domain_home' (${env_vars[domain_home]}) does not exist.")
+        errors+=("The path specified for 'domain_home' (${env_vars[domain_home]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
     fi
 
     # Check if the directory specified by oracle_home exists
     if [[ -n "${env_vars[oracle_home]:-}" && ! -d "${env_vars[oracle_home]}" ]]; then
-        errors+=("The path specified for 'oracle_home' (${env_vars[oracle_home]}) does not exist.")
+        errors+=("The path specified for 'oracle_home' (${env_vars[oracle_home]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
     fi
 
     # Ensure at least one SSH authentication method is set
@@ -206,12 +206,12 @@ else
 
     # Check if the ssh_private_key_file exists if specified
     if [[ -n "${env_vars[ssh_private_key_file]:-}" && ! -f "${env_vars[ssh_private_key_file]}" ]]; then
-        errors+=("The file specified for 'ssh_private_key_file' (${env_vars[ssh_private_key_file]}) does not exist.")
+        errors+=("The file specified for 'ssh_private_key_file' (${env_vars[ssh_private_key_file]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
     fi
 
     # Check if the ssh_password_file exists if specified
     if [[ -n "${env_vars[ssh_password_file]:-}" && ! -f "${env_vars[ssh_password_file]}" ]]; then
-        errors+=("The file specified for 'ssh_password_file' (${env_vars[ssh_password_file]}) does not exist.")
+        errors+=("The file specified for 'ssh_password_file' (${env_vars[ssh_password_file]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
     fi
 fi
 
