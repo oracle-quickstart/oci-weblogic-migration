@@ -43,7 +43,6 @@ function pre-reqs(){
 }
 
 upload_to_oss(){
-    return_code=0
     log "info" "<uploadArchiveOCI><upload_to_oss><entry> Args:  $1 $2 $3"
     local INVENTORY_FILE=$1
     local REPO_DIRECTORY=$2
@@ -67,9 +66,8 @@ upload_to_oss(){
             log "info" "<uploadArchiveOCI><upload_to_oss> uploading archive $f"
             oci os object put --namespace "$tenancy_namespace" --bucket-name "$bucket_name" --file "$f" --force >> "$LOG_FILE" || (log "error" "failed to upload $f ... exiting" ; exit 1)
         done
-        return_code=$OP_COMPLETED
     done
-    return "$return_code"
+    return "$SUCCESS"
 }
 
 update_oss_auto_tfvars(){

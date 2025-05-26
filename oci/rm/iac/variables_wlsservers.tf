@@ -151,10 +151,6 @@ variable "platform_config" {
     percentage_of_cores_enabled                    = optional(bool),
   })
 }
-#ATPDB
-variable "db_strategy_0" {
-  type = string
-}
 
 #variable "agent_config" {
 #  default     = null

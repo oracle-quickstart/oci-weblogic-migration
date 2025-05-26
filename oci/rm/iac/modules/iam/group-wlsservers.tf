@@ -43,11 +43,9 @@ locals {
     var.add_load_balancer ? [
       "Allow dynamic-group ${local.wlsserver_group_name} to manage load-balancers in compartment id %v"
     ] : [],
-    lower(trimspace(var.db_strategy_0)) == "autonomous transaction processing database"
-    ? [
+    var.db_strategy_is_atp ? [
       "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %v"
-    ]
-    : []
+    ] : []
   ))
 
   # Block volume encryption using OCI Key Management System (KMS)
