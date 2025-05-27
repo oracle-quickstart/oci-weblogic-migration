@@ -249,9 +249,9 @@ case "$1" in
     "test")
            build_orm_test $2 $3
            ;;
-#    "run")
-#          echo "running the consolidated script called from testowm.sh"
-#          ;;
+    "run")
+          echo "running the consolidated script called from testowm.sh"
+          ;;
     *)
         echo "Unknown option: $1"
         print_help
