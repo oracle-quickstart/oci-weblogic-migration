@@ -42,6 +42,7 @@ discover_local(){
      exit 1
   fi
   log "info" "<discoverDomain><discover_infra_local><exit> WebLogic Inventory File : $toolHome/out/Discovered_$file_timestamp.json"
+  DISCOVERED_DOMAIN_JSON="$toolHome/out/Discovered_$file_timestamp.json"
 }
 
 
@@ -93,6 +94,7 @@ discover_infra_local(){
        exit 1
    fi
    log "info" "<discoverDomain><discover_infra_local><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
+   DISCOVERED_INFRA_JSON="$toolHome/out/infra_output_$file_timestamp.json"
 }
 
 discover_infra_remote(){
@@ -235,18 +237,21 @@ case "$1" in
        ;;
     "lift")
        load_config "$2"
-       upload_to_oci "$3" "$4"
+       upload_to_oci "$3" "$4" #no need to provide the bucket name earlier.
        ;;
     "ds")
        load_config "$2"
        process_datasources $3
        ;;
     "orm")
-       build_orm $2 $3
+       build_orm $2 $3 #no 3rd argument.
        ;;
     "test")
            build_orm_test $2 $3
            ;;
+#    "run")
+#          echo "running the consolidated script called from testowm.sh"
+#          ;;
     *)
         echo "Unknown option: $1"
         print_help
