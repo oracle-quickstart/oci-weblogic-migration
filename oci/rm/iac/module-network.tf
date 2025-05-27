@@ -6,9 +6,55 @@ data "oci_core_vcn" "oke" {
   vcn_id = coalesce(var.vcn_id, "none")
 }
 
+data "oci_core_services" "all_services" {
+  filter {
+    name   = "name"
+    values = ["All .* Services In Oracle Services Network"]
+    regex  = true
+  }
+}
+
+# ──────────────────────────────────────────────────────────
+# Datasource to Fetch any existing gateways on the chosen VCN
+data "oci_core_internet_gateways" "existing_igs" {
+  count          = var.create_vcn ? 0 : 1
+  compartment_id = var.network_compartment_id
+  vcn_id         = var.vcn_id
+}
+
+data "oci_core_nat_gateways" "existing_ngs" {
+  count          = var.create_vcn ? 0 : 1
+  compartment_id = var.network_compartment_id
+  vcn_id         = var.vcn_id
+}
+
+data "oci_core_service_gateways" "existing_sgs" {
+  count          = var.create_vcn ? 0 : 1
+  compartment_id = var.network_compartment_id
+  vcn_id         = var.vcn_id
+}
+# ──────────────────────────────────────────────────────────
+
 locals {
   # Created VCN if enabled, else var.vcn_id
   vcn_id = var.create_vcn ? try(one(module.vcn[*].vcn_id), var.vcn_id) : var.vcn_id
+
+  # ──────────────────────────────────────────────────────────
+  # Only create in case of existing VCN if none of the gateways already exist
+  create_ig = var.create_vcn ? false : try(length(data.oci_core_internet_gateways.existing_igs[0].gateways), 0) == 0
+  create_ng = var.create_vcn ? false : try(length(data.oci_core_nat_gateways.existing_ngs[0].nat_gateways), 0) == 0
+  create_sg = var.create_vcn ? false : try(length(data.oci_core_service_gateways.existing_sgs[0].service_gateways), 0) == 0
+
+  # In case the gateways exists in the existing VCN, then fetch the gateways id to create new route tables using those ids.
+  ig_exists = !var.create_vcn && !local.create_ig
+  ng_exists = !var.create_vcn && !local.create_ng
+  sg_exists = !var.create_vcn && !local.create_sg
+
+  # Fetch the first existing gateway ID of each type when it exists
+  ig_fetched_id = local.ig_exists? try(data.oci_core_internet_gateways.existing_igs[0].gateways[0].id, "") : ""
+  ng_fetched_id = local.ng_exists? try(data.oci_core_nat_gateways.existing_ngs[0].nat_gateways[0].id, "") : ""
+  sg_fetched_id = local.sg_exists? try(data.oci_core_service_gateways.existing_sgs[0].service_gateways[0].id, "") : ""
+  # ──────────────────────────────────────────────────────────
 
   # Configured VCN CIDRs if creating, else from provided vcn_id
   vcn_lookup             = coalesce(one(data.oci_core_vcn.oke[*].cidr_blocks), [])
@@ -80,12 +126,119 @@ module "vcn" {
   vcn_name                     = coalesce(var.vcn_name, "wls-${local.state_id}")
 }
 
+locals {
+  vcn_name = coalesce(var.vcn_name, "wls-${local.state_id}")
+}
+
+# ────────────────────────────────────────────────────────────────────────
+# Creates the gateways and route tables in case of existing VCN
+
+########################
+# Internet Gateway (IGW)
+########################
+
+resource "oci_core_internet_gateway" "ig" {
+  count = local.create_ig ? 1 : 0
+  compartment_id = var.network_compartment_id
+  vcn_id         = local.vcn_id
+  display_name   = "${local.vcn_name}-ig"
+
+}
+
+resource "oci_core_route_table" "ig_rt" {
+  # always create the route table; it will point to either new or existing IG
+  count = var.create_vcn ? 0 : 1
+
+  compartment_id = var.network_compartment_id
+  vcn_id         = local.vcn_id
+  display_name   = "${local.vcn_name}-internet-route"
+
+  # Must use a block form, not an argument
+  route_rules {
+    destination       = "0.0.0.0/0"
+    destination_type  = "CIDR_BLOCK"
+    network_entity_id = local.ig_exists? local.ig_fetched_id: oci_core_internet_gateway.ig[0].id
+  }
+
+}
+
+#######################
+# Service Gateway (SGW)
+#######################
+
+resource "oci_core_service_gateway" "sg" {
+  count          = local.create_sg ? 1 : 0
+  compartment_id = var.network_compartment_id
+  vcn_id         = local.vcn_id
+  display_name   = "${local.vcn_name}-sg"
+
+  services {
+    service_id = data.oci_core_services.all_services.services.0.id
+  }
+}
+
+resource "oci_core_route_table" "sg_rt" {
+  # always create the route table; it will point to either new or existing IG
+  count = var.create_vcn ? 0 : 1
+  compartment_id = var.network_compartment_id
+  vcn_id         = local.vcn_id
+  display_name   = "${local.vcn_name}-sg-routetable"
+
+  route_rules {
+    destination       = data.oci_core_services.all_services.services.0.cidr_block
+    destination_type  = "SERVICE_CIDR_BLOCK"
+    network_entity_id = local.sg_exists? local.sg_fetched_id: oci_core_service_gateway.sg[0].id
+  }
+}
+
+###################
+# NAT Gateway (NGW)
+###################
+
+resource "oci_core_nat_gateway" "nat_gateway" {
+  count = local.create_ng ? 1 : 0
+  compartment_id = var.network_compartment_id
+  vcn_id         = local.vcn_id
+  display_name   = "${local.vcn_name}-ng"
+
+  public_ip_id = var.nat_gateway_public_ip_id != "none" ? var.nat_gateway_public_ip_id : null
+
+}
+
+resource "oci_core_route_table" "nat_rt" {
+  # always create the route table; it will point to either new or existing IG
+  count = var.create_vcn ? 0 : 1
+
+  compartment_id = var.network_compartment_id
+  vcn_id         = local.vcn_id
+  display_name   = "${local.vcn_name}-nat-routetable"
+
+  route_rules {
+    destination       = "0.0.0.0/0"
+    destination_type  = "CIDR_BLOCK"
+    network_entity_id = local.ng_exists? local.ng_fetched_id: oci_core_nat_gateway.nat_gateway[0].id
+    description       = "Terraformed - Auto-generated at NAT Gateway creation: NAT Gateway as default gateway"
+  }
+
+  dynamic "route_rules" {
+    # * If Service Gateway is created with the module, automatically creates a rule to handle traffic for "all services" through Service Gateway
+    for_each = var.create_vcn ? [] : [1]
+    content {
+      destination       = data.oci_core_services.all_services.services.0.cidr_block
+      destination_type  = "SERVICE_CIDR_BLOCK"
+      network_entity_id = local.sg_exists? local.sg_fetched_id: oci_core_service_gateway.sg[0].id
+      description       = "Terraformed - Auto-generated at Service Gateway creation: All Services in region to Service Gateway"
+    }
+  }
+}
+# ────────────────────────────────────────────────────────────────────────
+
 /* Create back end  private subnet for wls */
 module "network-wls-private-subnet" {
   source             = "./modules/network/subnet"
   compartment_id     = local.network_compartment_id
   vcn_id             = local.vcn_id
-  route_table_id     = local.nat_route_table_id
+  route_table_id = local.ng_exists? oci_core_route_table.nat_rt[0].id : local.nat_route_table_id
   subnet_name        = format("wlsservers-%v", local.state_id)
   dns_label          = lookup(local.subnet_dns_labels, "wlsservers", null)
   cidr_block         = var.wlsserver_subnet_cidr
@@ -130,7 +283,7 @@ module "network" {
   nsgs                              = var.nsgs
   #  create_operator              = false            #future use
   enable_waf           = false #future use
-  ig_route_table_id    = local.ig_route_table_id
+  ig_route_table_id  = local.ig_exists? oci_core_route_table.ig_rt[0].id : local.ig_route_table_id
   load_balancers       = var.load_balancers
   nat_route_table_id   = local.nat_route_table_id
   subnets              = var.subnets

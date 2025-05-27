@@ -283,7 +283,7 @@ variables:
   vcn_id:
     title: Existing Virtual Cloud Network
     type: oci:core:vcn:id
-    description: An existing Virtual Cloud Network (VCN) in which to create the compute instances, network resources, and load balancers. Existing Virtual Cloud Network can be validated using the network validation script. See <a href=https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/paas/weblogic-cloud/user&id=oci_network_validate>Validate Existing Network Setup</a>
+    description: An existing Virtual Cloud Network (VCN) in which to create the compute instances, network resources, and load balancers.
     required: true
     dependsOn:
       compartmentId: ${network_compartment_id}
@@ -344,17 +344,17 @@ variables:
     description: Existing Internet Gateway route table to attach to the VCN
     type: ocid
     required: false
-    visible:
-      not:
-        - ${create_vcn}
+    visible: false
+    #  not:
+    #    - ${create_vcn}
   service_gateway_id:
     title: Service gateway
     description: Existing service gateway in the VCN for access to Oracle Cloud services.
     type: oci:core:servicegateway:id
     required: true
-    visible:
-      not:
-        - ${create_vcn}
+    visible: false
+    #  not:
+    #    - ${create_vcn}
     dependsOn:
       compartmentId: ${network_compartment_id}
       vcnId: ${vcn_id}
@@ -363,9 +363,9 @@ variables:
     description: Existing NAT gateway in the VCN for private network egress.
     type: oci:core:natgateway:id
     required: true
-    visible:
-      not:
-        - ${create_vcn}
+    visible: false
+    #  not:
+    #    - ${create_vcn}
     dependsOn:
       compartmentId: ${network_compartment_id}
       vcnId: ${vcn_id}
@@ -1501,7 +1501,7 @@ variables:
     required: false
   ########
   # End section: Database Service
-  ########       
+  ########
     {{/datasources}}
 
 
