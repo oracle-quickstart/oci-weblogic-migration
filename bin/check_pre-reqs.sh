@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2024 Oracle and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #############################################################################################################################
@@ -8,15 +8,20 @@
 # Description          : Check minium requirements to run OCI Weblogic Migration Tool
 #############################################################################################################################
 
+scriptPath=$(dirname "$0")
+toolHome=$(builtin cd "$scriptPath/.." ||exit; pwd)
+
 ###################################################### Requirements #########################################################
 
 expected_os_name_oracle="oracle linux server"
 expected_os_name_rhel="red hat enterprise linux"
 minimum_os_version_oracle="8.0"
 minimum_os_version_rhel="8.0"
-minimum_cpu_count=8
+# Setting minimum CPU to 1 for now, as stacks are being created with 1 or 2 OCPUs.
+# This avoids blocking execution. We can update this threshold later.
+minimum_cpu_count=1
+#minimum_cpu_count=8
 minimum_mem_in_gib=8
-
 
 ###################################################### Script setup #########################################################
 
@@ -150,6 +155,70 @@ set -e
 
 end_section
 
+################################################# on-prem.env Parameter Checks #####################################################
+
+start_section "on-prem.env parameters"
+
+set +e
+
+env_file="$toolHome/config/on-prem.env"
+
+# Check if the environment file exists
+if [ ! -f "$env_file" ]; then
+    errors+=("The required environment file $env_file was not found.")
+else
+    declare -A env_vars
+    # Read each line from the env file that contains '='
+    while IFS='=' read -r key value; do
+        key=$(echo "$key" | xargs)   # Trim whitespace
+        value=$(echo "$value" | xargs)
+        # Skip comments and empty lines
+        [[ "$key" =~ ^#.*$ || -z "$key" ]] && continue
+        env_vars["$key"]="$value"
+    done < <(grep '=' "$env_file")
+
+    # Define the list of required keys to check
+    required_keys=("ssh_user" "domain_home" "oracle_home" "bucket_name" "compartment_ocid" "tenancy_namespace")
+
+    # Track missing keys
+    missing_keys=()
+    for key in "${required_keys[@]}"; do
+        if [[ -z "${env_vars[$key]:-}" ]]; then
+            errors+=("Missing value or key '$key' in $env_file.")
+            missing_keys+=("$key")
+        fi
+    done
+
+    # Check if the directory specified by domain_home exists
+    if [[ -n "${env_vars[domain_home]:-}" && ! -d "${env_vars[domain_home]}" ]]; then
+        errors+=("The path specified for 'domain_home' (${env_vars[domain_home]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
+    fi
+
+    # Check if the directory specified by oracle_home exists
+    if [[ -n "${env_vars[oracle_home]:-}" && ! -d "${env_vars[oracle_home]}" ]]; then
+        errors+=("The path specified for 'oracle_home' (${env_vars[oracle_home]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
+    fi
+
+    # Ensure at least one SSH authentication method is set
+    if [[ -z "${env_vars[ssh_private_key_file]:-}" && -z "${env_vars[ssh_password_file]:-}" ]]; then
+        errors+=("Either 'ssh_private_key_file' or 'ssh_password_file' must be set in $env_file.")
+    fi
+
+    # Check if the ssh_private_key_file exists if specified
+    if [[ -n "${env_vars[ssh_private_key_file]:-}" && ! -f "${env_vars[ssh_private_key_file]}" ]]; then
+        errors+=("The file specified for 'ssh_private_key_file' (${env_vars[ssh_private_key_file]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
+    fi
+
+    # Check if the ssh_password_file exists if specified
+    if [[ -n "${env_vars[ssh_password_file]:-}" && ! -f "${env_vars[ssh_password_file]}" ]]; then
+        errors+=("The file specified for 'ssh_password_file' (${env_vars[ssh_password_file]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
+    fi
+fi
+
+set -e
+
+end_section
+
 ################################################# Required Packages #####################################################
 
 start_section "Required Packages"
@@ -165,12 +234,15 @@ if ! rpm -qa | grep -i 'python.*oci' 2>&1 > /dev/null; then
 fi
 
 
-if ! rpm -qa | grep -i 'sshpass' 2>&1 > /dev/null; then
-    errors+=("Unable to find OCI Python client library")
+# Only check for sshpass if ssh_password_file is used in on-prem.env
+if [[ -n "${env_vars[ssh_password_file]:-}" ]]; then
+    if ! rpm -q sshpass > /dev/null 2>&1; then
+        errors+=("Unable to find sshpass package")
+    fi
 fi
 
 
-if ! rpm -qa | grep -i python3-paramiko 2>&1 > /dev/null; then
+if ! rpm -qa | grep -i python3-paramiko >/dev/null 2>&1 && ! python3 -c "import paramiko" >/dev/null 2>&1; then
     errors+=("Unable to find Paramiko Python SSH client library")
 fi
 
@@ -179,11 +251,9 @@ if ! which jq 2>&1 > /dev/null; then
 fi
 
 
-
 set -e
 
 end_section
-
 
 ################################################ Report findings to user ####################################################
 

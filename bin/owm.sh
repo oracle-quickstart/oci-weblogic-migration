@@ -156,7 +156,7 @@ upload_to_oci(){
   exit_code=$?
   log "info" "Executed owm.sh lift with exit code [$exit_code]"
 
-  if [ $exit_code -ne 0 ] && [ $exit_code -ne $OP_COMPLETED ]; then
+  if [ $exit_code -ne 0 ] ; then
     log "error" "<discoverDomain><upload_to_oci><error> Error executing owm.sh lift operation"
     echo "check $LOG_FILE for more details.."
     exit 1
