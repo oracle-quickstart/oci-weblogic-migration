@@ -7,11 +7,6 @@ data "oci_core_vcn" "oke" {
 }
 
 data "oci_core_services" "all_services" {
-  filter {
-    name   = "name"
-    values = ["All .* Services In Oracle Services Network"]
-    regex  = true
-  }
 }
 
 # ──────────────────────────────────────────────────────────
@@ -50,7 +45,10 @@ locals {
   ng_exists = !var.create_vcn && !local.create_ng
   sg_exists = !var.create_vcn && !local.create_sg
 
-  # Fetch the first existing gateway ID of each type when it exists
+  # Fetch the existing gateway ID of each type.
+  # This is because OCI allows only one gateway of each type (Internet, NAT, Service) per VCN.
+  # Therefore, if any exist, the first entry is guaranteed to be the one used in the VCN.
+
   ig_fetched_id = local.ig_exists? try(data.oci_core_internet_gateways.existing_igs[0].gateways[0].id, "") : ""
   ng_fetched_id = local.ng_exists? try(data.oci_core_nat_gateways.existing_ngs[0].nat_gateways[0].id, "") : ""
   sg_fetched_id = local.sg_exists? try(data.oci_core_service_gateways.existing_sgs[0].service_gateways[0].id, "") : ""
