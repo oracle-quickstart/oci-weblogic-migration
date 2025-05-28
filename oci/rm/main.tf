@@ -156,9 +156,9 @@ module "wls" {
   await_node_readiness = "none" #all
 
   #Weblogic Domain Common  - LoadBalancer, labels
-  add_load_balancer   = var.add_load_balancer
-  db_strategy_is_atp  = local.db_strategy_is_atp
-  db_strategy_is_edit_string_atp =local.db_strategy_is_edit_string_atp
+  add_load_balancer              = var.add_load_balancer
+  db_strategy_is_atp             = local.db_strategy_is_atp
+  db_strategy_is_edit_string_atp = local.db_strategy_is_edit_string_atp
   lbs = {
     pub_lb = { create = var.add_load_balancer ? "always" : "never", id = var.existing_load_balancer_id, backends = var.custom_backends }
   }
