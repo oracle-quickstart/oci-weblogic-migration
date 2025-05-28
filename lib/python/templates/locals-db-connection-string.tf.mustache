@@ -55,8 +55,8 @@ locals {
         is_atp_with_private_endpoints = var.atp_db_uses_private_endpoint_{{{datasourceName}}}
         network_compartment_id        = var.atp_db_network_compartment_id_{{{datasourceName}}}
         existing_vcn_id               = var.atp_db_existing_vcn_id_{{{datasourceName}}}
-        subnet_id                     = local.is_atp_with_private_endpoints_{{{datasourceName}}} ? data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].subnet_id : ""
-        #existing_vcn_add_seclist      = local.is_atp_with_private_endpoints_{{{datasourceName}}} ? var.db_existing_vcn_add_secrule : false
+        subnet_id                     = local.is_atp_db_{{{datasourceName}}} && local.is_atp_with_private_endpoints_{{{datasourceName}}} ? data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].subnet_id : ""
+        #existing_vcn_add_seclist     = local.is_atp_with_private_endpoints_{{{datasourceName}}} ? var.db_existing_vcn_add_secrule : false
         db_name                        = try(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).db_name,"empty")
         db_level                       = var.atp_db_level_{{{datasourceName}}}
     }
@@ -65,7 +65,7 @@ locals {
         compartment_id           = var.oci_db_compartment_id_{{{datasourceName}}}
         network_compartment_id   = var.oci_db_network_compartment_id_{{{datasourceName}}}
         existing_vcn_id          = var.oci_db_existing_vcn_id_{{{datasourceName}}}
-        subnet_id                = data.oci_database_db_systems.ocidb_db_systems_{{{datasourceName}}}[0].db_systems[0].subnet_id
+        subnet_id                = local.is_oci_db_{{{datasourceName}}} ? data.oci_database_db_systems.ocidb_db_systems_{{{datasourceName}}}[0].db_systems[0].subnet_id : ""
         #    existing_vcn_add_seclist = local.is_oci_db ? var.db_existing_vcn_add_secrule : false
     }
 
