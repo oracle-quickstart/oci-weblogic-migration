@@ -53,7 +53,7 @@ module "iam" {
   create_iam_resources         = var.create_iam_resources
   create_iam_autoscaler_policy = local.create_iam_autoscaler_policy
   create_iam_kms_policy        = local.create_iam_kms_policy
-  create_iam_wlsserver_policy     = local.create_iam_wlsserver_policy
+  create_iam_wlsserver_policy  = local.create_iam_wlsserver_policy
 
   create_iam_tag_namespace = var.create_iam_tag_namespace
   create_iam_defined_tags  = var.create_iam_defined_tags
@@ -62,11 +62,11 @@ module "iam" {
   tag_namespace            = var.tag_namespace
   use_defined_tags         = var.use_defined_tags
 
-  add_load_balancer = var.add_load_balancer
-  db_strategy_is_atp     = var.db_strategy_is_atp
-  db_strategy_is_edit_string_atp =var.db_strategy_is_edit_string_atp
+  add_load_balancer              = var.add_load_balancer
+  db_strategy_is_atp             = var.db_strategy_is_atp
+  db_strategy_is_edit_string_atp = var.db_strategy_is_edit_string_atp
 
-  wlsserver_volume_kms_key_id   = var.wlsserver_volume_kms_key_id
+  wlsserver_volume_kms_key_id  = var.wlsserver_volume_kms_key_id
 
   wlsserver_compartments     = local.wlsserver_compartments
 
