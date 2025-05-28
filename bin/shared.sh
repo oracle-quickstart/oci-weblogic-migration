@@ -228,4 +228,4 @@ log_exit_attempt(){
   printf '%*s\n' "${COLUMNS:-80}" '' | tr ' ' '='
 }
 
-export user_functions_loaded=0
+user_functions_loaded=0

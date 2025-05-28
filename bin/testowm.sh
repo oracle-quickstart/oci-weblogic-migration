@@ -7,11 +7,11 @@
 # Description          : Consolidated script to run the entire migration process
 #############################################################################################################################
 
-source ./owm.sh
+TESTOWM_SCRIPT_DIR="$(dirname "$0")"
 
 ########################################## SECTION : Install Dependencies ###################################################
 #Downloading and installing all dependencies
-bash ./install_dependencies.sh
+bash "$TESTOWM_SCRIPT_DIR/install_dependencies.sh"
 
 if [ $? -ne 0 ]; then
   echo "Failed to install dependencies."
@@ -21,7 +21,7 @@ fi
 #############################################################################################################################
 
 ########################################## SECTION : Prerequisites check ####################################################
-bash ./check_pre-reqs.sh
+bash "$TESTOWM_SCRIPT_DIR/check_pre-reqs.sh"
 
 if [ $? -ne 0 ]; then
   echo "Failed in prerequisites check."
@@ -30,7 +30,7 @@ fi
 #############################################################################################################################
 
 ########################################## SECTION : MIGRATION ##############################################################
-
+source "$TESTOWM_SCRIPT_DIR/owm.sh"
 load_config "$2"
 
 ########################################## SUB_SECTION : Discover Weblogic Domain ###########################################

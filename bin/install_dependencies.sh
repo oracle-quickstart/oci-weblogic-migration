@@ -8,17 +8,13 @@
 # Description          : Install all required dependencies needed to run OCI Weblogic Migration Tool
 # Dependencies         : $DEPS_WDT_HOME set in common.sh
 #############################################################################################################################
-
-
 scriptName=$(basename "$0")
 scriptPath=$(dirname "$0")
 toolHome=$(builtin cd "$scriptPath/.."|| exit; pwd )
 LOG_FILE_NAME="owm_install_deps.log"
-# echo $scriptPath
-# echo $toolHome
 over_write_deps=False
 
-[ "$user_functions_loaded" ] || source ./shared.sh
+[ "$user_functions_loaded" ] || source "$scriptPath/shared.sh"
 
 install_oci_sdk_release(){
   local skip_download=${1}

@@ -15,7 +15,7 @@ LOG_FILE_NAME="owm.log"
 # echo $toolHome
 ON_PREM_ENV_FILE="$toolHome/config"
 
-[ "$user_functions_loaded" ] || source ./shared.sh
+[ "$user_functions_loaded" ] || source "$scriptPath/shared.sh"
 
 discover(){
   log "info" "<discoverDomain><discover><entry> args: $*"
