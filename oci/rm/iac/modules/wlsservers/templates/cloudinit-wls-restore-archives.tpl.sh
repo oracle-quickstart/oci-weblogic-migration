@@ -172,7 +172,7 @@ function create_java_symlinks() {
             rm -rf ${java_path} | log >> $log_file
         fi
 
-        # Create symlink (CANONICAL → JAVA_PATH)
+        # Create symlink (CANONICAL -> JAVA_PATH)
         ln -s ${canonical_java_path} ${java_path} | log >> $log_file
 
         # Set ownership
