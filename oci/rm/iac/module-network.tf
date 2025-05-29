@@ -60,7 +60,7 @@ locals {
   vcn_cidrs              = var.create_vcn ? var.vcn_cidrs : local.vcn_lookup_cidr_blocks
 
   # Created route table if enabled, else var.ig_route_table_id
-  ig_route_table_id = var.create_vcn ? try(one(module.vcn[*].ig_route_id), var.ig_route_table_id) : var.ig_route_table_id
+  ig_route_table_id = var.create_vcn ? try(one(module.vcn[*].ig_route_id), var.ig_route_table_id) : try(oci_core_route_table.ig_rt[0].id, var.ig_route_table_id)
 
   # Created route table if enabled, else var.nat_route_table_id
   nat_route_table_id = var.create_vcn ? try(one(module.vcn[*].nat_route_id), var.ig_route_table_id) : var.nat_route_table_id
