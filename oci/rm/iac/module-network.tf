@@ -296,7 +296,7 @@ module "network" {
 /* Create LPGs for VCN Peering */
 module "lpg" {
   count              = var.is_vcn_peering ? 1 : 0
-  source             = "modules/network/vcn-peering"
+  source             = "./modules/network/vcn-peering"
   compartment_id     = local.network_compartment_id
   vcn_id             = local.vcn_id
   wls_existing_vcn_id                   = var.vcn_id
