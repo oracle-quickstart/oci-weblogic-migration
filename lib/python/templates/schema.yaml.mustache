@@ -1339,7 +1339,7 @@ variables:
         - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
     type: oci:core:vcn:id
     dependsOn:
-    compartmentId: ${atp_db_network_compartment_id_{{{datasourceName}}}}
+        compartmentId: ${atp_db_network_compartment_id_{{{datasourceName}}}}
     required: true
     default: ''
     title: "Autonomous Database Network"
@@ -1383,7 +1383,7 @@ variables:
                     - "Database System"
     type: oci:core:vcn:id
     dependsOn:
-    compartmentId: ${oci_db_network_compartment_id_{{{datasourceName}}}}
+        compartmentId: ${oci_db_network_compartment_id_{{{datasourceName}}}}
     required: true
     default: ''
     title: "DB System Network"
