@@ -17,6 +17,7 @@ ON_PREM_ENV_FILE="$toolHome/config"
 
 [ "$user_functions_loaded" ] || source "$scriptPath/shared.sh"
 
+
 discover(){
   log "info" "<discoverDomain><discover><entry> args: $*"
   EXEC_TYPE=$1
@@ -91,7 +92,11 @@ discover_infra_local(){
    log "info" "Executed discover infra with exit code [$exit_code]"
    if [ $exit_code -ne 0 ]; then
        log "error" "<discoverDomain><discover_infra_local><error> Error executing discover infra"
-       exit 1
+       if is_sourced; then
+         return 1
+       else
+         exit 1
+       fi
    fi
    log "info" "<discoverDomain><discover_infra_local><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
    DISCOVERED_INFRA_JSON="$toolHome/out/infra_output_$file_timestamp.json"
@@ -244,13 +249,13 @@ case "$1" in
        process_datasources $3
        ;;
     "orm")
-       build_orm $2 $3 #no 3rd argument.
+       build_orm $2 $3
        ;;
     "test")
            build_orm_test $2 $3
            ;;
-    "run")
-          echo "running the consolidated script called from testowm.sh"
+    "execute")
+          log "info" "Executing the migration process.."
           ;;
     *)
         echo "Unknown option: $1"
