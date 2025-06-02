@@ -11,7 +11,7 @@ TESTOWM_SCRIPT_DIR="$(dirname "$0")"
 source "$TESTOWM_SCRIPT_DIR/owm.sh"
 
 mkdir -p "$toolHome/logs/"
-CONSOLIDATED_LOG_FILE="$toolHome/logs/owm_consolidated.log"
+CONSOLIDATED_LOG_FILE="$toolHome/logs/migration_script.log"
 
 ########################################## SECTION : Install Dependencies ###################################################
 log "info" "Installing Dependencies.." | tee -a "$CONSOLIDATED_LOG_FILE"
@@ -23,6 +23,8 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+log "info" "Successfully installed dependencies." >> "$CONSOLIDATED_LOG_FILE"
+echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$CONSOLIDATED_LOG_FILE"
 #############################################################################################################################
 
 ########################################## SECTION : Prerequisites check ####################################################
@@ -34,11 +36,12 @@ if [ $? -ne 0 ]; then
   log "error" "Migration failed." | tee -a "$CONSOLIDATED_LOG_FILE"
   exit 1
 fi
+
+echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$CONSOLIDATED_LOG_FILE"
 #############################################################################################################################
 
 ########################################## SECTION : MIGRATION ##############################################################
 load_config "$ON_PREM_ENV_FILE/on-prem.env" >> "$CONSOLIDATED_LOG_FILE" 2>&1
-
 
 if [ $? -ne 0 ]; then
   log "error" "Script execution failed in loading configuration file. Errors can be found in $CONSOLIDATED_LOG_FILE"
@@ -46,6 +49,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$CONSOLIDATED_LOG_FILE"
 ########################################## SUB_SECTION : Discover Weblogic Domain ###########################################
 log "info" "Discovering WebLogic domain.." | tee -a "$CONSOLIDATED_LOG_FILE"
 discover_local >> "$CONSOLIDATED_LOG_FILE" 2>&1
@@ -55,17 +59,21 @@ if [ $? -ne 0 ]; then
   log "error" "Migration failed." | tee -a "$CONSOLIDATED_LOG_FILE"
   exit 1
 fi
+
+echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$CONSOLIDATED_LOG_FILE"
 #############################################################################################################################
 
 ########################################## SUB_SECTION : Discover Infrastructure ############################################
 log "info" "Discovering infrastructure.." | tee -a "$CONSOLIDATED_LOG_FILE"
-discover_infra_local "$DISCOVadsERED_DOMAIN_JSON" >> "$CONSOLIDATED_LOG_FILE" 2>&1
+discover_infra_local "$DISCOVERED_DOMAIN_JSON" >> "$CONSOLIDATED_LOG_FILE" 2>&1
 
 if [ $? -ne 0 ]; then
   log "error" "Script execution failed in discovering infrastructure. Errors can be found in $CONSOLIDATED_LOG_FILE"
   log "error" "Migration failed." | tee -a "$CONSOLIDATED_LOG_FILE"
   exit 1
 fi
+
+echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$CONSOLIDATED_LOG_FILE"
 #############################################################################################################################
 
 ########################################## SUB_SECTION : Archive Weblogic Domain ############################################
@@ -77,6 +85,8 @@ if [ $? -ne 0 ]; then
   log "error" "Migration failed." | tee -a "$CONSOLIDATED_LOG_FILE"
   exit 1
 fi
+
+echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$CONSOLIDATED_LOG_FILE"
 #############################################################################################################################
 
 ##################################### SUB_SECTION : Upload Archives to OCI Object Storage (Optional) ########################
@@ -88,6 +98,8 @@ if [ $? -ne 0 ]; then
   log "error" "Migration failed." | tee -a "$CONSOLIDATED_LOG_FILE"
   exit 1
 fi
+
+echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$CONSOLIDATED_LOG_FILE"
 #############################################################################################################################
 
 ##################################### SUB_SECTION : Discovery Database Connections ##########################################
@@ -99,6 +111,8 @@ if [ $? -ne 0 ]; then
   log "error" "Migration failed." | tee -a "$CONSOLIDATED_LOG_FILE"
   exit 1
 fi
+
+echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$CONSOLIDATED_LOG_FILE"
 #############################################################################################################################
 
 ##################################### SUB_SECTION :  Generate OCI Resource Manager Stacks ###################################
@@ -110,6 +124,8 @@ if [ $? -ne 0 ]; then
   log "error" "Migration failed." | tee -a "$CONSOLIDATED_LOG_FILE"
   exit 1
 fi
+
+echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$CONSOLIDATED_LOG_FILE"
 #############################################################################################################################
 log "info" "Migration completed successfully!" | tee -a "$CONSOLIDATED_LOG_FILE"
 log "info" "Stack file created: ${toolHome}/oci/stack/$STACK_NAME.zip" | tee -a "$CONSOLIDATED_LOG_FILE"
