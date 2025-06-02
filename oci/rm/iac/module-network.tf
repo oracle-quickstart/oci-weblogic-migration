@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Oracle and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 data "oci_core_vcn" "oke" {
@@ -60,16 +60,17 @@ locals {
   vcn_cidrs              = var.create_vcn ? var.vcn_cidrs : local.vcn_lookup_cidr_blocks
 
   # Created route table if enabled, else var.ig_route_table_id
-  ig_route_table_id = var.create_vcn ? try(one(module.vcn[*].ig_route_id), var.ig_route_table_id) : var.ig_route_table_id
+  ig_route_table_id = var.create_vcn ? try(one(module.vcn[*].ig_route_id), var.ig_route_table_id) : try(oci_core_route_table.ig_rt[0].id, var.ig_route_table_id)
 
   # Created route table if enabled, else var.nat_route_table_id
   nat_route_table_id = var.create_vcn ? try(one(module.vcn[*].nat_route_id), var.ig_route_table_id) : var.nat_route_table_id
 
   network_compartment_id = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
   # Map of configured subnets to specified/generated dns_label when enabled
-  # If `assign_dns = true`, use dns_label for subnet if specified or first 2 characters of subnet key
+  # If `assign_dns = true`, use the provided `dns_label` for each subnet (if specified),
+  # otherwise use "<two characters of subnet key><state_id>" as the default DNS label to ensure uniqueness.
   subnet_dns_labels = { for k, v in var.subnets :
-    k => coalesce(lookup(v, "dns_label", null), substr(k, 0, 2))
+    k => coalesce(lookup(v, "dns_label", null), "${substr(k, 0, 2)}${local.state_id}")
     if var.assign_dns
   }
 }
@@ -254,6 +255,30 @@ module "network-wls-private-subnet" {
   }, local.wlsservers_freeform_tags)
 }
 
+/* Create back end subnet for bastion subnet */
+module "network_bastion_subnet" {
+  source             = "./modules/network/subnet"
+  count              = var.create_bastion ? 1 : 0
+  compartment_id     = local.network_compartment_id
+  vcn_id             = local.vcn_id
+  route_table_id     = local.ig_route_table_id
+  subnet_name        = format("bastion-%v", local.state_id)
+  dns_label          = lookup(local.subnet_dns_labels, "bastion", null)
+  cidr_block         = var.bastion_subnet_cidr
+  prohibit_public_ip = false
+
+  # Standard tags as defined if enabled for use, or freeform
+  # User-provided tags are merged last and take precedence
+  defined_tags = merge(var.use_defined_tags ? {
+    "${var.tag_namespace}.state_id" = local.state_id,
+    "${var.tag_namespace}.role"     = "bastion",
+  } : {}, local.bastion_defined_tags)
+  freeform_tags = merge(var.use_defined_tags ? {} : {
+    "state_id" = local.state_id,
+    "role"     = "bastion",
+  }, local.bastion_freeform_tags)
+}
+
 module "network" {
   source           = "./modules/network"
   state_id         = local.state_id
@@ -309,7 +334,7 @@ output "nat_route_table_id" {
 
 # Subnets
 output "bastion_subnet_id" {
-  value = try(module.network.bastion_subnet_id, null)
+  value = try(module.network_bastion_subnet[0].subnet_id, null)
 }
 output "bastion_subnet_cidr" {
   value = try(module.network.bastion_subnet_cidr, null)
