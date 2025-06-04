@@ -54,7 +54,7 @@ module "load-balancer" {
   compartment_id           = coalesce(var.network_compartment_id, local.compartment_id)
   lb_reserved_public_ip_id = compact([var.lb_reserved_public_ip_id])
   is_lb_private            = false #var.is_lb_private
-  lb_nsg_id                = compact(flatten([try(can(regex("^ocid1.networksecuritygroup", var.nsgs.pub_lb)) ? [var.nsgs.pub_lb] : [], []), try([module.network.pub_lb_nsg_id], [])]))
+  lb_nsg_id                = compact(flatten([try(length(trimspace(var.nsgs.pub_lb.id)) > 0 ? [var.nsgs.pub_lb.id] : [], []), try([module.network.pub_lb_nsg_id], [])]))
   lb_max_bandwidth         = var.lb_shape.pub_lb.max
   lb_min_bandwidth         = var.lb_shape.pub_lb.min
   lb_name                  = format("%s-%v-lb",local.wls_domain_name,local.state_id)
