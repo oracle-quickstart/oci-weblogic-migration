@@ -198,6 +198,10 @@ data "cloudinit_config" "wlsservers" {
              content  = file("${path.module}/templates/ds_update_config_xml_w_db_system.py")
              path     = "/opt/scripts/ds_update_config_xml_w_db_system.py"
            },
+           {
+             content  = file("${path.module}/templates/vcn_peering.py")
+             path     = "/opt/scripts/vcn_peering.py"
+           },
          ]
        })
        filename   = "72-wls-ds-scripts.yml"

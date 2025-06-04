@@ -28,6 +28,17 @@ function log() {
     done
 }
 
+#VCN peering script to update the Weblogic and Database subnet route tables
+output=$(python3 /opt/scripts/vcn_peering.py)
+exit_code=$?
+echo "Executing VCN peering script" | log >> $log_file
+echo "$output" | log >> $log_file
+    if [ $exit_code -ne 0 ]; then
+        echo "Error executing VCN peering script. " | log >> $log_file
+    else
+        echo "Executed VCN peering script with [$exit_code]" | log >> $log_file
+    fi
+
 
 cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/jdbc" | log >> $log_file ; exit 1)
 

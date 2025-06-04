@@ -153,6 +153,7 @@ resource "oci_core_instance" "wlsservers" {
       mode = var.mode
       wls-tenancy-id           = var.tenancy_id
       wls-initial-node-labels  = join(",", [for k, v in each.value.node_labels : format("%v=%v", k, v)])
+      is_admin_instance        = tostring(each.value.index == 0)
       secondary_vnics          = jsonencode(lookup(each.value, "secondary_vnics", {}))
       ssh_authorized_keys      = var.ssh_public_key
       user_data                = lookup(lookup(data.cloudinit_config.wlsservers, each.key, {}), "rendered", "")

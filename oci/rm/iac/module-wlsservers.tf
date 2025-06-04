@@ -89,8 +89,8 @@ module "wlsservers" {
   wlsserver_vcn_id    = var.create_vcn ? try(one(module.vcn[*].vcn_id), var.vcn_id) : var.vcn_id
   db_subnet_id        = var.db_subnet_id
   is_vcn_peering      = var.is_vcn_peering
-  db_lpg              = try(module.lpg.db_lpg, "")
-  wlsserver_lpg       = try(module.lpg.wls_lpg, "")
+  db_lpg              = element(concat(module.lpg[*].db_lpg, [""]), 0)
+  wlsserver_lpg       = element(concat(module.lpg[*].wls_lpg, [""]), 0)
   wlsserver_ports     = local.wls_domain_all_discovered_ports
   adminserver_ports   = local.wls_admin_server_ports
 
