@@ -129,10 +129,10 @@ variable "nat_gateway_public_ip_id" {
 
 variable "subnets" {
   default = {
-    bastion     = { cidr    = "10.0.1.0/24" }
-    int_lb      = { newbits = 11 }
-    pub_lb      = { newbits = 11 }
-    wlsservers  = { newbits = 4 }
+    bastion    = { cidr = "10.0.1.0/24" }
+    int_lb     = { newbits = 11 }
+    pub_lb     = { newbits = 11 }
+    wlsservers = { newbits = 4 }
   }
   description = "Configuration for standard subnets. The 'create' parameter of each entry defaults to 'auto', creating subnets when other enabled components are expected to utilize them, and may be configured with 'never' or 'always' to force disabled/enabled."
   type = map(object({
@@ -145,27 +145,27 @@ variable "subnets" {
   }))
   validation {
     condition = alltrue([
-    for k, v in var.subnets : contains(["never", "auto", "always"], coalesce(v.create, "auto"))
+      for k, v in var.subnets : contains(["never", "auto", "always"], coalesce(v.create, "auto"))
     ])
     error_message = "Accepted values for 'create' are 'never', 'auto', or 'always'."
   }
   validation {
     condition = alltrue([
-    for v in flatten([for k, v in var.subnets : keys(v)]) : contains(["create", "id", "cidr", "netnum", "newbits", "dns_label"], v)
+      for v in flatten([for k, v in var.subnets : keys(v)]) : contains(["create", "id", "cidr", "netnum", "newbits", "dns_label"], v)
     ])
     error_message = format("Invalid subnet configuration keys: %s", jsonencode(distinct([
-    for v in flatten([for k, v in var.subnets : keys(v)]) : v if !contains(["create", "id", "cidr", "netnum", "newbits", "dns_label"], v)
+      for v in flatten([for k, v in var.subnets : keys(v)]) : v if !contains(["create", "id", "cidr", "netnum", "newbits", "dns_label"], v)
     ])))
   }
 }
 
 variable "nsgs" {
   default = {
-    bastion  = {}
-    int_lb   = {}
-    pub_lb   = {}
-    managedserver  = {}
-    adminserver = {}
+    bastion       = {}
+    int_lb        = {}
+    pub_lb        = {}
+    managedserver = {}
+    adminserver   = {}
   }
   description = "Configuration for standard network security groups (NSGs).  The 'create' parameter of each entry defaults to 'auto', creating NSGs when other enabled components are expected to utilize them, and may be configured with 'never' or 'always' to force disabled/enabled."
   type = map(object({
@@ -174,25 +174,25 @@ variable "nsgs" {
   }))
   validation {
     condition = alltrue([
-    for k, v in values(var.nsgs) : contains(["never", "auto", "always"], coalesce(v.create, "auto"))
+      for k, v in values(var.nsgs) : contains(["never", "auto", "always"], coalesce(v.create, "auto"))
     ])
     error_message = "Accepted values for 'create' are 'never', 'auto', or 'always'."
   }
   validation {
     condition = alltrue([
-    for v in flatten([for k, v in var.nsgs : keys(v)]) : contains(["create", "id"], v)
+      for v in flatten([for k, v in var.nsgs : keys(v)]) : contains(["create", "id"], v)
     ])
     error_message = format("Invalid NSG configuration keys: %s", jsonencode(distinct([
-    for v in flatten([for k, v in var.nsgs : keys(v)]) : v if !contains(["create", "id"], v)
+      for v in flatten([for k, v in var.nsgs : keys(v)]) : v if !contains(["create", "id"], v)
     ])))
   }
   validation {
     condition = alltrue([
-    for k, v in var.nsgs :
-    contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver", "fss"], k)
+      for k, v in var.nsgs :
+      contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver", "fss"], k)
     ])
     error_message = format("Invalid NSG keys: %s", jsonencode([for k, v in var.nsgs : k
-    if !contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver","fss"], k)
+      if !contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver", "fss"], k)
     ]))
   }
 }
@@ -309,19 +309,23 @@ variable "bastion_subnet_cidr" {
 variable "db_network_compartment_id" {
   type        = string
   description = "The OCID of the compartment in which the DB System VCN is found"
+  default     = ""
 }
 
 variable "db_existing_vcn_id" {
   type        = string
   description = "The OCID of the VCN used by the ATP database private endpoint"
+  default     = ""
 }
 
 variable "is_vcn_peering" {
   type        = bool
   description = "Indicates whether VCN peering will be set up"
+  default     = false
 }
 
 variable "db_subnet_id" {
   type        = string
   description = "The OCID of the subnet for the OCI DB or ATP DB (when using private endpoint)"
+  default     = ""
 }

@@ -1,3 +1,6 @@
+# Copyright (c) 2025, Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+
 variable "db_existing_vcn_id" {
   type        = string
   description = "The OCID of the VCN used by the ATP database private endpoint"
@@ -18,8 +21,9 @@ variable "vcn_id" {
   type        = string
 }
 
-variable "wls_existing_vcn_id" { type = string }
-variable "wlsserver_subnet_id" { type = string }
+variable "wlsserver_subnet_id" {
+  type    = string
+}
 
 
 variable "db_subnet_id" {

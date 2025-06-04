@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 resource "oci_core_instance" "wlsservers" {
@@ -10,8 +10,8 @@ resource "oci_core_instance" "wlsservers" {
   preserve_boot_volume = false
   shape                = each.value.shape
   #TODO: JOI: enable pre-release
-#  defined_tags            = each.value.defined_tags
-#  freeform_tags           = each.value.freeform_tags
+  #  defined_tags            = each.value.defined_tags
+  #  freeform_tags           = each.value.freeform_tags
   extended_metadata       = each.value.extended_metadata
   capacity_reservation_id = each.value.capacity_reservation_id
 
@@ -26,10 +26,10 @@ resource "oci_core_instance" "wlsservers" {
   }
 
   #TODO (joi) future version - launch_volume_attachments should be dynamic based on var.wls_archived_volumes
-#   dynamic "launch_volume_attachments" {
-#     for_each = length(var.wls_archived_volumes) > 0 ? var.wls_archived_volumes : {}
-#     content {
-#       type = "iscsi"
+  #   dynamic "launch_volume_attachments" {
+  #     for_each = length(var.wls_archived_volumes) > 0 ? var.wls_archived_volumes : {}
+  #     content {
+  #       type = "iscsi"
   #     device = each.value.device
   #    display_name = format("mw-%s-%s-%v",var.resource_name_prefix,each.key,var.state_id)
   #    is_agent_auto_iscsi_login_enabled=true
@@ -39,47 +39,47 @@ resource "oci_core_instance" "wlsservers" {
   #      display_name = format("%s-%s-%s-%v",each.value.display_name, var.resource_name_prefix,each.key,var.state_id)
   #      size_in_gbs = each.value.size
   #    }
-#     }
-#   }
+  #     }
+  #   }
   // Create and attach a volume
   launch_volume_attachments {
-    type = "iscsi"
-    device = "/dev/oracleoci/oraclevdb"
-    display_name = format("mw-%s-%s-%v",var.resource_name_prefix,each.key,var.state_id)
-    is_agent_auto_iscsi_login_enabled=true
+    type                              = "iscsi"
+    device                            = "/dev/oracleoci/oraclevdb"
+    display_name                      = format("mw-%s-%s-%v", var.resource_name_prefix, each.key, var.state_id)
+    is_agent_auto_iscsi_login_enabled = true
     launch_create_volume_details {
       volume_creation_type = "ATTRIBUTES"
-      compartment_id = each.value.compartment_id
-      display_name = format("mwi-%s-%s-%v",var.resource_name_prefix,each.key,var.state_id)
-      size_in_gbs = local.block_volume_mw_size
+      compartment_id       = each.value.compartment_id
+      display_name         = format("mwi-%s-%s-%v", var.resource_name_prefix, each.key, var.state_id)
+      size_in_gbs          = local.block_volume_mw_size
     }
   }
 
   // Create and attach a volume
   launch_volume_attachments {
-    type = "iscsi"
-    device = "/dev/oracleoci/oraclevdc"
-    display_name = format("jdk-%s-%s-%v",var.resource_name_prefix,each.key,var.state_id)
-    is_agent_auto_iscsi_login_enabled=true
+    type                              = "iscsi"
+    device                            = "/dev/oracleoci/oraclevdc"
+    display_name                      = format("jdk-%s-%s-%v", var.resource_name_prefix, each.key, var.state_id)
+    is_agent_auto_iscsi_login_enabled = true
     launch_create_volume_details {
       volume_creation_type = "ATTRIBUTES"
-      compartment_id = each.value.compartment_id
-      display_name = format("jdki-%s-%s-%v",var.resource_name_prefix,each.key,var.state_id)
-      size_in_gbs = local.block_volume_jdk_size
+      compartment_id       = each.value.compartment_id
+      display_name         = format("jdki-%s-%s-%v", var.resource_name_prefix, each.key, var.state_id)
+      size_in_gbs          = local.block_volume_jdk_size
     }
   }
 
   // Create and attach a volume
   launch_volume_attachments {
-    type = "iscsi"
-    device = "/dev/oracleoci/oraclevdd"
-    is_agent_auto_iscsi_login_enabled=true
-    display_name = format("domain-%s-%s-%v",var.resource_name_prefix,each.key,var.state_id)
+    type                              = "iscsi"
+    device                            = "/dev/oracleoci/oraclevdd"
+    is_agent_auto_iscsi_login_enabled = true
+    display_name                      = format("domain-%s-%s-%v", var.resource_name_prefix, each.key, var.state_id)
     launch_create_volume_details {
       volume_creation_type = "ATTRIBUTES"
-      compartment_id = each.value.compartment_id
-      display_name = format("domain-%s-%s-%v",var.resource_name_prefix,each.key,var.state_id)
-      size_in_gbs = local.block_volume_domain_size
+      compartment_id       = each.value.compartment_id
+      display_name         = format("domain-%s-%s-%v", var.resource_name_prefix, each.key, var.state_id)
+      size_in_gbs          = local.block_volume_domain_size
     }
   }
   #TODO: JOI makes this default to true.  Just to be on the safe side.
@@ -135,10 +135,10 @@ resource "oci_core_instance" "wlsservers" {
     assign_public_ip          = each.value.assign_public_ip
     nsg_ids                   = each.value.nsg_ids
     subnet_id                 = each.value.subnet_id
-    hostname_label = each.value.hostname
-#TODO: JOI: enable pre-release
-#    defined_tags              = each.value.defined_tags
-#    freeform_tags             = each.value.freeform_tags
+    hostname_label            = each.value.hostname
+    #TODO: JOI: enable pre-release
+    #    defined_tags              = each.value.defined_tags
+    #    freeform_tags             = each.value.freeform_tags
   }
 
   instance_options {
@@ -147,22 +147,22 @@ resource "oci_core_instance" "wlsservers" {
 
   metadata = merge(
     {
-      logs_dir=   "/var/log/owm"
-      wls_domain_name = var.resource_name_prefix
-      vmscripts_path = var.vm_scripts_path
-      mode = var.mode
-      wls-tenancy-id           = var.tenancy_id
-      wls-initial-node-labels  = join(",", [for k, v in each.value.node_labels : format("%v=%v", k, v)])
-      is_admin_instance        = tostring(each.value.index == 0)
-      secondary_vnics          = jsonencode(lookup(each.value, "secondary_vnics", {}))
-      ssh_authorized_keys      = var.ssh_public_key
-      user_data                = lookup(lookup(data.cloudinit_config.wlsservers, each.key, {}), "rendered", "")
-      wlsserver_vcn_id         = var.wlsserver_vcn_id
-      wlsserver_subnet_id      = var.wlsserver_subnet_id
-      db_subnet_id             = var.db_subnet_id
-      is_vcn_peering           = var.is_vcn_peering
-      db_lpg                   = var.db_lpg
-      wlsserver_lpg            = var.wlsserver_lpg
+      logs_dir                = "/var/log/owm"
+      wls_domain_name         = var.resource_name_prefix
+      vmscripts_path          = var.vm_scripts_path
+      mode                    = var.mode
+      wls-tenancy-id          = var.tenancy_id
+      wls-initial-node-labels = join(",", [for k, v in each.value.node_labels : format("%v=%v", k, v)])
+      is_admin_instance       = tostring(each.value.index == 0)
+      secondary_vnics         = jsonencode(lookup(each.value, "secondary_vnics", {}))
+      ssh_authorized_keys     = var.ssh_public_key
+      user_data               = lookup(lookup(data.cloudinit_config.wlsservers, each.key, {}), "rendered", "")
+      wlsserver_vcn_id        = var.wlsserver_vcn_id
+      wlsserver_subnet_id     = var.wlsserver_subnet_id
+      db_subnet_id            = var.db_subnet_id
+      is_vcn_peering          = var.is_vcn_peering
+      db_lpg                  = var.db_lpg
+      wlsserver_lpg           = var.wlsserver_lpg
     },
 
     # Extra user-defined fields merged last
