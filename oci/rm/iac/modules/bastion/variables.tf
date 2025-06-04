@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2023 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2017, 2023, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 # Common
@@ -12,6 +12,7 @@ variable "image_id" { type = string }
 variable "is_public" { type = bool }
 variable "nsg_ids" { type = list(string) }
 variable "shape" { type = map(any) }
+variable "boot_volume_size" {type = number}
 variable "ssh_private_key" {
   type      = string
   sensitive = true

@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 variable "create_vcn" { default = true }
@@ -110,6 +110,12 @@ variable "network_compartment_id" {
   type        = string
   description = "The OCID of the compartment for network resources. Leave it blank to use the the same compartment for both compute and network resources"
   default     = ""
+}
+
+variable "bastion_subnet_cidr" {
+  type        = string
+  description = "The CIDR of the new public subnet to create for a Bastion compute instance. The new subnet's CIDR should not overlap with any other subnet CIDRs."
+  default     = "10.0.1.0/24"
 }
 
 #TODO: Future version support multi-compartment
