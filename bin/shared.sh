@@ -79,11 +79,11 @@ function log(){
     #exec 3>&1 1>"$LOG_FILE" 2>&1
 }
 
-is_sourced() {
-  # Checks if the script being sourced.
-  # Returns 0 if sourced
-  [[ "${BASH_SOURCE[0]}" != "${0}" ]]
-}
+#is_sourced() {
+#  # Checks if the script being sourced.
+#  # Returns 0 if sourced
+#  [[ "${BASH_SOURCE[0]}" != "${0}" ]]
+#}
 
 is_empty_dir() {
     log "info" "is_empty_dir $1"

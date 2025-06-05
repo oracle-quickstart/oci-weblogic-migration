@@ -40,11 +40,7 @@ discover_local(){
   log "info" "Executed discover WebLogic with exit code [$exit_code]"
   if [ $exit_code -ne 0 ]; then
      log "error" "<discoverDomain><discover_local><error> Error executing discover infra"
-     if is_sourced; then
-       return 1
-     else
-       exit 1
-     fi
+     exit 1
   fi
   log "info" "<discoverDomain><discover_infra_local><exit> WebLogic Inventory File : $toolHome/out/Discovered_$file_timestamp.json"
   DISCOVERED_DOMAIN_JSON="$toolHome/out/Discovered_$file_timestamp.json"
@@ -89,22 +85,14 @@ discover_infra_local(){
       model_file_arg="-model_file $toolHome/out/$wls_inventory_file"
    else
        log "error" "<discoverDomain><discover_infra_local><error> model_file $wls_inventory_file not found. exiting."
-       if is_sourced; then
-         return 1
-       else
-         exit 1;
-       fi
+       exit 1
    fi
    discover "local" "$SCRIPT_PATH" "$model_file_arg" "-archive_file $toolHome/out/infra_output_$file_timestamp.json"
    exit_code=$?
    log "info" "Executed discover infra with exit code [$exit_code]"
    if [ $exit_code -ne 0 ]; then
        log "error" "<discoverDomain><discover_infra_local><error> Error executing discover infra"
-       if is_sourced; then
-         return 1
-       else
-         exit 1
-       fi
+       exit 1
    fi
    log "info" "<discoverDomain><discover_infra_local><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
    DISCOVERED_INFRA_JSON="$toolHome/out/infra_output_$file_timestamp.json"
@@ -147,22 +135,14 @@ function process_archives() {
         model_file_arg="-model_file $toolHome/out/$wls_inventory_file"
      else
          log "error" "<discoverDomain><process_archives><error> model_file $wls_inventory_file not found. exiting."
-         if is_sourced; then
-           return 1
-         else
-           exit 1
-         fi
+         exit 1
      fi
       discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@"
      exit_code=$?
      log "info" "Executed discover infra with exit code [$exit_code]"
      if [ $exit_code -ne 0 ]; then
          log "error" "<discoverDomain><process_archives><error> Error executing discover infra"
-         if is_sourced; then
-           return 1
-         else
-           exit 1
-         fi
+         exit 1
      fi
      log "info" "<discoverDomain><process_archives><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
 
@@ -180,11 +160,7 @@ upload_to_oci(){
   if [ $exit_code -ne 0 ] ; then
     log "error" "<discoverDomain><upload_to_oci><error> Error executing owm.sh lift operation"
     echo "check $LOG_FILE for more details.."
-    if is_sourced; then
-      return 1
-    else
-      exit 1
-    fi
+    exit 1
   fi
 #  if [[ "$exit_code" == $OP_COMPLETED ]]; then
 #     update_oss_auto_tfvars
