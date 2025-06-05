@@ -4,16 +4,20 @@
 """Updates the Weblogic and Database subnet route tables for VCN peering."""
 
 import oci
+import sys
 import urllib.request, urllib.error, urllib.parse
-principal = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+sys.path.append("/opt/scripts")
+import clogging.commonLogging as commonLogging
 
+logger = commonLogging.getLogger("vcn_peering.py")
 
 # Initialize service clients
+principal = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
 database_client = oci.database.DatabaseClient(config={}, signer=principal)
 core_client = oci.core.VirtualNetworkClient(config={}, signer=principal)
 virtual_network_composite_operations = oci.core.VirtualNetworkClientCompositeOperations(core_client)
 
-# Get all metadata attributes. Cache the attributes.
+# Get metadata attribute.
 def getAttribute(attribute, default=None):
     """
     Returns attribute or default value if no value is found
@@ -33,16 +37,6 @@ def getAttribute(attribute, default=None):
         logger.debug("0008", attribute, str(ex))
         pass
 
-    try:
-        result = urllib.request.urlopen('http://169.254.169.254/opc/v1/instance/metadata/' + attribute).read()
-        return result.decode("utf-8")
-    except urllib.error.HTTPError as er:
-        logger.debug("0010", attribute, str(er))
-        pass
-    except Exception as ex:
-        logger.debug("0007", attribute, str(ex))
-        pass
-
     return default
 
 def get_db_subnet_id():
@@ -56,12 +50,6 @@ def get_wls_subnet_id():
 
 def get_wls_lpg_id():
     return getAttribute("wlsserver_lpg")
-
-def is_vcn_peering():
-    return getAttribute("is_vcn_peering")
-
-def is_admin_instance():
-    return getAttribute("is_admin_instance")
 
 def get_subnet_details(subnet_id):
     get_subnet_response = core_client.get_subnet(subnet_id=subnet_id)
@@ -93,19 +81,18 @@ def add_route_rule_to_route_table(route_table_id, cidr_block, lpg_id):
     route_table = update_route_table_response.data
 
 if __name__ == '__main__':
-    if is_vcn_peering() and is_admin_instance():
-        wls_subnet = get_subnet_details(get_wls_subnet_id())
-        wls_rt_id = wls_subnet.route_table_id
-        wls_lpg_id = get_wls_lpg_id()
-        wls_subnet_cidr_block = wls_subnet.cidr_block
-        db_subnet = get_subnet_details(get_db_subnet_id())
-        db_rt_id = db_subnet.route_table_id
-        db_lpg_id = get_db_lpg_id()
-        db_subnet_cidr_block = db_subnet.cidr_block
-        #Add a route to the current route table of the weblogic subnet to direct traffic
-        #to the CIDR of the Database subnet to the LPG.
-        add_route_rule_to_route_table(wls_rt_id, db_subnet_cidr_block, wls_lpg_id)
+    wls_subnet = get_subnet_details(get_wls_subnet_id())
+    wls_rt_id = wls_subnet.route_table_id
+    wls_lpg_id = get_wls_lpg_id()
+    wls_subnet_cidr_block = wls_subnet.cidr_block
+    db_subnet = get_subnet_details(get_db_subnet_id())
+    db_rt_id = db_subnet.route_table_id
+    db_lpg_id = get_db_lpg_id()
+    db_subnet_cidr_block = db_subnet.cidr_block
+    #Add a route to the current route table of the weblogic subnet to direct traffic
+    #to the CIDR of the Database subnet to the LPG.
+    add_route_rule_to_route_table(wls_rt_id, db_subnet_cidr_block, wls_lpg_id)
 
-        #Add a route to the current route table of the database subnet to direct traffic
-        #to the CIDR of the WebLogic subnet to the LPG.
-        add_route_rule_to_route_table(db_rt_id, wls_subnet_cidr_block, db_lpg_id)
+    #Add a route to the current route table of the database subnet to direct traffic
+    #to the CIDR of the WebLogic subnet to the LPG.
+    add_route_rule_to_route_table(db_rt_id, wls_subnet_cidr_block, db_lpg_id)
