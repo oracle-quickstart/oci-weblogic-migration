@@ -66,7 +66,7 @@ install_jq_release(){
         exit 1
    fi
    chmod +x $DEPS_JQ_HOME/jq
-   log "info" "Install and download WDT tool in $DEPS_JQ_HOME completed."
+   log "info" "Install and download JQ tool in $DEPS_JQ_HOME completed."
 }
 
 
