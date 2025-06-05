@@ -328,6 +328,7 @@ module "lpg" {
   db_existing_vcn_id        = var.db_existing_vcn_id
   wlsserver_subnet_id       = try(module.network-wls-private-subnet.subnet_id, "")
   db_subnet_id              = var.db_subnet_id
+  lpg_name                  = format("lpg-%v", local.state_id)
 }
 
 # VCN

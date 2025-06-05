@@ -21,6 +21,11 @@ variable "vcn_id" {
   type        = string
 }
 
+variable "lpg_name" {
+  type        = string
+  description = "A user-friendly lpg name"
+}
+
 variable "wlsserver_subnet_id" {
   type    = string
 }
