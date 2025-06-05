@@ -35,11 +35,11 @@ if [ "$is_admin_instance" = "true" ] && [ "$is_vcn_peering" = "true" ]; then
     output=$(python3 /opt/scripts/vcn_peering.py)
     exit_code=$?
     echo "Executing VCN peering script" | log >> $log_file
-    echo "$output" | log >> $log_file
     if [ $exit_code -ne 0 ]; then
         echo "Error executing VCN peering script. " | log >> $log_file
+        echo "$output" | log >> $log_file
     else
-        echo "Executed VCN peering script with [$exit_code]" | log >> $log_file
+        echo "Executed VCN peering script with exit code [$exit_code]" | log >> $log_file
     fi
 fi
 
