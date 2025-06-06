@@ -156,5 +156,5 @@ fi
 STACK_FILE=$(jq -r '.stack_file' "$MIGRATION_DATA_JSON")
 echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
 #############################################################################################################################
-log "info" "Migration completed successfully!"
+log "info" "Migration scripts completed successfully!"
 log "info" "Stack file created: $STACK_FILE"
