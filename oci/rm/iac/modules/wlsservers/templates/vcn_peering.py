@@ -26,11 +26,8 @@ def getAttribute(attribute, default=None):
                                          headers=request_headers)
         result = urllib.request.urlopen(request).read()
         return result.decode("utf-8")
-    except urllib.error.HTTPError as er:
-        logger.debug("0009", attribute, str(er))
-        pass
     except Exception as ex:
-        logger.debug("0008", attribute, str(ex))
+        print(f"Error: {ex}")
         pass
 
     return default
@@ -51,22 +48,31 @@ def get_subnet_details(subnet_id):
     get_subnet_response = core_client.get_subnet(subnet_id=subnet_id)
     return(get_subnet_response.data)
 
-def add_route_rule_to_route_table(route_table_id, cidr_block, lpg_id):
+def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
     """
-        Adds a route rule to an existing route table.
-        :param route_table_id: route table to be updated
-        :param cidr_block: destination cidr_block
-        :param lpg_id: local peering gateway OCID
+    Checks if a specific route rule exists in an OCI route table.
+    If not, adds the route rule to an OCI route table.
+
+    Args:
+        route_table_id (str): The OCID of the route table to check.
+        destination_cidr (str): The destination CIDR block of the route rule.
+        target_id (str): The OCID of the local peering gateway.
+
     """
 
     try:
         get_route_table_response = core_client.get_route_table(rt_id=route_table_id)
         route_rules = get_route_table_response.data.route_rules
+        for rule in route_rules:
+            if rule.destination == destination_cidr and rule.destination_type == 'CIDR_BLOCK' and rule.network_entity_id == target_id:
+                print(f"Route rule already exists in route table {route_table_id}  : Skipping....")
+                return
+
         route_rule = oci.core.models.RouteRule(
             cidr_block=None,
-            destination=cidr_block,
+            destination=destination_cidr,
             destination_type='CIDR_BLOCK',
-            network_entity_id=lpg_id
+            network_entity_id=target_id
         )
         route_rules.append(route_rule)
         update_route_table_details = oci.core.models.UpdateRouteTableDetails(route_rules=route_rules)
@@ -76,8 +82,9 @@ def add_route_rule_to_route_table(route_table_id, cidr_block, lpg_id):
             wait_for_states=[oci.core.models.RouteTable.LIFECYCLE_STATE_AVAILABLE]
         )
         route_table = update_route_table_response.data
+        print(f"Route rule added to route table {route_table_id}")
     except Exception as e:
-        print(e)
+        print(f"Error: {e}")
         sys.exit(-1)
 
 if __name__ == '__main__':
