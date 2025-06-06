@@ -6,10 +6,6 @@
 import oci
 import sys
 import urllib.request, urllib.error, urllib.parse
-sys.path.append("/opt/scripts")
-import clogging.commonLogging as commonLogging
-
-logger = commonLogging.getLogger("vcn_peering.py")
 
 # Initialize service clients
 principal = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
