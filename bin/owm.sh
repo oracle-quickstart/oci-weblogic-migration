@@ -13,7 +13,7 @@ toolHome=$(builtin cd "$scriptPath/.." ||exit; pwd)
 LOG_FILE_NAME="owm.log"
 # echo $scriptPath
 # echo $toolHome
-ON_PREM_ENV_FILE="$toolHome/config"
+ON_PREM_ENV_FILE="$toolHome/config/on-prem.env"
 
 [ "$user_functions_loaded" ] || source "$scriptPath/shared.sh"
 
@@ -44,6 +44,7 @@ discover_local(){
   fi
   log "info" "<discoverDomain><discover_infra_local><exit> WebLogic Inventory File : $toolHome/out/Discovered_$file_timestamp.json"
   DISCOVERED_DOMAIN_JSON="$toolHome/out/Discovered_$file_timestamp.json"
+  update_migration_data_json "wls_json" "$DISCOVERED_DOMAIN_JSON"
 }
 
 
@@ -96,6 +97,7 @@ discover_infra_local(){
    fi
    log "info" "<discoverDomain><discover_infra_local><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
    DISCOVERED_INFRA_JSON="$toolHome/out/infra_output_$file_timestamp.json"
+   update_migration_data_json "infra_json" "$DISCOVERED_INFRA_JSON"
 }
 
 discover_infra_remote(){
@@ -214,45 +216,42 @@ fi
 
 case "$1" in
     "wls")
-        load_config "$2"
+        load_config "$ON_PREM_ENV_FILE"
         discover_local
         ;;
     "remote")
-        load_config "$2"
+        load_config "$ON_PREM_ENV_FILE"
         discover_remote
         ;;
     "infra")
-        load_config "$2"
-        discover_infra_local $3
+        load_config "$ON_PREM_ENV_FILE"
+        discover_infra_local $2
         ;;
     "infra-remote")
-        load_config "$2"
-        discover_infra_remote $3
+        load_config "$ON_PREM_ENV_FILE"
+        discover_infra_remote $2
         ;;
     "archive")
-       load_config "$2"
-       shift; shift
-#       process_archives "$3" "$4" "$5"
-       process_archives "$@"
-
+       load_config "$ON_PREM_ENV_FILE"
+       process_archives "$2"
        ;;
     "lift")
-       load_config "$2"
-       upload_to_oci "$3" "$4" #no need to provide the bucket name earlier.
+       load_config "$ON_PREM_ENV_FILE"
+       upload_to_oci "$2" "$3"
        ;;
     "ds")
-       load_config "$2"
-       process_datasources $3
+       load_config "$ON_PREM_ENV_FILE"
+       process_datasources "$2"
        ;;
     "orm")
-       build_orm $2 $3
+       build_orm $2 $3 #Inventory file path and Stack name
        ;;
     "test")
            build_orm_test $2 $3
            ;;
-    "execute")
-          log "info" "Executing the migration process.."
-          ;;
+#    "execute")
+#          log "info" "Executing the migration process.."
+#          ;;
     *)
         echo "Unknown option: $1"
         print_help

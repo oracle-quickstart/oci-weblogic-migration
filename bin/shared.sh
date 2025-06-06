@@ -79,11 +79,25 @@ function log(){
     #exec 3>&1 1>"$LOG_FILE" 2>&1
 }
 
-#is_sourced() {
-#  # Checks if the script being sourced.
-#  # Returns 0 if sourced
-#  [[ "${BASH_SOURCE[0]}" != "${0}" ]]
-#}
+update_migration_data_json() {
+  #Creating & updating migration_data.json, a metadata json file using jq tool.
+
+  local key=$1
+  local value=$2
+  local MIGRATION_DATA_JSON="$toolHome/logs/migration_data.json"
+
+  # Creating file with empty JSON object if it doesn't exist.
+  if [ ! -f "$MIGRATION_DATA_JSON" ]; then
+    echo '{}' > "$MIGRATION_DATA_JSON"
+  fi
+
+  # Creating a temporary file safely.
+  local tmpfile
+  tmpfile=$(mktemp) || { echo "Failed to create temp file"; return 1; }
+
+  # Updating the key in the JSON file, preserving other keys.
+  jq --arg k "$key" --arg v "$value" '.[$k] = $v' "$MIGRATION_DATA_JSON" > "$tmpfile" && mv "$tmpfile" "$MIGRATION_DATA_JSON"
+}
 
 is_empty_dir() {
     log "info" "is_empty_dir $1"
