@@ -63,22 +63,26 @@ def add_route_rule_to_route_table(route_table_id, cidr_block, lpg_id):
         :param lpg_id: local peering gateway OCID
     """
 
-    get_route_table_response = core_client.get_route_table(rt_id=route_table_id)
-    route_rules = get_route_table_response.data.route_rules
-    route_rule = oci.core.models.RouteRule(
-        cidr_block=None,
-        destination=cidr_block,
-        destination_type='CIDR_BLOCK',
-        network_entity_id=lpg_id
-    )
-    route_rules.append(route_rule)
-    update_route_table_details = oci.core.models.UpdateRouteTableDetails(route_rules=route_rules)
-    update_route_table_response = virtual_network_composite_operations.update_route_table_and_wait_for_state(
-        route_table_id,
-        update_route_table_details,
-        wait_for_states=[oci.core.models.RouteTable.LIFECYCLE_STATE_AVAILABLE]
-    )
-    route_table = update_route_table_response.data
+    try:
+        get_route_table_response = core_client.get_route_table(rt_id=route_table_id)
+        route_rules = get_route_table_response.data.route_rules
+        route_rule = oci.core.models.RouteRule(
+            cidr_block=None,
+            destination=cidr_block,
+            destination_type='CIDR_BLOCK',
+            network_entity_id=lpg_id
+        )
+        route_rules.append(route_rule)
+        update_route_table_details = oci.core.models.UpdateRouteTableDetails(route_rules=route_rules)
+        update_route_table_response = virtual_network_composite_operations.update_route_table_and_wait_for_state(
+            route_table_id,
+            update_route_table_details,
+            wait_for_states=[oci.core.models.RouteTable.LIFECYCLE_STATE_AVAILABLE]
+        )
+        route_table = update_route_table_response.data
+    except Exception as e:
+        print(e)
+        sys.exit(-1)
 
 if __name__ == '__main__':
     wls_subnet = get_subnet_details(get_wls_subnet_id())
@@ -96,3 +100,5 @@ if __name__ == '__main__':
     #Add a route to the current route table of the database subnet to direct traffic
     #to the CIDR of the WebLogic subnet to the LPG.
     add_route_rule_to_route_table(db_rt_id, wls_subnet_cidr_block, db_lpg_id)
+
+    sys.exit(0)
