@@ -31,7 +31,7 @@ locals {
 
   db_network_compartment_id = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_network_comp_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_network_comp_id_0 : ""))
   db_existing_vcn_id        = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_existing_vcn_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_existing_vcn_id_0 : ""))
-  db_subnet_id              = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_subnet_id_0 : (local.db_strategy_0_is_oci_db ? local.atp_db_subnet_id_0 : ""))
+  db_subnet_id              = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_subnet_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_subnet_id_0 : ""))
 
   new_vcn_and_oci_db                    = local.db_strategy_0_is_oci_db && var.create_vcn ? true : false
   existing_vcn_and_oci_db_different_vcn = local.db_strategy_0_is_oci_db && var.vcn_id != "" && var.vcn_id != local.oci_db_existing_vcn_id_0 ? true : false
