@@ -152,16 +152,16 @@ variableGroups:
   - title: "Loadbalancer"
     variables:
       - pub_lb_subnet_create
-      - pub_lb_subnet_newbits
+      - pub_lb_subnet_cidr
       - pub_lb_subnet_id
       - pub_lb_nsg_id
       - load_balancer_shape
       - lb_max_bandwidth
       - lb_min_bandwidth
-      - loadbalancer_authorized_cidrs_mgmt
-      - loadbalancer_authorized_cidrs_service
-      - allow_rules_internal_lb
-      - allow_rules_public_lb
+#      - loadbalancer_authorized_cidrs_mgmt
+#      - loadbalancer_authorized_cidrs_service
+#      - allow_rules_internal_lb
+#      - allow_rules_public_lb
 
   - title: "Bastion"
     variables:
@@ -514,19 +514,19 @@ variables:
     additionalProps:
       allowMultiple: true
     required: false
-    visible:
-      and:
-        - ${create_nsgs}
-        - ${add_load_balancer}
+    visible: false
+#      and:
+#        - ${create_nsgs}
+#        - ${add_load_balancer}
   allow_rules_public_lb:
     title: Additional public load balancer rules
     additionalProps:
       allowMultiple: true
     required: false
-    visible:
-      and:
-        - ${create_nsgs}
-        - ${add_load_balancer}
+    visible: false
+#      and:
+#        - ${create_nsgs}
+#        - ${add_load_balancer}
 
   create_drg:
     title: Create DRG
@@ -716,7 +716,8 @@ variables:
     pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
     uniqueItems: true
     default: [0.0.0.0/0]
-    visible: ${add_load_balancer}
+    visible: false
+#   visible: ${add_load_balancer}
 
   loadbalancer_authorized_cidrs_mgmt:
     type: array
@@ -727,7 +728,8 @@ variables:
       type: string
     pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
     uniqueItems: true
-    visible: ${add_load_balancer}
+    visible: false
+#   visible: ${add_load_balancer}
 
   pub_lb_subnet_create:
     title: Create public load balancer subnet
@@ -738,18 +740,14 @@ variables:
         - add_load_balancer
         - not: use_existing_loadbalancer
 
-  pub_lb_subnet_newbits:
-    title: Public load balancer subnet size
-    description: The number of network prefix bits added to the VCN CIDR block for the created subnet address range (i.e. a higher value is smaller). Refer to the Terraform <a href=https://developer.hashicorp.com/terraform/language/functions/cidrsubnets>cidrsubnets</a> function for more information.
-    type: number
-    visible:
-      and:
-        - ${pub_lb_subnet_create}
-        - and:
-            - ${add_load_balancer}
-            - not:
-                - ${use_existing_loadbalancer}
-
+    pub_lb_subnet_cidr:
+      title: Load Balancer Subnet CIDR
+      description: The CIDR of the new subnet to create for the load balancer. The new subnet’s CIDR should not overlap with any other subnet CIDRs.
+      type: string
+      default: 10.0.3.0/24
+      pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])/(3[0-2]|[1-2]?[0-9])$"
+      required: true
+      visible: ${add_load_balancer}
 
   pub_lb_subnet_id:
     title: Public load balancer subnet

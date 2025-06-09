@@ -279,6 +279,31 @@ module "network_bastion_subnet" {
   }, local.bastion_freeform_tags)
 }
 
+/* Create back end subnet for public loadbalancer subnet */
+module "network_pub_lb_subnet" {
+  source             = "./modules/network/subnet"
+  count              = var.add_load_balancer? 1 : 0
+
+  compartment_id     = local.network_compartment_id
+  vcn_id             = local.vcn_id
+  route_table_id     = local.ig_route_table_id
+  subnet_name        = format("public-lb-%v", local.state_id)
+  dns_label          = lookup(local.subnet_dns_labels, "pub_lb", null)
+  cidr_block         = var.pub_lb_subnet_cidr
+  prohibit_public_ip = false
+
+  defined_tags = merge(var.use_defined_tags ? {
+    "${var.tag_namespace}.state_id" = local.state_id,
+    "${var.tag_namespace}.role"     = "pub_lb",
+  } : {}, local.service_lb_defined_tags)
+
+  freeform_tags = merge(var.use_defined_tags ? {} : {
+    "state_id" = local.state_id,
+    "role"     = "pub_lb",
+  }, local.service_lb_freeform_tags)
+}
+
+
 module "network" {
   source           = "./modules/network"
   state_id         = local.state_id
@@ -359,7 +384,7 @@ output "int_lb_subnet_cidr" {
   value = try(module.network.int_lb_subnet_cidr, null)
 }
 output "pub_lb_subnet_id" {
-  value = try(module.network.pub_lb_subnet_id, null)
+  value = try(module.network_pub_lb_subnet[0].subnet_id, null)
 }
 output "pub_lb_subnet_cidr" {
   value = try(module.network.pub_lb_subnet_cidr, null)

@@ -131,7 +131,7 @@ variable "subnets" {
   default = {
     bastion     = { cidr    = "10.0.1.0/24" }
     int_lb      = { newbits = 11 }
-    pub_lb      = { newbits = 11 }
+    pub_lb      = { cidr = "10.0.3.0/24" }
     wlsservers  = { newbits = 4 }
   }
   description = "Configuration for standard subnets. The 'create' parameter of each entry defaults to 'auto', creating subnets when other enabled components are expected to utilize them, and may be configured with 'never' or 'always' to force disabled/enabled."
@@ -304,4 +304,10 @@ variable "bastion_subnet_cidr" {
   type        = string
   description = "CIDR for bastion subnet"
   default     = ""
+}
+
+variable "pub_lb_subnet_cidr" {
+  type        = string
+  description = "The CIDR of the new public subnet to create for a Bastion compute instance. The new subnet's CIDR should not overlap with any other subnet CIDRs."
+  default     = "10.0.3.0/24"
 }

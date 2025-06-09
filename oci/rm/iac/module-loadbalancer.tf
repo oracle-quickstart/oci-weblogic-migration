@@ -58,7 +58,7 @@ module "load-balancer" {
   lb_max_bandwidth         = var.lb_shape.pub_lb.max
   lb_min_bandwidth         = var.lb_shape.pub_lb.min
   lb_name                  = format("%s-%v-lb",local.wls_domain_name,local.state_id)
-  lb_subnet_id             = compact(flatten([lookup(var.subnets.pub_lb,"id",null),try(module.network.pub_lb_subnet_id, null)])) #compact(flatten([lookup(var.subnets.pub_lb,"id",null), try(module.network.pub_lb_subnet_id, null)])) #[module.network.pub_lb_subnet_id]
+  lb_subnet_id             = compact(flatten([lookup(var.subnets.pub_lb,"id",null),try(module.network_pub_lb_subnet[0].subnet_id, null)])) #compact(flatten([lookup(var.subnets.pub_lb,"id",null), try(module.network.pub_lb_subnet_id, null)])) #[module.network.pub_lb_subnet_id]
   state_id            = local.state_id
   lb_shape = var.lb_shape.pub_lb.shape
   # Tagging
