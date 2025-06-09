@@ -71,7 +71,7 @@ locals {
       },
       {
         for p in var.backend_ports :
-        "Allow TCP ingress to wlsservers on port ${p} from CIDR" => { protocol = local.tcp_protocol, port = p, source = var.pub_lb_subnet_cidr_value source_type  = "CIDR_BLOCK"
+        "Allow TCP ingress to wlsservers on port ${p} from CIDR" => { protocol = local.tcp_protocol, port = p, source = var.pub_lb_subnet_cidr_value, source_type  = "CIDR_BLOCK"
       }
       }
     ) : {},
