@@ -62,3 +62,12 @@ variable "nsgs" {
     id     = optional(string)
   }))
 }
+variable "backend_ports" {
+  type        = list(number)
+  description = "The list of private IP addresses and Ports of the instances for the backend servers"
+}
+
+variable "pub_lb_subnet_cidr_value" {
+  type        = string
+  description = "load_balancer_subnet_cidr"
+}

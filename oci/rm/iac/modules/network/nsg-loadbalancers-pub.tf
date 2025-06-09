@@ -25,6 +25,8 @@ locals {
       "Allow ICMP egress from public load balancers to wlsserver nodes for path discovery" : {
         protocol = local.icmp_protocol, port = local.all_ports, destination = local.wlsserver_nsg_id, destination_type = local.rule_type_nsg,
       },
+      "Allow all egress traffic from public load balancer" : { protocol = local.all_protocols, destination = local.anywhere, destination_type = local.rule_type_cidr, port = 0,
+      },
     },
     var.enable_waf ? local.waf_rules : {},
     var.allow_rules_public_lb,

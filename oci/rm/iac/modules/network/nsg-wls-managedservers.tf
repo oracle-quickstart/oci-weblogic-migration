@@ -60,14 +60,21 @@ locals {
       },
     } : {},
     #TODO: JOI update ports with http listen ports
-    local.pub_lb_nsg_enabled ? {
-      "Allow TCP ingress to wlsservers from public load balancers" : {
-        protocol = local.tcp_protocol, port_min = local.node_port_min, port_max = local.node_port_max, source = local.pub_lb_nsg_id, source_type = local.rule_type_nsg,
+    local.pub_lb_nsg_enabled ? merge(
+      {
+        "Allow TCP ingress to wlsservers from public load balancers" : {
+          protocol = local.tcp_protocol, port_min = local.node_port_min, port_max = local.node_port_max, source   = local.pub_lb_nsg_id, source_type = local.rule_type_nsg,
+        },
+        "Allow TCP ingress to wlsservers for health check from public load balancers" : {
+          protocol    = local.tcp_protocol, port = local.health_check_port, source = local.pub_lb_nsg_id, source_type = local.rule_type_nsg,
+        }
       },
-      "Allow TCP ingress to wlsservers for health check from public load balancers" : {
-        protocol = local.tcp_protocol, port = local.health_check_port, source = local.pub_lb_nsg_id, source_type = local.rule_type_nsg,
-      },
-    } : {},
+      {
+        for p in var.backend_ports :
+        "Allow TCP ingress to wlsservers on port ${p} from CIDR" => { protocol = local.tcp_protocol, port = p, source = var.pub_lb_subnet_cidr_value # load balancer subnet CIDRsource_type  = "CIDR_BLOCK"
+      }
+      }
+    ) : {},
     # Allow Bastion ssh access to Managed Server
     local.bastion_nsg_enabled && var.allow_wlsserver_ssh_access ? {
       "Allow SSH ingress to wlsservers from bastion" : {
