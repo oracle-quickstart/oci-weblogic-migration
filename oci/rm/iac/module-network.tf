@@ -9,7 +9,6 @@ data "oci_core_vcn" "oke" {
 data "oci_core_services" "all_services" {
 }
 
-# ──────────────────────────────────────────────────────────
 # Datasource to Fetch any existing gateways on the chosen VCN
 data "oci_core_internet_gateways" "existing_igs" {
   count          = var.create_vcn ? 0 : 1
@@ -28,13 +27,11 @@ data "oci_core_service_gateways" "existing_sgs" {
   compartment_id = var.network_compartment_id
   vcn_id         = var.vcn_id
 }
-# ──────────────────────────────────────────────────────────
 
 locals {
   # Created VCN if enabled, else var.vcn_id
   vcn_id = var.create_vcn ? try(one(module.vcn[*].vcn_id), var.vcn_id) : var.vcn_id
 
-  # ──────────────────────────────────────────────────────────
   # Only create in case of existing VCN if none of the gateways already exist
   create_ig = var.create_vcn ? false : try(length(data.oci_core_internet_gateways.existing_igs[0].gateways), 0) == 0
   create_ng = var.create_vcn ? false : try(length(data.oci_core_nat_gateways.existing_ngs[0].nat_gateways), 0) == 0
@@ -52,7 +49,6 @@ locals {
   ig_fetched_id = local.ig_exists? try(data.oci_core_internet_gateways.existing_igs[0].gateways[0].id, "") : ""
   ng_fetched_id = local.ng_exists? try(data.oci_core_nat_gateways.existing_ngs[0].nat_gateways[0].id, "") : ""
   sg_fetched_id = local.sg_exists? try(data.oci_core_service_gateways.existing_sgs[0].service_gateways[0].id, "") : ""
-  # ──────────────────────────────────────────────────────────
 
   # Configured VCN CIDRs if creating, else from provided vcn_id
   vcn_lookup             = coalesce(one(data.oci_core_vcn.oke[*].cidr_blocks), [])
@@ -129,7 +125,6 @@ locals {
   vcn_name = coalesce(var.vcn_name, "wls-${local.state_id}")
 }
 
-# ────────────────────────────────────────────────────────────────────────
 # Creates the gateways and route tables in case of existing VCN
 
 ########################
@@ -230,7 +225,6 @@ resource "oci_core_route_table" "nat_rt" {
     }
   }
 }
-# ────────────────────────────────────────────────────────────────────────
 
 /* Create back end  private subnet for wls */
 module "network-wls-private-subnet" {
