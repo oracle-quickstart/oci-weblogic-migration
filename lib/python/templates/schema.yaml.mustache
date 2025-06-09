@@ -65,6 +65,7 @@ variableGroups:
       - wls_discovery_filename
       - compartment_ocid
       - wlsserver_subnet_newbits
+      - pub_lb_subnet_id
 
   - title: "Stack Configuration"
     variables:
@@ -624,7 +625,7 @@ variables:
   add_load_balancer:
     title: Provision Public Load Balancer
     description: Provision a load balancer in Oracle Cloud Infrastructure to distribute application traffic to the managed servers in the domain.
-    default: false
+    default: true
     type: boolean
 
   use_existing_loadbalancer:
@@ -686,7 +687,7 @@ variables:
             - "flexible"
 
   lb_min_bandwidth:
-    title: Public Load Balancer Min Bandwith
+    title: Flexible Public Load Balancer Min Bandwith
     description: "Choose Minimum Shape for Flex Load Balancer."
     required: false
     type: enum
