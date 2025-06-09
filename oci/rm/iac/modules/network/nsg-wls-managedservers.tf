@@ -67,13 +67,13 @@ locals {
           port_min     = local.node_port_min,
           port_max     = local.node_port_max,
           source       = local.pub_lb_nsg_id,
-          source_type  = local.rule_type_nsg
+          source_type  = local.rule_type_nsg,
         },
         "Allow TCP ingress to wlsservers for health check from public load balancers" = {
           protocol     = local.tcp_protocol,
           port         = local.health_check_port,
           source       = local.pub_lb_nsg_id,
-          source_type  = local.rule_type_nsg
+          source_type  = local.rule_type_nsg,
         }
       },
       {
@@ -82,7 +82,7 @@ locals {
         protocol     = local.tcp_protocol,
         port         = p,
         source       = var.pub_lb_subnet_cidr_value,
-        source_type  = "CIDR_BLOCK"
+        source_type  = "CIDR_BLOCK",
       }
       }
     ) : {}
