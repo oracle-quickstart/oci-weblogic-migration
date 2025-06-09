@@ -336,7 +336,7 @@ module "network" {
   adminserver_ports    = local.wls_admin_server_ports
   resource_name_prefix = local.wls_domain_name
   backend_ports        = local.wls_all_ports_application_traffic_servers
-  pub_lb_subnet_cidr_value = try(module.network.pub_lb_subnet_cidr, null)
+  pub_lb_subnet_cidr_value = try(var.pub_lb_subnet_cidr, null)
 }
 
 # VCN
