@@ -65,7 +65,6 @@ variableGroups:
       - wls_discovery_filename
       - compartment_ocid
       - wlsserver_subnet_newbits
-      - pub_lb_subnet_id
 
   - title: "Stack Configuration"
     variables:
@@ -752,13 +751,7 @@ variables:
       hidePrivateSubnet: true
       hideRegionalSubnet: false
       hideAdSubnet: true
-    visible:
-      and:
-        - and:
-            - ${add_load_balancer}
-            - not:
-                - ${use_existing_loadbalancer}
-        - not: [ pub_lb_subnet_create ]
+    visible: false
 
   pub_lb_subnet_cidr:
     title: Load Balancer Subnet CIDR
