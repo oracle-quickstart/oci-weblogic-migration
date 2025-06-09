@@ -85,7 +85,7 @@ locals {
         source_type  = "CIDR_BLOCK",
       }
       }
-    ) : {}
+    ) : {},
 
     # Allow Bastion ssh access to Managed Server
     local.bastion_nsg_enabled && var.allow_wlsserver_ssh_access ? {
