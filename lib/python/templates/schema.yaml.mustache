@@ -740,15 +740,6 @@ variables:
         - add_load_balancer
         - not: use_existing_loadbalancer
 
-  pub_lb_subnet_cidr:
-    title: Load Balancer Subnet CIDR
-    description: "The CIDR of the new subnet to create for the load balancer. The new subnet’s CIDR should not overlap with any other subnet CIDRs."
-    type: string
-    default: 10.0.3.0/24
-    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])/(3[0-2]|[1-2]?[0-9])$"
-    required: true
-    visible: ${add_load_balancer}
-
   pub_lb_subnet_id:
     title: Public load balancer subnet
     type: oci:core:subnet:id
@@ -767,6 +758,15 @@ variables:
             - not:
                 - ${use_existing_loadbalancer}
         - not: [ pub_lb_subnet_create ]
+
+  pub_lb_subnet_cidr:
+    title: Load Balancer Subnet CIDR
+    description: "The CIDR of the new subnet to create for the load balancer. The new subnet’s CIDR should not overlap with any other subnet CIDRs."
+    type: string
+    default: 10.0.3.0/24
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])/(3[0-2]|[1-2]?[0-9])$"
+    required: true
+    visible: ${add_load_balancer}
 
   int_lb_subnet_create: # Future version
     title: Create internal load balancer subnet
