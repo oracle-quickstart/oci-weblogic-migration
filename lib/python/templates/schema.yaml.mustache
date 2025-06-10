@@ -65,6 +65,10 @@ variableGroups:
       - wls_discovery_filename
       - compartment_ocid
       - wlsserver_subnet_newbits
+      - loadbalancer_authorized_cidrs_mgmt
+      - loadbalancer_authorized_cidrs_service
+      - allow_rules_internal_lb
+      - allow_rules_public_lb
 
   - title: "Stack Configuration"
     variables:
@@ -158,10 +162,6 @@ variableGroups:
       - load_balancer_shape
       - lb_max_bandwidth
       - lb_min_bandwidth
-#      - loadbalancer_authorized_cidrs_mgmt
-#      - loadbalancer_authorized_cidrs_service
-#      - allow_rules_internal_lb
-#      - allow_rules_public_lb
 
   - title: "Bastion"
     variables:
@@ -514,19 +514,12 @@ variables:
     additionalProps:
       allowMultiple: true
     required: false
-    visible: false
-#      and:
-#        - ${create_nsgs}
-#        - ${add_load_balancer}
+
   allow_rules_public_lb:
     title: Additional public load balancer rules
     additionalProps:
       allowMultiple: true
     required: false
-    visible: false
-#      and:
-#        - ${create_nsgs}
-#        - ${add_load_balancer}
 
   create_drg:
     title: Create DRG
@@ -716,8 +709,6 @@ variables:
     pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
     uniqueItems: true
     default: [0.0.0.0/0]
-    visible: false
-#   visible: ${add_load_balancer}
 
   loadbalancer_authorized_cidrs_mgmt:
     type: array
@@ -728,8 +719,6 @@ variables:
       type: string
     pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
     uniqueItems: true
-    visible: false
-#   visible: ${add_load_balancer}
 
   pub_lb_subnet_create:
     title: Create public load balancer subnet
