@@ -29,6 +29,8 @@ function log() {
 }
 
 #VCN peering script to update the Weblogic and Database subnet route tables
+eval $(oci-metadata --get logs_dir --export)
+log_file="${logs_dir}/datasource_update.log"
 eval $(oci-metadata --get is_vcn_peering --export)
 eval $(oci-metadata --get is_admin_instance --export)
 if [ "$is_admin_instance" = "true" ] && [ "$is_vcn_peering" = "true" ]; then
@@ -84,7 +86,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     connection_url="jdbc:oracle:thin:@${jdbc_string.atp_db.db_name}_${jdbc_string.atp_db.db_level}?TNS_ADMIN=$wallet_location"
     output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$connection_url|g");
     exit_code=$?
-    echo "Executed datasource ATP update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
+    echo "Executed datasource update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
     echo "$output" | log >> $log_file
     if [ $exit_code -eq 123 ]; then
                      echo "Non-JRF migration. continuing executing scripts" | log >> $log_file

@@ -1,7 +1,13 @@
 # Copyright (c) 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
-"""Updates the Weblogic and Database subnet route tables for VCN peering."""
+"""
+Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+Establishes peering connection between Weblogic and Database VCNs' LPGs
+Updates the Weblogic and Database subnet route tables for VCN peering.
+"""
 
 import oci
 import sys
@@ -47,6 +53,26 @@ def get_wls_lpg_id():
 def get_subnet_details(subnet_id):
     get_subnet_response = core_client.get_subnet(subnet_id=subnet_id)
     return(get_subnet_response.data)
+
+def establish_peering_between_lpgs():
+    """
+    Establishes peering connection between LPGs
+    """
+    try:
+        wls_lpg_id = get_wls_lpg_id()
+        db_lpg_id = get_db_lpg_id()
+        connect_local_peering_gateways_response = core_client.connect_local_peering_gateways(
+            local_peering_gateway_id=wls_lpg_id,
+            connect_local_peering_gateways_details=oci.core.models.ConnectLocalPeeringGatewaysDetails(
+                peer_id=db_lpg_id))
+        print(f"Peering established between LPGs : {wls_lpg_id} and {db_lpg_id}")
+    except Exception as e:
+        if e.status == 409 and e.code == 'IncorrectState' and e.operation_name == 'connect_local_peering_gateways':
+            print(f"LPGs {wls_lpg_id} and {db_lpg_id} appears to be connected.")
+            return 0
+        else:
+            print(f"Error: {e}")
+            return 1
 
 def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
     """
@@ -96,12 +122,16 @@ if __name__ == '__main__':
     db_rt_id = db_subnet.route_table_id
     db_lpg_id = get_db_lpg_id()
     db_subnet_cidr_block = db_subnet.cidr_block
-    #Add a route to the current route table of the weblogic subnet to direct traffic
-    #to the CIDR of the Database subnet to the LPG.
-    add_route_rule_to_route_table(wls_rt_id, db_subnet_cidr_block, wls_lpg_id)
 
-    #Add a route to the current route table of the database subnet to direct traffic
-    #to the CIDR of the WebLogic subnet to the LPG.
-    add_route_rule_to_route_table(db_rt_id, wls_subnet_cidr_block, db_lpg_id)
+    #Establish peering connection between LPGs of weblogic and database VCNs
+    result = establish_peering_between_lpgs()
+    if result == 0:
+        #Add a route to the current route table of the weblogic subnet to direct traffic
+        #to the CIDR of the Database subnet to the LPG.
+        add_route_rule_to_route_table(wls_rt_id, db_subnet_cidr_block, wls_lpg_id)
+
+        #Add a route to the current route table of the database subnet to direct traffic
+        #to the CIDR of the WebLogic subnet to the LPG.
+        add_route_rule_to_route_table(db_rt_id, wls_subnet_cidr_block, db_lpg_id)
 
     sys.exit(0)
