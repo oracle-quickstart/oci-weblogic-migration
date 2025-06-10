@@ -60,7 +60,7 @@ bash owm.sh wls ../config/on-prem.env >> "$MIGRATION_SCRIPT_LOG" 2>&1
 process_exit_code=$?
 set -e
 
-if [ "$process_exit_code" -ne 0 ]; then
+if [ "$process_exit_code" -ne 0 ] && [ "$process_exit_code" -ne 1 ]; then
   log "error" "Script execution failed in discovering WebLogic domain. Errors can be found in $MIGRATION_SCRIPT_LOG"
   log "error" "Migration failed."
   exit 1
@@ -79,7 +79,7 @@ bash owm.sh infra $WLS_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
 process_exit_code=$?
 set -e
 
-if [ "$process_exit_code" -ne 0 ]; then
+if [ "$process_exit_code" -ne 0 ] && [ "$process_exit_code" -ne 1 ]; then
   log "error" "Script execution failed in discovering infrastructure. Errors can be found in $MIGRATION_SCRIPT_LOG"
   log "error" "Migration failed."
   exit 1
@@ -98,7 +98,7 @@ bash owm.sh archive $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
 process_exit_code=$?
 set -e
 
-if [ "$process_exit_code" -ne 0 ]; then
+if [ "$process_exit_code" -ne 0 ] && [ "$process_exit_code" -ne 1 ]; then
   log "error" "Script execution failed in archiiving Weblogic domain. Errors can be found in $MIGRATION_SCRIPT_LOG"
   log "error" "Migration failed."
   exit 1
@@ -132,7 +132,7 @@ bash owm.sh ds $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
 process_exit_code=$?
 set -e
 
-if [ "$process_exit_code" -ne 0 ]; then
+if [ "$process_exit_code" -ne 0 ] && [ "$process_exit_code" -ne 1 ]; then
   log "error" "Script execution failed in Discovery Database Connections. Errors can be found in $MIGRATION_SCRIPT_LOG"
   log "error" "Migration failed."
   exit 1
