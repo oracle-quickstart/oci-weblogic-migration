@@ -3,31 +3,6 @@ import json
 import argparse
 import shutil
 import subprocess
-import sys
-try:
-    import paramiko
-except ModuleNotFoundError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "paramiko"])
-    import paramiko
-
-def load_ssh_config(env_file_path):
-    """
-    Load SSH configuration parameters from a given environment file.
-
-    Args:
-        env_file_path (str): Path to the environment file containing SSH config variables.
-
-    Returns:
-        dict: Dictionary of SSH config variables (e.g., ssh_user, ssh_private_key_file).
-    """
-    ssh_config = {}
-    with open(env_file_path) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, val = line.split("=", 1)
-                ssh_config[key.strip()] = val.strip().strip('"')
-    return ssh_config
 
 def load_hostnames_from_infrastructure(infra_file_path):
     """
@@ -50,75 +25,63 @@ def load_hostnames_from_infrastructure(infra_file_path):
                 hostnames.append(hostname)
         return hostnames
 
-def execute_ssh_command(hostname, username, private_key_path, command):
+def execute_ssh_command(hostname, command):
     """
-    Execute a command on a remote host over SSH.
+    Execute a shell command on a remote host over SSH.
 
     Args:
         hostname (str): The remote host's name or IP address.
-        username (str): SSH username.
-        private_key_path (str): Path to the private key file for SSH authentication.
         command (str): Command string to run on the remote host.
 
     Returns:
         str: Output of the SSH command or error message.
     """
     try:
-        key = paramiko.RSAKey.from_private_key_file(private_key_path)
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_client.connect(hostname, username=username, pkey=key)
-
-        stdin, stdout, stderr = ssh_client.exec_command(command)
-        output = stdout.read().decode().strip()
-        ssh_client.close()
-        return output
+        ssh_command = ["ssh", hostname, command]
+        result = subprocess.run(ssh_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True)
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        return f"Error: {e.stderr.strip()}"
     except Exception as e:
-        return f"SSH ERROR: {e}"
+        return f"An unexpected error occurred: {str(e)}"
 
-def retrieve_remote_env_var_path(hostname, username, private_key_path, env_var_name):
+def retrieve_remote_env_var_path(hostname, env_var_name):
     """
     Retrieve the resolved path of an environment variable on a remote host.
 
-    Checks if the variable is set directly or in the .bash_profile/.bashrc,
-    and returns the canonical (absolute) path.
+    This function checks if the variable is set directly or declared in .bash_profile or .bashrc.
 
     Args:
         hostname (str): Remote host.
-        username (str): SSH username.
-        private_key_path (str): SSH private key path.
-        env_var_name (str): Name of the environment variable to retrieve.
+        env_var_name (str): Name of the environment variable.
 
     Returns:
-        str: Resolved path or raw value of the environment variable.
+        str: Resolved (canonical) path or raw value of the environment variable.
     """
-    # Shell command to get variable value or fallback to .bash_profile/.bashrc
     cmd = (
         f'VAR_VALUE=${env_var_name}; '
         f'[ -z "$VAR_VALUE" ] && VAR_VALUE=$(grep -h {env_var_name} ~/.bash_profile ~/.bashrc 2>/dev/null | '
         f'awk -F "=" \'{{print $2}}\' | tr -d \'"\' | tail -n 1); '
         f'readlink -f "$VAR_VALUE" || echo "$VAR_VALUE"'
     )
-    result = execute_ssh_command(hostname, username, private_key_path, cmd)
+    result = execute_ssh_command(hostname, cmd)
     if '=' in result:
         return result.split('=')[-1].strip('"').strip()
     return result.strip()
 
-def get_remote_directory_size_bytes(hostname, username, private_key_path, directory_path):
+def get_remote_directory_size_bytes(hostname, directory_path):
     """
-    Get the size in bytes of a directory on a remote host.
+    Get the size of a directory on a remote host in bytes.
 
     Args:
         hostname (str): Remote host.
-        username (str): SSH username.
-        private_key_path (str): SSH private key path.
-        directory_path (str): Path of the directory to measure.
+        directory_path (str): Absolute path to the remote directory.
 
     Returns:
-        int: Directory size in bytes, or 0 if error/does not exist.
+        int: Directory size in bytes, or 0 if the command fails.
     """
     cmd = f"du -sb {directory_path} 2>/dev/null | cut -f1"
-    result = execute_ssh_command(hostname, username, private_key_path, cmd)
+    result = execute_ssh_command(hostname, cmd)
     try:
         return int(result)
     except ValueError:
@@ -126,55 +89,54 @@ def get_remote_directory_size_bytes(hostname, username, private_key_path, direct
 
 def get_local_free_space_mb(directory_path):
     """
-    Calculate the available free disk space in megabytes for a local directory.
+    Check available free disk space in megabytes for a local directory.
 
     Args:
-        directory_path (str): Path of the directory to check.
+        directory_path (str): Local path to check for free space.
 
     Returns:
-        float: Free space in MB.
+        float: Free disk space in megabytes.
     """
     total, used, free = shutil.disk_usage(directory_path)
-    free_mb = free / (1024 ** 2)
-    return free_mb
+    return free / (1024 ** 2)
 
 def main():
+    """
+    Main execution flow:
+    - Parse input arguments.
+    - Load remote hostnames from the infrastructure file.
+    - Retrieve paths of environment variables from each host.
+    - Measure remote directory sizes.
+    - Compare total remote size to local available disk space.
+    """
     parser = argparse.ArgumentParser(
-        description="Precheck script to verify available local disk space "
-                    "against the total size of remote WebLogic archive directories."
+        description="Check if the local system has enough space to store archives from remote WebLogic environments."
     )
     parser.add_argument(
         "--infrafile",
         type=str,
         required=True,
-        help="Path to the infrastructure JSON file containing host information."
+        help="Path to infrastructure JSON file containing host details."
     )
     args = parser.parse_args()
 
-    # Derive paths relative to this script location
+    # Derive tool's root directory from script location
     script_path = os.path.realpath(__file__)
     tool_home = os.path.abspath(os.path.join(script_path, "..", "..", ".."))
-    env_path = os.path.join(tool_home, "config", "on-prem.env")
 
-    ssh_config = load_ssh_config(env_path)
-    ssh_user = ssh_config.get("ssh_user")
-    ssh_key_path = ssh_config.get("ssh_private_key_file")
-    if not ssh_user or not ssh_key_path:
-        print("ERROR: 'ssh_user' or 'ssh_private_key_file' missing in on-prem.env.")
-        return
-
+    # Load hostnames from infrastructure file
     hosts = load_hostnames_from_infrastructure(args.infrafile)
     total_size_mb = 0
 
     for host in hosts:
         print(f"\n----- {host} -----")
         for env_var in ["ORACLE_HOME", "DOMAIN_HOME", "JAVA_HOME"]:
-            path = retrieve_remote_env_var_path(host, ssh_user, ssh_key_path, env_var)
+            path = retrieve_remote_env_var_path(host, env_var)
             if not path or "not found" in path.lower():
                 print(f"{env_var}: Not found.")
                 continue
 
-            size_bytes = get_remote_directory_size_bytes(host, ssh_user, ssh_key_path, path)
+            size_bytes = get_remote_directory_size_bytes(host, path)
             size_mb = size_bytes / (1024 ** 2)
             print(f"{env_var} size on {host}: {size_mb:.2f} MB")
             total_size_mb += size_mb
