@@ -20,7 +20,7 @@ data "oci_core_images" "bastion" {
 
 locals {
   bastion_public_ip = (var.create_bastion
-  ? one(module.bastion[*].public_ip)
+  ? element(module.bastion[*].public_ip, 0)
   : var.bastion_public_ip
   )
 
@@ -74,7 +74,7 @@ module "bastion" {
 
 output "bastion_id" {
   description = "ID of bastion instance"
-  value       = one(module.bastion[*].id)
+  value       = try(element(module.bastion[*].id, 0), "")
 }
 
 output "bastion_public_ip" {

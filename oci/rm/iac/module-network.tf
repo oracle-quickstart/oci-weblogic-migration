@@ -413,3 +413,8 @@ output "lpg_all_attributes" {
   description = "all attributes of created lpg"
   value       = try(one(module.vcn[*].lpg_all_attributes), null)
 }
+
+output "adminserver_port" {
+  description = "Port of admin node"
+  value       = try(module.network.adminserver_port, null)
+}
