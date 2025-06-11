@@ -64,14 +64,12 @@ def establish_peering_between_lpgs():
                 peer_id=db_lpg_id))
         print(f"Peering established between LPGs : {wls_lpg_id} and {db_lpg_id}")
     except Exception as e:
-        if e.status == 409 and e.code == 'IncorrectState' and e.operation_name == 'connect_local_peering_gateways':
-            print(f"LPGs {wls_lpg_id} and {db_lpg_id} appears to be connected.")
-            return 0
+        if e.status == 400 and e.target_service == 'virtual_network' and e.operation_name == 'connect_local_peering_gateways' and "has already been established" in str(e):
+            print(f"{e.message}")
+            pass
         else:
             print(f"Error: {e}")
-            return 1
-
-    return 0
+            sys.exit(-1)
 
 def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
     """
@@ -109,7 +107,7 @@ def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
         route_table = update_route_table_response.data
         print(f"Route rule added to route table {route_table_id}")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error: {e.message}")
         sys.exit(-1)
 
 if __name__ == '__main__':
@@ -124,13 +122,11 @@ if __name__ == '__main__':
 
     #Establish peering connection between LPGs of weblogic and database VCNs
     result = establish_peering_between_lpgs()
-    if result == 0:
-        #Add a route to the current route table of the weblogic subnet to direct traffic
-        #to the CIDR of the Database subnet to the LPG.
-        add_route_rule_to_route_table(wls_rt_id, db_subnet_cidr_block, wls_lpg_id)
 
-        #Add a route to the current route table of the database subnet to direct traffic
-        #to the CIDR of the WebLogic subnet to the LPG.
-        add_route_rule_to_route_table(db_rt_id, wls_subnet_cidr_block, db_lpg_id)
+    #Add a route to the current route table of the weblogic subnet to direct traffic
+    #to the CIDR of the Database subnet to the LPG.
+    add_route_rule_to_route_table(wls_rt_id, db_subnet_cidr_block, wls_lpg_id)
 
-    sys.exit(0)
+    #Add a route to the current route table of the database subnet to direct traffic
+    #to the CIDR of the WebLogic subnet to the LPG.
+    add_route_rule_to_route_table(db_rt_id, wls_subnet_cidr_block, db_lpg_id)
