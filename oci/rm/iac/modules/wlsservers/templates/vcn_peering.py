@@ -71,6 +71,8 @@ def establish_peering_between_lpgs():
             print(f"Error: {e}")
             return 1
 
+    return 0
+
 def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
     """
     Checks if a specific route rule exists in an OCI route table.
