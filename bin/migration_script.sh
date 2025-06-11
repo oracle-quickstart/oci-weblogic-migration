@@ -56,7 +56,7 @@ echo "--------------------------------------------------------------------------
 log "info" "Discovering WebLogic domain.."
 
 set +e
-bash owm.sh wls ../config/on-prem.env >> "$MIGRATION_SCRIPT_LOG" 2>&1
+bash "$MIGRATION_SCRIPT_DIR/owm.sh" wls >> "$MIGRATION_SCRIPT_LOG" 2>&1
 process_exit_code=$?
 set -e
 
@@ -75,7 +75,7 @@ echo "--------------------------------------------------------------------------
 log "info" "Discovering infrastructure.."
 
 set +e
-bash owm.sh infra $WLS_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
+bash "$MIGRATION_SCRIPT_DIR/owm.sh" infra $WLS_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
 process_exit_code=$?
 set -e
 
@@ -94,7 +94,7 @@ echo "--------------------------------------------------------------------------
 log "info" "Archiving WebLogic domain.."
 
 set +e
-bash owm.sh archive $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
+bash "$MIGRATION_SCRIPT_DIR/owm.sh" archive $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
 process_exit_code=$?
 set -e
 
@@ -111,7 +111,7 @@ echo "--------------------------------------------------------------------------
 log "info" "Uploading archives to OCI.."
 
 set +e
-bash owm.sh lift $INFRA_JSON ../out >> "$MIGRATION_SCRIPT_LOG" 2>&1
+bash "$MIGRATION_SCRIPT_DIR/owm.sh" lift $INFRA_JSON ../out >> "$MIGRATION_SCRIPT_LOG" 2>&1
 process_exit_code=$?
 set -e
 
@@ -128,7 +128,7 @@ echo "--------------------------------------------------------------------------
 log "info" "Discovering datasources.."
 
 set +e
-bash owm.sh ds $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
+bash "$MIGRATION_SCRIPT_DIR/owm.sh" ds $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
 process_exit_code=$?
 set -e
 
@@ -144,7 +144,7 @@ echo "--------------------------------------------------------------------------
 ##################################### SUB_SECTION :  Generate OCI Resource Manager Stacks ###################################
 log "info" "Building OCI Resource Manager stack.."
 set +e
-bash owm.sh orm $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
+bash "$MIGRATION_SCRIPT_DIR/owm.sh" orm $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
 process_exit_code=$?
 set -e
 

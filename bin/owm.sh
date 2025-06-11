@@ -38,9 +38,9 @@ discover_local(){
   discover "local" "$SCRIPT_PATH" "-domain_home $domain_home" "-model_file $toolHome/out/Discovered_$file_timestamp.json" "-skip_archive"
   exit_code=$?
   log "info" "Executed discover WebLogic with exit code [$exit_code]"
-  if [ $exit_code -ne 0 ]; then
-     log "error" "<discoverDomain><discover_local><error> Error executing discover infra"
-     exit 1
+  if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
+     log "error" "<discoverDomain><discover_local><error> Error executing discover domain"
+     exit 2
   fi
   log "info" "<discoverDomain><discover_infra_local><exit> WebLogic Inventory File : $toolHome/out/Discovered_$file_timestamp.json"
   DISCOVERED_DOMAIN_JSON="$toolHome/out/Discovered_$file_timestamp.json"
@@ -86,14 +86,14 @@ discover_infra_local(){
       model_file_arg="-model_file $toolHome/out/$wls_inventory_file"
    else
        log "error" "<discoverDomain><discover_infra_local><error> model_file $wls_inventory_file not found. exiting."
-       exit 1
+       exit 2
    fi
    discover "local" "$SCRIPT_PATH" "$model_file_arg" "-archive_file $toolHome/out/infra_output_$file_timestamp.json"
    exit_code=$?
    log "info" "Executed discover infra with exit code [$exit_code]"
-   if [ $exit_code -ne 0 ]; then
+   if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
        log "error" "<discoverDomain><discover_infra_local><error> Error executing discover infra"
-       exit 1
+       exit $exit_code
    fi
    log "info" "<discoverDomain><discover_infra_local><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
    DISCOVERED_INFRA_JSON="$toolHome/out/infra_output_$file_timestamp.json"
@@ -142,9 +142,9 @@ function process_archives() {
       discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@"
      exit_code=$?
      log "info" "Executed discover infra with exit code [$exit_code]"
-     if [ $exit_code -ne 0 ]; then
-         log "error" "<discoverDomain><process_archives><error> Error executing discover infra"
-         exit 1
+     if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
+         log "error" "<discoverDomain><process_archives><error> Error executing archives"
+         exit 2
      fi
      log "info" "<discoverDomain><process_archives><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
 
