@@ -456,13 +456,7 @@ variables:
       hidePrivateSubnet: false
       hideRegionalSubnet: false
       hideAdSubnet: true
-    visible:
-      and:
-        - ${orm_create_mode}
-        - not:
-            - ${create_vcn}
-        - not:
-            - ${wlsserver_subnet_create}
+    visible: false
 
   #Network Other
   wlsserver_is_public:

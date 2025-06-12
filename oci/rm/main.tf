@@ -40,6 +40,12 @@ locals {
   existing_vcn_and_atp_db_private_endpoint_different_vcn = local.db_strategy_0_is_atp_db && var.vcn_id != "" && local.atp_has_private_endpoints_0 && (var.vcn_id != local.atp_db_existing_vcn_id_0) ? true : false
 
   is_vcn_peering = local.db_strategy_0_is_atp_db || local.db_strategy_0_is_oci_db ? (local.new_vcn_and_oci_db || local.new_vcn_and_atp_db_private_endpoint || local.existing_vcn_and_oci_db_different_vcn || local.existing_vcn_and_atp_db_private_endpoint_different_vcn) : false
+
+  # Fetching WLS version from JSON file
+  wls_version        = try(local.wls_data["topology"]["NMProperties"]["PropertiesVersion"],"")
+  # If the WLS version is 14.1.2.0.0 then link to documentation is provided to connect to remote console,
+  # else admin console url is provided
+  admin_console_url = local.wls_version == "14.1.2.0.0" ? "Please refer this documentation to access the administrator remote console: https://docs.oracle.com/en/cloud/paas/weblogic-cloud/user/access-weblogic-remote-console.html#GUID-FE3B189C-E17C-423F-BC71-121AB80251F1" : try(format("https://%s:%s/console", module.wls.weblogic_instances_admin_private_ip, module.wls.adminserver_port),"")
 }
 
 #Code has become a single module due:

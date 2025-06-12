@@ -40,6 +40,11 @@ locals {
       size               = var.wlsserver_domain_volume_size
     }
   }
+
+  # To look for WLS private IP
+  wlsserver_private_ips_list = flatten([
+    for key, instance in module.wlsservers[0].wlsserver_instances :  lookup(instance,"private_ip")
+  ])
 }
 
 # Default wlsservers sub-module implementation for Weblogic Domain nodes
@@ -155,3 +160,6 @@ output "ssh_to_nodes" {
   local.bastion_proxy_command, [ip]))] : null
 }
 
+output "weblogic_instances_admin_private_ip" {
+  value = local.wlsserver_private_ips_list[0]
+}

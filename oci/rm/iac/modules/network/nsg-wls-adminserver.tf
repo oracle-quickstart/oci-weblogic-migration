@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
@@ -132,8 +132,10 @@ resource "oci_core_network_security_group" "adminservers" {
   }
 }
 
-
-
 output "adminserver_nsg_id" {
   value = local.adminserver_nsg_id
+}
+
+output "adminserver_port" {
+  value       = var.adminserver_ports[0]
 }
