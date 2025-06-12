@@ -323,6 +323,7 @@ module "network" {
   bastion_is_public                 = var.bastion_is_public
   create_bastion                    = var.create_bastion
   nsgs                              = var.nsgs
+  add_load_balancer                 = var.add_load_balancer
   #  create_operator              = false            #future use
   enable_waf           = false #future use
   ig_route_table_id  = local.ig_exists? oci_core_route_table.ig_rt[0].id : local.ig_route_table_id
