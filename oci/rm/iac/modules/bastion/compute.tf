@@ -43,6 +43,11 @@ resource "oci_core_instance" "bastion" {
     subnet_id        = var.subnet_id
   }
 
+  # Set to true to disable the legacy (/v1) Instance Metadata Service (IMDS) endpoints.
+  instance_options {
+    are_legacy_imds_endpoints_disabled = true
+  }
+
   metadata = {
     ssh_authorized_keys = var.ssh_public_key
     user_data           = data.cloudinit_config.bastion.rendered
