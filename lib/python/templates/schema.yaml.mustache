@@ -65,8 +65,6 @@ variableGroups:
       - wls_discovery_filename
       - compartment_ocid
       - wlsserver_subnet_newbits
-      - loadbalancer_authorized_cidrs_mgmt
-      - loadbalancer_authorized_cidrs_service
       - allow_rules_internal_lb
       - allow_rules_public_lb
 
@@ -699,26 +697,6 @@ variables:
         - eq:
             - load_balancer_shape
             - "flexible"
-  loadbalancer_authorized_cidrs_service:
-    type: array
-    title: "Authorized list of Network Addresses to connect Loadbalancer Application Ports"
-    required: false
-    description: "Type each network address in cidr format Y.Y.Y.Y/XX. Click after each type to be registered in the text area. Example Format: Network 192.168.1.0/24 or individual host by IP/32 . ex X.X.X.X/32"
-    items:
-      type: string
-    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
-    uniqueItems: true
-    default: [0.0.0.0/0]
-
-  loadbalancer_authorized_cidrs_mgmt:
-    type: array
-    title: "Authorized list of Network Addresses to connect to Weblogic Console and Admin Ports exposed on the Loadbalancer"
-    required: false
-    description: "Type each network address in cidr format Y.Y.Y.Y/XX. Click after each type to be registered in the text area. Example Format: Network 192.168.1.0/24 or individual host by IP/32 . ex X.X.X.X/32"
-    items:
-      type: string
-    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
-    uniqueItems: true
 
   pub_lb_subnet_create:
     title: Create public load balancer subnet
