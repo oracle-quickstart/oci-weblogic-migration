@@ -129,10 +129,10 @@ variable "nat_gateway_public_ip_id" {
 
 variable "subnets" {
   default = {
-    bastion    = { cidr = "10.0.1.0/24" }
-    int_lb     = { newbits = 11 }
-    pub_lb     = { newbits = 11 }
-    wlsservers = { newbits = 4 }
+    bastion     = { cidr = "10.0.1.0/24" }
+    pub_lb      = { cidr = "10.0.3.0/24" }
+    int_lb      = { newbits = 11 }
+    wlsservers  = { newbits = 4 }
   }
   description = "Configuration for standard subnets. The 'create' parameter of each entry defaults to 'auto', creating subnets when other enabled components are expected to utilize them, and may be configured with 'never' or 'always' to force disabled/enabled."
   type = map(object({
@@ -328,4 +328,10 @@ variable "db_subnet_id" {
   type        = string
   description = "The OCID of the subnet for the OCI DB or ATP DB (when using private endpoint)"
   default     = ""
+}
+
+variable "pub_lb_subnet_cidr" {
+  type        = string
+  description = "The CIDR of the new public subnet to create for a Bastion compute instance. The new subnet's CIDR should not overlap with any other subnet CIDRs."
+  default     = "10.0.3.0/24"
 }

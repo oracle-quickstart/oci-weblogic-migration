@@ -54,11 +54,11 @@ module "load-balancer" {
   compartment_id           = coalesce(var.network_compartment_id, local.compartment_id)
   lb_reserved_public_ip_id = compact([var.lb_reserved_public_ip_id])
   is_lb_private            = false #var.is_lb_private
-  lb_nsg_id                = try(compact(flatten([var.nsgs.pub_lb, [try(module.network.pub_lb_nsg_id, null)]])), [])
+  lb_nsg_id                = compact(flatten([try(length(trimspace(var.nsgs.pub_lb.id)) > 0 ? [var.nsgs.pub_lb.id] : [], []), try([module.network.pub_lb_nsg_id], [])]))
   lb_max_bandwidth         = var.lb_shape.pub_lb.max
   lb_min_bandwidth         = var.lb_shape.pub_lb.min
   lb_name                  = format("%s-%v-lb",local.wls_domain_name,local.state_id)
-  lb_subnet_id             = compact(flatten([lookup(var.subnets.pub_lb,"id",null),try(module.network.pub_lb_subnet_id, null)])) #compact(flatten([lookup(var.subnets.pub_lb,"id",null), try(module.network.pub_lb_subnet_id, null)])) #[module.network.pub_lb_subnet_id]
+  lb_subnet_id             = compact(flatten([lookup(var.subnets.pub_lb,"id",null),try(module.network_pub_lb_subnet[0].subnet_id, null)])) #compact(flatten([lookup(var.subnets.pub_lb,"id",null), try(module.network.pub_lb_subnet_id, null)])) #[module.network.pub_lb_subnet_id]
   state_id            = local.state_id
   lb_shape = var.lb_shape.pub_lb.shape
   # Tagging

@@ -110,7 +110,7 @@ module "wls" {
 
     pub_lb = {
       create  = var.pub_lb_subnet_create ? "always" : "never",
-      newbits = var.pub_lb_subnet_newbits,
+      cidr    = var.pub_lb_subnet_cidr,
       id      = var.pub_lb_subnet_id
     }
 
@@ -198,6 +198,7 @@ module "wls" {
   add_load_balancer              = var.add_load_balancer
   db_strategy_is_atp             = local.db_strategy_is_atp
   db_strategy_is_edit_string_atp = local.db_strategy_is_edit_string_atp
+  pub_lb_subnet_cidr = var.pub_lb_subnet_cidr
   lbs = {
     pub_lb = { create = var.add_load_balancer ? "always" : "never", id = var.existing_load_balancer_id, backends = var.custom_backends }
   }
