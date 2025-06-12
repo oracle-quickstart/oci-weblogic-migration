@@ -198,9 +198,9 @@ variableGroups:
         - atp_db_level_{{{datasourceName}}}
         - atp_db_uses_private_endpoint_{{{datasourceName}}}
         - atp_db_network_compartment_id_{{{datasourceName}}}
+        - atp_db_existing_vcn_id_{{{datasourceName}}}
         - oci_db_connection_string_{{{datasourceName}}}
         #  Database Service
-        - oci_db_network_compartment_id_{{{datasourceName}}}
         - oci_db_compartment_id_{{{datasourceName}}}
         - oci_db_dbsystem_id_{{{datasourceName}}}
         - oci_db_dbhome_id_{{{datasourceName}}}
@@ -208,7 +208,8 @@ variableGroups:
         - oci_db_database_id_{{{datasourceName}}}
         - oci_db_pdb_service_name_{{{datasourceName}}}
         - oci_db_port_{{{datasourceName}}}
-        - atp_db_existing_vcn_id_{{{datasourceName}}}
+        - oci_db_network_compartment_id_{{{datasourceName}}}
+        - oci_db_existing_vcn_id_{{{datasourceName}}}
 {{/datasources}}
   
     
@@ -1097,18 +1098,20 @@ variables:
     visible:
       and:
         - ${orm_create_mode}
+        - ${update_any_ds}
         - ${update_ds_{{{datasourceName}}}}
-        - edit_ds{{{datasourceName}}}
+        - edit_ds_{{{datasourceName}}}
         - and:
             - eq:
-                - ${db_strategy{{{datasourceName}}}}
+                - ${db_strategy_{{{datasourceName}}}}
                 - "Autonomous Transaction Processing Database"
-            - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
+            - atp_db_uses_private_endpoint_{{{datasourceName}}}
     type: oci:identity:compartment:id
     required: true
-    title: "Autonomous Database Network Compartment"
-    description: "The compartment in which the ATP database Virtual Cloud Network is found"
     default: ${compartment_ocid}
+    title: "Autonomous Database Network Compartment"
+    description: "The compartment in which the Autonomous Transaction Processing(ATP) Database Virtual Cloud Network(VCN) is found."
+
 
   atp_db_compartment_id_{{{datasourceName}}}:
     visible:
@@ -1121,6 +1124,7 @@ variables:
             - "Autonomous Transaction Processing Database"
     type: oci:identity:compartment:id
     required: true
+    default: ${compartment_ocid}
     title: "Autonomous Database Compartment"
     description: "The compartment in which the Autonomous Transaction Processing (ATP) database is found"
 
@@ -1174,11 +1178,23 @@ variables:
     description: "The Autonomous Transaction Processing (ATP) database uses private endpoint for network access"
 
   atp_db_existing_vcn_id_{{{datasourceName}}}:
-    visible: false
-    type: string
-    default: ""
-    required: false
-    title: "The OCID of the VCN used by the ATP database private endpoint"
+    visible:
+      and:
+        - ${orm_create_mode}
+        - ${update_any_ds}
+        - edit_ds_{{{datasourceName}}}
+        - and:
+            - eq:
+                - ${db_strategy_{{{datasourceName}}}}
+                - "Autonomous Transaction Processing Database"
+        - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
+    type: oci:core:vcn:id
+    dependsOn:
+        compartmentId: ${atp_db_network_compartment_id_{{{datasourceName}}}}
+    required: true
+    default: ''
+    title: "Autonomous Database Network"
+    description: "An existing Virtual Cloud Network (VCN) used by ATP database with private endpoint. If the selected VCN is different from WebLogic Server VCN then local VCN peering will be setup. When using VCN peering ensure that the VCNs being peered have non-overlapping CIDR blocks."
 
   ########
   # End section: ATP
@@ -1205,6 +1221,24 @@ variables:
     title: "DB System Network Compartment"
     description: "The compartment in which the DB System Virtual Cloud Network is found"
     default: ${compartment_ocid}
+
+  oci_db_existing_vcn_id_{{{datasourceName}}}:
+    visible:
+        and:
+            - ${orm_create_mode}
+            - ${update_any_ds}
+            - edit_ds_{{{datasourceName}}}
+            - and:
+                - eq:
+                    - ${db_strategy_{{{datasourceName}}}}
+                    - "Database System"
+    type: oci:core:vcn:id
+    dependsOn:
+        compartmentId: ${oci_db_network_compartment_id_{{{datasourceName}}}}
+    required: true
+    default: ''
+    title: "DB System Network"
+    description: "An existing Virtual Cloud Network (VCN) used by DB System. If the selected VCN is different from WebLogic Server VCN then local VCN peering will be setup. When using VCN peering ensure that the VCNs being peered have non-overlapping CIDR blocks."
 
   oci_db_compartment_id_{{{datasourceName}}}:
     visible:

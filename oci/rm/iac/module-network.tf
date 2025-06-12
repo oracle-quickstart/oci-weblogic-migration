@@ -49,9 +49,9 @@ locals {
   # This is because OCI allows only one gateway of each type (Internet, NAT, Service) per VCN.
   # Therefore, if any exist, the first entry is guaranteed to be the one used in the VCN.
 
-  ig_fetched_id = local.ig_exists? try(data.oci_core_internet_gateways.existing_igs[0].gateways[0].id, "") : ""
-  ng_fetched_id = local.ng_exists? try(data.oci_core_nat_gateways.existing_ngs[0].nat_gateways[0].id, "") : ""
-  sg_fetched_id = local.sg_exists? try(data.oci_core_service_gateways.existing_sgs[0].service_gateways[0].id, "") : ""
+  ig_fetched_id = local.ig_exists ? try(data.oci_core_internet_gateways.existing_igs[0].gateways[0].id, "") : ""
+  ng_fetched_id = local.ng_exists ? try(data.oci_core_nat_gateways.existing_ngs[0].nat_gateways[0].id, "") : ""
+  sg_fetched_id = local.sg_exists ? try(data.oci_core_service_gateways.existing_sgs[0].service_gateways[0].id, "") : ""
   # ──────────────────────────────────────────────────────────
 
   # Configured VCN CIDRs if creating, else from provided vcn_id
@@ -137,7 +137,7 @@ locals {
 ########################
 
 resource "oci_core_internet_gateway" "ig" {
-  count = local.create_ig ? 1 : 0
+  count          = local.create_ig ? 1 : 0
   compartment_id = var.network_compartment_id
   vcn_id         = local.vcn_id
   display_name   = "${local.vcn_name}-ig"
@@ -156,7 +156,7 @@ resource "oci_core_route_table" "ig_rt" {
   route_rules {
     destination       = "0.0.0.0/0"
     destination_type  = "CIDR_BLOCK"
-    network_entity_id = local.ig_exists? local.ig_fetched_id: oci_core_internet_gateway.ig[0].id
+    network_entity_id = local.ig_exists ? local.ig_fetched_id : oci_core_internet_gateway.ig[0].id
   }
 
 }
@@ -178,7 +178,7 @@ resource "oci_core_service_gateway" "sg" {
 
 resource "oci_core_route_table" "sg_rt" {
   # always create the route table; it will point to either new or existing IG
-  count = var.create_vcn ? 0 : 1
+  count          = var.create_vcn ? 0 : 1
   compartment_id = var.network_compartment_id
   vcn_id         = local.vcn_id
   display_name   = "${local.vcn_name}-sg-routetable"
@@ -186,7 +186,7 @@ resource "oci_core_route_table" "sg_rt" {
   route_rules {
     destination       = data.oci_core_services.all_services.services.0.cidr_block
     destination_type  = "SERVICE_CIDR_BLOCK"
-    network_entity_id = local.sg_exists? local.sg_fetched_id: oci_core_service_gateway.sg[0].id
+    network_entity_id = local.sg_exists ? local.sg_fetched_id : oci_core_service_gateway.sg[0].id
   }
 }
 
@@ -195,7 +195,7 @@ resource "oci_core_route_table" "sg_rt" {
 ###################
 
 resource "oci_core_nat_gateway" "nat_gateway" {
-  count = local.create_ng ? 1 : 0
+  count          = local.create_ng ? 1 : 0
   compartment_id = var.network_compartment_id
   vcn_id         = local.vcn_id
   display_name   = "${local.vcn_name}-ng"
@@ -215,7 +215,7 @@ resource "oci_core_route_table" "nat_rt" {
   route_rules {
     destination       = "0.0.0.0/0"
     destination_type  = "CIDR_BLOCK"
-    network_entity_id = local.ng_exists? local.ng_fetched_id: oci_core_nat_gateway.nat_gateway[0].id
+    network_entity_id = local.ng_exists ? local.ng_fetched_id : oci_core_nat_gateway.nat_gateway[0].id
     description       = "Terraformed - Auto-generated at NAT Gateway creation: NAT Gateway as default gateway"
   }
 
@@ -225,7 +225,7 @@ resource "oci_core_route_table" "nat_rt" {
     content {
       destination       = data.oci_core_services.all_services.services.0.cidr_block
       destination_type  = "SERVICE_CIDR_BLOCK"
-      network_entity_id = local.sg_exists? local.sg_fetched_id: oci_core_service_gateway.sg[0].id
+      network_entity_id = local.sg_exists ? local.sg_fetched_id : oci_core_service_gateway.sg[0].id
       description       = "Terraformed - Auto-generated at Service Gateway creation: All Services in region to Service Gateway"
     }
   }
@@ -237,7 +237,7 @@ module "network-wls-private-subnet" {
   source             = "./modules/network/subnet"
   compartment_id     = local.network_compartment_id
   vcn_id             = local.vcn_id
-  route_table_id = local.ng_exists? oci_core_route_table.nat_rt[0].id : local.nat_route_table_id
+  route_table_id     = local.ng_exists ? oci_core_route_table.nat_rt[0].id : local.nat_route_table_id
   subnet_name        = format("wlsservers-%v", local.state_id)
   dns_label          = lookup(local.subnet_dns_labels, "wlsservers", null)
   cidr_block         = var.wlsserver_subnet_cidr
@@ -306,7 +306,7 @@ module "network" {
   nsgs                              = var.nsgs
   #  create_operator              = false            #future use
   enable_waf           = false #future use
-  ig_route_table_id  = local.ig_exists? oci_core_route_table.ig_rt[0].id : local.ig_route_table_id
+  ig_route_table_id    = local.ig_exists ? oci_core_route_table.ig_rt[0].id : local.ig_route_table_id
   load_balancers       = var.load_balancers
   nat_route_table_id   = local.nat_route_table_id
   subnets              = var.subnets
@@ -316,6 +316,19 @@ module "network" {
   wlsserver_ports      = local.wls_domain_all_discovered_ports
   adminserver_ports    = local.wls_admin_server_ports
   resource_name_prefix = local.wls_domain_name
+}
+
+/* Create LPGs for VCN Peering */
+module "lpg" {
+  count                     = var.is_vcn_peering ? 1 : 0
+  source                    = "./modules/network/vcn-peering"
+  compartment_id            = local.network_compartment_id
+  vcn_id                    = local.vcn_id
+  db_network_compartment_id = var.db_network_compartment_id
+  db_existing_vcn_id        = var.db_existing_vcn_id
+  wlsserver_subnet_id       = try(module.network-wls-private-subnet.subnet_id, "")
+  db_subnet_id              = var.db_subnet_id
+  lpg_name                  = format("lpg-%v", local.state_id)
 }
 
 # VCN
