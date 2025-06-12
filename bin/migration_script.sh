@@ -118,7 +118,7 @@ set -e
 if [ "$process_exit_code" -ne 0 ]; then
   log "error" "Script execution failed in uploading archives to OCI Object Storage. Errors can be found in $MIGRATION_SCRIPT_LOG"
   log "error" "Migration failed."
-  exit 1
+  exit $process_exit_code
 fi
 
 echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"

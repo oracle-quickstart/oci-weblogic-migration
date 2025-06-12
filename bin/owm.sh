@@ -139,12 +139,12 @@ function process_archives() {
          log "error" "<discoverDomain><process_archives><error> model_file $wls_inventory_file not found. exiting."
          exit 1
      fi
-      discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@"
+    discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@"
      exit_code=$?
      log "info" "Executed discover infra with exit code [$exit_code]"
      if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
          log "error" "<discoverDomain><process_archives><error> Error executing archives"
-         exit 2
+         exit $exit_code
      fi
      log "info" "<discoverDomain><process_archives><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
 
