@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
@@ -197,6 +197,10 @@ data "cloudinit_config" "wlsservers" {
            {
              content  = file("${path.module}/templates/ds_update_config_xml_w_db_system.py")
              path     = "/opt/scripts/ds_update_config_xml_w_db_system.py"
+           },
+           {
+             content  = file("${path.module}/templates/vcn_peering.py")
+             path     = "/opt/scripts/vcn_peering.py"
            },
          ]
        })

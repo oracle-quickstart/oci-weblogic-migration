@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Oracle and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 data "oci_load_balancer_load_balancers" "existing_load_balancers_data_source" {
@@ -103,3 +103,11 @@ module "load-balancer-managed_server-backends" {
 ##  backend_port = try(one(local.wls_merged_templates_details).port, local.MS_LISTEN_PORT_NOT_SET)
 #  backend_port =  each.value.ListenPort
 #}
+
+output "wls_loadbalancer_id"{
+  value = try(element(module.load-balancer[*].wls_loadbalancer_id, 0), "")
+}
+
+output "wls_loadbalancer_ip"{
+  value = try(module.load-balancer[*].wls_loadbalancer_ip_addresses, "")
+}
