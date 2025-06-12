@@ -142,7 +142,7 @@ resource "oci_core_instance" "wlsservers" {
   }
 
   instance_options {
-    are_legacy_imds_endpoints_disabled = false
+    are_legacy_imds_endpoints_disabled = true
   }
 
   metadata = merge(
