@@ -16,145 +16,76 @@ MIGRATION_DATA_JSON="$toolHome/logs/migration_data.json"
 
 [ "$user_functions_loaded" ] || source "$toolHome/bin/shared.sh"
 
+run_migration_step() {
+
+  #Runs the specified migration step
+  #arg1: step name.
+  #arg2: script command.
+  #arg3: (Optional) Allow exit code 1 to pass (Used in the case of WDT).(default : false).
+  #arg4: (Optional) json key for the medata (migration_data.json) file. (default: $(step_name)_status).
+
+  local step_name="$1"
+  local script_cmd="$2"
+  local allow_exit_code_1="${3:-false}"
+  local json_key="${4:-${step_name}_status}"
+
+  # Skip if already marked as success, continues otherwise.
+  local status=""
+  [ -f "$MIGRATION_DATA_JSON" ] && status=$(jq -r --arg k "$json_key" '.[$k] // empty' "$MIGRATION_DATA_JSON")
+  if [ "$status" = "success" ]; then
+    echo "\"$step_name\" already completed successfully. Skipping." >> "$MIGRATION_SCRIPT_LOG"
+    return
+  fi
+
+  log "info" "$step_name..."
+  update_migration_data_json "$json_key" "in_progress"
+
+  set +e
+  eval "$script_cmd" >> "$MIGRATION_SCRIPT_LOG" 2>&1
+  local exit_code=$?
+  set -e
+
+  if [ "$exit_code" -eq 0 ] || { [ "$allow_exit_code_1" = "true" ] && [ "$exit_code" -eq 1 ]; }; then
+    update_migration_data_json "$json_key" "success"
+  else
+    update_migration_data_json "$json_key" "failed"
+    log "error" " \"$step_name\" failed. Check $MIGRATION_SCRIPT_LOG for details. Run migration_script.sh again after resolving the issue."
+    log "error" "Migration failed."
+    exit $exit_code
+  fi
+
+  echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
+}
+
 ########################################## SECTION : Install Dependencies ###################################################
-log "info" "Installing Dependencies.."
-
-set +e
-bash "$MIGRATION_SCRIPT_DIR/install_dependencies.sh" >> "$MIGRATION_SCRIPT_LOG" 2>&1
-process_exit_code=$?
-set -e
-if [ "$process_exit_code" -ne 0 ]; then
-  log "error" "Script execution failed at install dependencies. Errors can be found in $MIGRATION_SCRIPT_LOG"
-  log "error" "Migration failed."
-  exit 1
-fi
-
-log "info" "Successfully installed dependencies." >> "$MIGRATION_SCRIPT_LOG"
-echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
-#############################################################################################################################
+run_migration_step  "Installing dependencies" "bash \"$MIGRATION_SCRIPT_DIR/install_dependencies.sh\"" "" "install_dependencies"
 
 ########################################## SECTION : Prerequisites check ####################################################
-log "info" "Checking prerequisites.."
-
-set +e
-bash "$MIGRATION_SCRIPT_DIR/check_pre-reqs.sh" >> "$MIGRATION_SCRIPT_LOG" 2>&1
-process_exit_code=$?
-set -e
-
-if [ "$process_exit_code" -ne 0 ]; then
-  log "error" "Script execution failed at prerequisites check. Errors can be found in $MIGRATION_SCRIPT_LOG"
-  log "error" "Migration failed."
-  exit 1
-fi
-
-echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
-#############################################################################################################################
+run_migration_step "Checking prerequisites" "bash \"$MIGRATION_SCRIPT_DIR/check_pre-reqs.sh\"" "" "prerequisites_check"
 
 ########################################## SECTION : MIGRATION ##############################################################
 
 ########################################## SUB_SECTION : Discover Weblogic Domain ###########################################
-log "info" "Discovering WebLogic domain.."
-
-set +e
-bash "$MIGRATION_SCRIPT_DIR/owm.sh" wls >> "$MIGRATION_SCRIPT_LOG" 2>&1
-process_exit_code=$?
-set -e
-
-if [ "$process_exit_code" -ne 0 ] && [ "$process_exit_code" -ne 1 ]; then
-  log "error" "Script execution failed in discovering WebLogic domain. Errors can be found in $MIGRATION_SCRIPT_LOG"
-  log "error" "Migration failed."
-  exit 1
-fi
-
+run_migration_step "Discovering WebLogic domain" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" wls" "true" "wls_discover"
 WLS_JSON=$(jq -r '.wls_json' "$MIGRATION_DATA_JSON")
 
-echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
-#############################################################################################################################
-
 ########################################## SUB_SECTION : Discover Infrastructure ############################################
-log "info" "Discovering infrastructure.."
-
-set +e
-bash "$MIGRATION_SCRIPT_DIR/owm.sh" infra $WLS_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
-process_exit_code=$?
-set -e
-
-if [ "$process_exit_code" -ne 0 ] && [ "$process_exit_code" -ne 1 ]; then
-  log "error" "Script execution failed in discovering infrastructure. Errors can be found in $MIGRATION_SCRIPT_LOG"
-  log "error" "Migration failed."
-  exit 1
-fi
-
+run_migration_step "Discovering infrastructure" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" infra $WLS_JSON" "true" "infra_discover"
 INFRA_JSON=$(jq -r '.infra_json' "$MIGRATION_DATA_JSON")
 
-echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
-#############################################################################################################################
-
 ########################################## SUB_SECTION : Archive Weblogic Domain ############################################
-log "info" "Archiving WebLogic domain.."
-
-set +e
-bash "$MIGRATION_SCRIPT_DIR/owm.sh" archive $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
-process_exit_code=$?
-set -e
-
-if [ "$process_exit_code" -ne 0 ] && [ "$process_exit_code" -ne 1 ]; then
-  log "error" "Script execution failed in archiiving Weblogic domain. Errors can be found in $MIGRATION_SCRIPT_LOG"
-  log "error" "Migration failed."
-  exit 1
-fi
-
-echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
-#############################################################################################################################
+run_migration_step "Archiving WebLogic domain" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" archive $INFRA_JSON" "true" "archive_weblogic_domain"
 
 ##################################### SUB_SECTION : Upload Archives to OCI Object Storage (Optional) ########################
-log "info" "Uploading archives to OCI.."
-
-set +e
-bash "$MIGRATION_SCRIPT_DIR/owm.sh" lift $INFRA_JSON ../out >> "$MIGRATION_SCRIPT_LOG" 2>&1
-process_exit_code=$?
-set -e
-
-if [ "$process_exit_code" -ne 0 ]; then
-  log "error" "Script execution failed in uploading archives to OCI Object Storage. Errors can be found in $MIGRATION_SCRIPT_LOG"
-  log "error" "Migration failed."
-  exit $process_exit_code
-fi
-
-echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
-#############################################################################################################################
+run_migration_step "Uploading archives to OCI" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" lift $INFRA_JSON ../out" "" "upload_to_oci"
 
 ##################################### SUB_SECTION : Discovery Database Connections ##########################################
-log "info" "Discovering datasources.."
-
-set +e
-bash "$MIGRATION_SCRIPT_DIR/owm.sh" ds $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
-process_exit_code=$?
-set -e
-
-if [ "$process_exit_code" -ne 0 ] && [ "$process_exit_code" -ne 1 ]; then
-  log "error" "Script execution failed in Discovery Database Connections. Errors can be found in $MIGRATION_SCRIPT_LOG"
-  log "error" "Migration failed."
-  exit 1
-fi
-
-echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
-#############################################################################################################################
+run_migration_step "Discovering datasources" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" ds $INFRA_JSON" "true" "discover_datasources"
 
 ##################################### SUB_SECTION :  Generate OCI Resource Manager Stacks ###################################
-log "info" "Building OCI Resource Manager stack.."
-set +e
-bash "$MIGRATION_SCRIPT_DIR/owm.sh" orm $INFRA_JSON >> "$MIGRATION_SCRIPT_LOG" 2>&1
-process_exit_code=$?
-set -e
-
-if [ "$process_exit_code" -ne 0 ]; then
-  log "error" "Script execution failed in building OCI Resource Manager stack. Errors can be found in $MIGRATION_SCRIPT_LOG"
-  log "error" "Migration failed."
-  exit 1
-fi
+run_migration_step "Building OCI Resource Manager stack" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" orm $INFRA_JSON" "" "build_oci_orm"
 STACK_FILE=$(jq -r '.stack_file' "$MIGRATION_DATA_JSON")
-echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
+
 #############################################################################################################################
 log "info" "Migration scripts completed successfully!"
 log "info" "Stack file created: $STACK_FILE"
