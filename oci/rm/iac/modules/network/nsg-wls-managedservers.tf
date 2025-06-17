@@ -44,6 +44,9 @@ locals {
       "Allow ICMP ingress to wlsservers for path discovery" : {
         protocol = local.icmp_protocol, port = local.all_ports, source = local.anywhere, source_type = local.rule_type_cidr,
       },
+      "Allow TCP ingress from Managed Servers to Node Manager port" : {
+        protocol = local.tcp_protocol, port = var.nm_port, source = local.wlsserver_nsg_id, source_type = local.rule_type_nsg,
+      },
     },
     var.allow_wlsserver_internet_access ? {
       "Allow ALL egress from wlsservers to internet" : {
