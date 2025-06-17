@@ -21,7 +21,7 @@ class SSHUtils:
         self.user = user
         self.key_file = key_file
 
-    def execute_ssh_command(self, hostname: str, command: str) -> str:
+    def execute_ssh_command(self, hostname: str, command: str):
         """
         Execute a shell command on a remote host via SSH and return its output.
         Constructs the SSH command, including user@hostname and optional key file, then runs it via subprocess.run, capturing both stdout and stderr.
@@ -29,13 +29,16 @@ class SSHUtils:
             hostname (str): The remote host's name or IP address.
             command (str): The shell command to execute on the remote host.
         Returns:
-            str: If successful, returns the stdout stripped of trailing newlines.
-                 If the command fails, returns a string starting with "Error:"
-                 followed by the stderr output or exception message.
+            subprocess.CompletedProcess:
+            Always returns a CompletedProcess object containing:
+              - args: the full SSH command that was run
+              - stdout: the command’s standard output (maybe empty)
+              - stderr: the command’s standard error (may contain the error message)
+              - returncode: 0 on success or non-zero on failure
         """
 
+        ssh_command = ["ssh"]
         try:
-            ssh_command = ["ssh"]
             if self.key_file:
                 ssh_command.extend(["-i", self.key_file])
             target = f"{self.user}@{hostname}" if self.user else hostname
@@ -48,8 +51,11 @@ class SSHUtils:
                 universal_newlines=True,
                 check=True
             )
-            return result.stdout.strip()
+            return result
+
         except subprocess.CalledProcessError as e:
-            return f"Error: {e.stderr.strip()}"
+            # Return a CompletedProcess carrying the stderr and exit code
+            return subprocess.CompletedProcess(args=e.cmd, returncode=e.returncode, stdout="", stderr=e.stderr, )
         except Exception as e:
-            return f"An unexpected error occurred: {str(e)}"
+            # Any other exception: capture its message in stderr
+            return subprocess.CompletedProcess(args=ssh_command, returncode=-1,stdout="", stderr=str(e), )

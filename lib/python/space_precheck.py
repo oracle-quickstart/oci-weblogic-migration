@@ -59,10 +59,11 @@ class SpacePrecheck:
 
         cmd = f'''VAR_VALUE=${{{env_var_name}}}; [ -z "$VAR_VALUE" ] && VAR_VALUE=$(grep -h "^{env_var_name}=" ~/.bash_profile ~/.bashrc 2>/dev/null | awk -F "=" '{{print $2}}' | tr -d '"' | tail -n1); readlink -f "$VAR_VALUE" || echo "$VAR_VALUE"'''
         result = self.ssh.execute_ssh_command(hostname, cmd)
-        # If the result contains an error or is empty, skip
-        if not result or result.startswith("Error:"):
+        result_out = result.stdout.strip()
+        # If the SSH command failed or produced no output, skip
+        if result.returncode != 0 or not result_out:
             return ""
-        return result.strip()
+        return result_out
 
     def get_remote_directory_size_bytes(self, hostname: str, directory_path: str) -> int:
         """
@@ -77,8 +78,9 @@ class SpacePrecheck:
             return 0
         cmd = f"du -sb {directory_path} 2>/dev/null | cut -f1"
         result = self.ssh.execute_ssh_command(hostname, cmd)
+        result_out = result.stdout.strip()
         try:
-            return int(result)
+            return int(result_out)
         except (ValueError, TypeError):
             return 0
 
