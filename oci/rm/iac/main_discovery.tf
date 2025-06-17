@@ -316,7 +316,7 @@ locals {
   }
 
   # Node Manager port
-  nm_port = try(local.wls_topology["NMProperties"].ListenPort, "5556")
+  nm_port = tolist([try(local.wls_topology["NMProperties"].ListenPort, "5556")])
 
   # rules for datasource changes.
   # on_prem != "" &&
