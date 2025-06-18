@@ -205,6 +205,20 @@ run_ssh_command(){
      log "info" "SSH command executed successfully"
 }
 
+get_ssh_args() {
+  local ssh_args=""
+  [[ -n "$ssh_user" ]] && ssh_args="$ssh_args -ssh_user $ssh_user"
+  if [[ -n "$ssh_private_key_file" && -f "$ssh_private_key_file" ]]; then
+    ssh_args="$ssh_args -ssh_private_key $ssh_private_key_file"
+    if [[ -n "$ssh_private_key_pass_file" && -f "$ssh_private_key_pass_file" ]]; then
+      ssh_args="$ssh_args -ssh_private_key_pass_file $ssh_private_key_pass_file"
+    fi
+  elif [[ -n "$ssh_password_file" && -f "$ssh_password_file" ]]; then
+    ssh_args="$ssh_args -ssh_pass_file $ssh_password_file"
+  fi
+  echo "$ssh_args"
+}
+
 secure_copy(){
      source=$1
      destination=$2
