@@ -205,6 +205,8 @@ run_ssh_command(){
      log "info" "SSH command executed successfully"
 }
 
+# Construct SSH authentication arguments based on available config values.
+# Priority: private key (with optional passphrase) > password file.
 get_ssh_args() {
   local ssh_args=""
   [[ -n "$ssh_user" ]] && ssh_args="$ssh_args -ssh_user $ssh_user"
