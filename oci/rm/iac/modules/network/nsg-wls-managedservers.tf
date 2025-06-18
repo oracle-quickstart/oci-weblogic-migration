@@ -65,14 +65,14 @@ locals {
     #TODO: JOI update ports with http listen ports
     local.pub_lb_nsg_enabled ? merge(
       {
-        "Allow TCP ingress to wlsservers from public load balancers" = {
+        "Allow TCP ingress to wlsservers from public load balancers" : {
           protocol     = local.tcp_protocol,
           port_min     = local.node_port_min,
           port_max     = local.node_port_max,
           source       = local.pub_lb_nsg_id,
           source_type  = local.rule_type_nsg,
         },
-        "Allow TCP ingress to wlsservers for health check from public load balancers" = {
+        "Allow TCP ingress to wlsservers for health check from public load balancers" : {
           protocol     = local.tcp_protocol,
           port         = local.health_check_port,
           source       = local.pub_lb_nsg_id,
