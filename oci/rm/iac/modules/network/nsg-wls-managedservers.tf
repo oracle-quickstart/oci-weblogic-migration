@@ -44,6 +44,9 @@ locals {
       "Allow ICMP ingress to wlsservers for path discovery" : {
         protocol = local.icmp_protocol, port = local.all_ports, source = local.anywhere, source_type = local.rule_type_cidr,
       },
+      "Allow TCP ingress from Managed Servers to Node Manager port" : {
+        protocol = local.tcp_protocol, port = var.nm_port[0], source = local.wlsserver_nsg_id, source_type = local.rule_type_nsg,
+      },
     },
     var.allow_wlsserver_internet_access ? {
       "Allow ALL egress from wlsservers to internet" : {
@@ -62,14 +65,14 @@ locals {
     #TODO: JOI update ports with http listen ports
     local.pub_lb_nsg_enabled ? merge(
       {
-        "Allow TCP ingress to wlsservers from public load balancers" = {
+        "Allow TCP ingress to wlsservers from public load balancers" : {
           protocol     = local.tcp_protocol,
           port_min     = local.node_port_min,
           port_max     = local.node_port_max,
           source       = local.pub_lb_nsg_id,
           source_type  = local.rule_type_nsg,
         },
-        "Allow TCP ingress to wlsservers for health check from public load balancers" = {
+        "Allow TCP ingress to wlsservers for health check from public load balancers" : {
           protocol     = local.tcp_protocol,
           port         = local.health_check_port,
           source       = local.pub_lb_nsg_id,
