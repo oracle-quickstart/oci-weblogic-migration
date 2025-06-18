@@ -72,7 +72,7 @@ locals {
     try(channel["ListenPort"], null)
   ]
   ])))
-  wls_admin_server_ports                = distinct(compact(concat(local.wls_admin_server_non_unique_ports,local._wls_admin_network_channel_port_definition, local.nm_port)))
+  wls_admin_server_ports                = distinct(compact(concat(local.wls_admin_server_non_unique_ports,local._wls_admin_network_channel_port_definition)))
 }
 
 ## MANAGED SERVER DETAILS
