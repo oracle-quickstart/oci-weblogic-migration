@@ -85,7 +85,9 @@ discover_infra_local(){
        log "error" "<discoverDomain><discover_infra_local><error> model_file $wls_inventory_file not found. exiting."
        exit 1
    fi
-   discover "local" "$SCRIPT_PATH" "$model_file_arg" "-archive_file $toolHome/out/infra_output_$file_timestamp.json"
+   local ssh_args
+   ssh_args=$(get_ssh_args) # Get SSH options from helper
+   discover "local" "$SCRIPT_PATH" "$model_file_arg" "-archive_file $toolHome/out/infra_output_$file_timestamp.json" "$ssh_args"
    exit_code=$?
    log "info" "Executed discover infra with exit code [$exit_code]"
    if [ $exit_code -ne 0 ]; then
@@ -134,7 +136,9 @@ function process_archives() {
          log "error" "<discoverDomain><process_archives><error> model_file $wls_inventory_file not found. exiting."
          exit 1
      fi
-      discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@"
+     local ssh_args
+     ssh_args=$(get_ssh_args) # Get SSH options from helper
+     discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@" "$ssh_args"
      exit_code=$?
      log "info" "Executed discover infra with exit code [$exit_code]"
      if [ $exit_code -ne 0 ]; then
