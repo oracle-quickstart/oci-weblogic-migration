@@ -30,9 +30,8 @@ output "load_balancer_ip" {
   value = try(element(flatten(module.wls.wls_loadbalancer_ip), 0).ip_address, "")
 }
 
-# value to be added later when vcn peering support is added, and the variable is defined
 output "is_vcn_peered" {
-  value = ""
+  value = local.is_vcn_peering
 }
 
 # Terraform State Id
