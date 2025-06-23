@@ -7,6 +7,8 @@ locals {
   wlsserver_compartments        = coalescelist(var.wlsserver_compartments, [var.compartment_id])
   wlsserver_compartment_matches = formatlist("instance.compartment.id = '%v'", local.wlsserver_compartments)
   wlsserver_compartment_rule    = format("ANY {%v}", join(", ", local.wlsserver_compartment_matches))
+  bucket_compartment            = var.bucket_compartment
+  network_compartment_id        = var.network_compartment_id
 
   wlsserver_group_rules = var.use_defined_tags ? format("ALL {%v}", join(", ", [
     format("tag.%v.role.value='wlsserver'", var.tag_namespace),
@@ -33,21 +35,32 @@ locals {
   migration_compartment_policy_templates = tolist([
     "Allow dynamic-group ${local.wlsserver_group_name} to use instance-family in compartment id %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to manage volume-family in compartment id %v",
-    "Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to manage tag-namespaces in compartment id %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to use app-catalog-listing in compartment id %v",
   ])
 
+  network_compartment_policy_templates = tolist([
+    format("Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v", var.network_compartment_id)
+  ])
+
   # Define the optional templates based on conditions
-  optional_policy_templates = compact(concat(
-    var.add_load_balancer ? [
-      "Allow dynamic-group ${local.wlsserver_group_name} to manage load-balancers in compartment id %v"
-    ] : [],
-    var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp
-    ? [
-      "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %v"
-    ]
-    : []
+  atp_db_policy_template_1 = compact(concat(
+    var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp ?
+    [
+      format(
+        "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %s",
+        var.atp_db_compartment_id_0
+      )
+    ] : []
+  ))
+    atp_db_policy_template_2 = compact(concat(
+    (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp || (var.atp_db_existing_vcn_id_0 != "" && var.atp_has_private_endpoints_0)) ?
+    [
+      format(
+        "Allow dynamic-group ${local.wlsserver_group_name} to manage network-security-groups in compartment id %s where request.operation = 'AddNetworkSecurityGroupSecurityRules'",
+        var.atp_db_network_compartment_id_0
+      )
+    ] : []
   ))
 
   # Block volume encryption using OCI Key Management System (KMS)
@@ -59,7 +72,7 @@ locals {
   # Object Storage access  (OSS)
   wlsservers_object_storage_statements = flatten(tolist([
     for statement in local.wlsservers_object_storage_templates :
-    formatlist(statement, local.wlsserver_compartments)
+    formatlist(statement, local.bucket_compartment)
   ]))
 
   migration_compartment_policy_statements = var.create_iam_wlsserver_policy ? flatten(tolist([
@@ -68,16 +81,15 @@ locals {
   ])) : []
 
   # Use the templates only if the flag is enabled
-  optional_policy_statements = var.create_iam_wlsserver_policy ? flatten([
-    for statement in local.optional_policy_templates :
-    formatlist(statement, local.wlsserver_compartments)
-  ]) : []
+
 
   wlsserver_policy_statements = var.create_iam_wlsserver_policy ? tolist(concat(
     local.wlsservers_object_storage_statements,
     local.wlsserver_kms_volume_statements,
     local.migration_compartment_policy_statements,
-    local.optional_policy_statements
+    local.network_compartment_policy_templates,
+    local.atp_db_policy_template_1,
+    local.atp_db_policy_template_2
   )) : []
 }
 
