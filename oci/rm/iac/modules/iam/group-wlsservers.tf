@@ -40,7 +40,7 @@ locals {
   ])
 
   network_compartment_policy_templates = tolist([
-    format("Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v", var.network_compartment_id)
+    format("Allow dynamic-group ${local.wlsserver_group_name} to inspect virtual-network-family in compartment id %v", var.network_compartment_id)
   ])
 
   # Define the optional templates based on conditions
