@@ -44,24 +44,24 @@ locals {
   ])
 
   # Define the optional templates based on conditions
-  atp_db_policy_template_1 = compact(concat(
-    var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp ?
-    [
-      format(
-        "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %s",
-        var.atp_db_compartment_id_0
-      )
-    ] : []
-  ))
-    atp_db_policy_template_2 = compact(concat(
-    (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp || (var.atp_db_existing_vcn_id_0 != "" && var.atp_has_private_endpoints_0)) ?
-    [
-      format(
-        "Allow dynamic-group ${local.wlsserver_group_name} to manage network-security-groups in compartment id %s where request.operation = 'AddNetworkSecurityGroupSecurityRules'",
-        var.atp_db_network_compartment_id_0
-      )
-    ] : []
-  ))
+   atp_db_policy_template_1 = compact(concat(
+       (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp) ? [
+         format(
+           "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %s",
+           var.atp_db_compartment_id_0
+         )
+       ] : []
+   ))
+
+   atp_db_policy_template_2 = compact(concat(
+     (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp || (var.atp_db_existing_vcn_id_0 != "" && var.atp_has_private_endpoints_0)) ? [
+       format(
+         "Allow dynamic-group ${local.wlsserver_group_name} to manage network-security-groups in compartment id %s where request.operation = 'AddNetworkSecurityGroupSecurityRules'",
+          var.atp_db_network_compartment_id_0
+       )
+     ] : []
+   ))
+
 
   # Block volume encryption using OCI Key Management System (KMS)
   wlsserver_kms_volume_statements = coalesce(var.wlsserver_volume_kms_key_id, "none") != "none" ? flatten(tolist([
