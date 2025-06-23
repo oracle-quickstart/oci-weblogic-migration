@@ -141,8 +141,9 @@ resource "oci_core_instance" "wlsservers" {
 #    freeform_tags             = each.value.freeform_tags
   }
 
+  # Set to true to disable the legacy (/v1) Instance Metadata Service (IMDS) endpoints.
   instance_options {
-    are_legacy_imds_endpoints_disabled = false
+    are_legacy_imds_endpoints_disabled = true
   }
 
   metadata = merge(

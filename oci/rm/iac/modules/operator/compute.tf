@@ -48,6 +48,11 @@ resource "oci_core_instance" "operator" {
     subnet_id        = var.subnet_id
   }
 
+  # Set to true to disable the legacy (/v1) Instance Metadata Service (IMDS) endpoints.
+  instance_options {
+    are_legacy_imds_endpoints_disabled = true
+  }
+
   launch_options {
     boot_volume_type = "PARAVIRTUALIZED"
     network_type     = "PARAVIRTUALIZED"
