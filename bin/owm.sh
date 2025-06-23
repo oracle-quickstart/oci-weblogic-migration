@@ -237,7 +237,8 @@ case "$1" in
         ;;
     "archive")
        load_config "$ON_PREM_ENV_FILE"
-       process_archives "$2"
+       shift
+       process_archives "$@"
        ;;
     "lift")
        load_config "$ON_PREM_ENV_FILE"
