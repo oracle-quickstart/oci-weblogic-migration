@@ -4,7 +4,7 @@
 locals {
   pub_lb_nsg_config = try(var.nsgs.pub_lb, { create = "never" })
   pub_lb_nsg_create = coalesce(lookup(local.pub_lb_nsg_config, "create", null), "auto")
-  pub_lb_nsg_enabled = anytrue([
+  pub_lb_nsg_enabled = var.add_load_balancer && anytrue([
     local.pub_lb_nsg_create == "always",
     alltrue([
       local.pub_lb_nsg_create == "auto",
@@ -24,6 +24,8 @@ locals {
       },
       "Allow ICMP egress from public load balancers to wlsserver nodes for path discovery" : {
         protocol = local.icmp_protocol, port = local.all_ports, destination = local.wlsserver_nsg_id, destination_type = local.rule_type_nsg,
+      },
+      "Allow all egress traffic from public load balancer" : { protocol = local.all_protocols, destination = local.anywhere, destination_type = local.rule_type_cidr, port = 0,
       },
     },
     var.enable_waf ? local.waf_rules : {},

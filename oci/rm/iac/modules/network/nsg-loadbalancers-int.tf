@@ -4,7 +4,7 @@
 locals {
   int_lb_nsg_config = try(var.nsgs.int_lb, { create = "never" })
   int_lb_nsg_create = coalesce(lookup(local.int_lb_nsg_config, "create", null), "auto")
-  int_lb_nsg_enabled = anytrue([
+  int_lb_nsg_enabled = var.add_load_balancer && anytrue([
     local.int_lb_nsg_create == "always",
     alltrue([
       local.int_lb_nsg_create == "auto",

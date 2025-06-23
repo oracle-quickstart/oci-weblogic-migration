@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 # shellcheck disable=SC1091
 # This is an auto-generated file.
@@ -19,7 +19,7 @@ locals {
 {{#datasources}}
     db_options_{{{datasourceName}}}= {
         "Edit JDBC String" = trimspace(var.oci_db_connection_string_{{{datasourceName}}}) != var.ds_{{{datasourceName}}} && length(trimspace(var.oci_db_connection_string_{{{datasourceName}}})) >0 ? var.oci_db_connection_string_{{{datasourceName}}} :"unchanged"
-        "Autonomous Transaction Processing Database" = try(lookup(one(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).connection_strings).all_connection_strings,upper(var.atp_db_level_{{{datasourceName}}})),"none")
+        "Autonomous Transaction Processing Database" = local.is_atp_db_{{{datasourceName}}} ? local.desired_atp_db_profile_value : ""
         "Database System" = var.oci_db_dbsystem_id_{{{datasourceName}}} !="" ? trimspace(var.oci_db_pdb_service_name_{{{datasourceName}}}) !="" ? replace(tostring(data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].connection_strings[0].cdb_default),data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].db_unique_name,var.oci_db_pdb_service_name_{{{datasourceName}}}) :tostring(data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].connection_strings[0].cdb_default) : ""
     }
 {{/datasources}}
@@ -49,22 +49,25 @@ locals {
     is_atp_dedicated_{{{datasourceName}}} = try(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).is_dedicated,"none")
     is_atp_with_private_endpoints_{{{datasourceName}}} = local.is_atp_db_{{{datasourceName}}} && (length(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}) != 0 ? data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].subnet_id != null : false)
     atp_db_network_compartment_id_{{{datasourceName}}} = local.is_atp_with_private_endpoints_{{{datasourceName}}} && var.atp_db_network_compartment_id_{{{datasourceName}}} == "" ? var.atp_db_compartment_id_{{{datasourceName}}} : var.atp_db_network_compartment_id_{{{datasourceName}}}
+    desired_atp_db_profile_value = local.is_atp_db_{{{datasourceName}}} ? [for profile in data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].connection_strings[0].profiles : profile.value if upper(profile.consumer_group) == upper(var.atp_db_level_{{{datasourceName}}})][0] : ""
 
     atp_db_{{{datasourceName}}} = {
         atp_type                      = local.is_atp_dedicated_{{{datasourceName}}}
-        #compartment_id                = var.atp_db_compartment_id_{{{datasourceName}}}
-        is_atp_with_private_endpoints = local.is_atp_with_private_endpoints_{{{datasourceName}}}
-        network_compartment_id        = local.atp_db_network_compartment_id_{{{datasourceName}}}
-        # existing_vcn_id               = var.atp_db_existing_vcn_id_{{{datasourceName}}}
+        compartment_id                = var.atp_db_compartment_id_{{{datasourceName}}}
+        is_atp_with_private_endpoints = var.atp_db_uses_private_endpoint_{{{datasourceName}}}
+        network_compartment_id        = var.atp_db_network_compartment_id_{{{datasourceName}}}
+        existing_vcn_id               = var.atp_db_existing_vcn_id_{{{datasourceName}}}
+        subnet_id                     = local.is_atp_db_{{{datasourceName}}} && local.is_atp_with_private_endpoints_{{{datasourceName}}} ? data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].subnet_id : ""
         #existing_vcn_add_seclist      = local.is_atp_with_private_endpoints_{{{datasourceName}}} ? var.db_existing_vcn_add_secrule : false
         db_name                        = try(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).db_name,"empty")
         db_level                       = var.atp_db_level_{{{datasourceName}}}
     }
     oci_db_{{{datasourceName}}} = {
         is_oci_db                = local.is_oci_db_{{{datasourceName}}}
-        #compartment_id           = local.oci_db_compartment_id_{{{datasourceName}}}
-        network_compartment_id   = local.oci_db_network_compartment_id_{{{datasourceName}}}
-        #    existing_vcn_id          = var.oci_db_existing_vcn_id
+        compartment_id           = var.oci_db_compartment_id_{{{datasourceName}}}
+        network_compartment_id   = var.oci_db_network_compartment_id_{{{datasourceName}}}
+        existing_vcn_id          = var.oci_db_existing_vcn_id_{{{datasourceName}}}
+        subnet_id                = local.is_oci_db_{{{datasourceName}}} ? data.oci_database_db_systems.ocidb_db_systems_{{{datasourceName}}}[0].db_systems[0].subnet_id : ""
         #    existing_vcn_add_seclist = local.is_oci_db ? var.db_existing_vcn_add_secrule : false
     }
 

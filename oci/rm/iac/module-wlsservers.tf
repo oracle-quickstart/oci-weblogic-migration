@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2024 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
@@ -40,6 +40,11 @@ locals {
       size               = var.wlsserver_domain_volume_size
     }
   }
+
+  # To look for WLS private IP
+  wlsserver_private_ips_list = flatten([
+    for key, instance in module.wlsservers[0].wlsserver_instances :  lookup(instance,"private_ip")
+  ])
 }
 
 # Default wlsservers sub-module implementation for Weblogic Domain nodes
@@ -86,6 +91,11 @@ module "wlsservers" {
   #  adminserver_nsg_ids        = concat(var.adminserver_nsg_ids, [try(module.network.adminserver_nsg_id, null)])
   adminserver_nsg_ids = coalescelist([module.network.adminserver_nsg_id])
   wlsserver_subnet_id = try(module.network-wls-private-subnet.subnet_id, "")
+  wlsserver_vcn_id    = var.create_vcn ? try(one(module.vcn[*].vcn_id), var.vcn_id) : var.vcn_id
+  db_subnet_id        = var.db_subnet_id
+  is_vcn_peering      = var.is_vcn_peering
+  db_lpg              = element(concat(module.lpg[*].db_lpg, [""]), 0)
+  wlsserver_lpg       = element(concat(module.lpg[*].wls_lpg, [""]), 0)
   wlsserver_ports     = local.wls_domain_all_discovered_ports
   adminserver_ports   = local.wls_admin_server_ports
 
@@ -150,3 +160,6 @@ output "ssh_to_nodes" {
   local.bastion_proxy_command, [ip]))] : null
 }
 
+output "weblogic_instances_admin_private_ip" {
+  value = local.wlsserver_private_ips_list[0]
+}

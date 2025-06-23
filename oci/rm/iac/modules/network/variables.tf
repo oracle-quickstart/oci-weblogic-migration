@@ -34,6 +34,7 @@ variable "load_balancers" { type = string }
 variable "nat_route_table_id" { type = string }
 variable "vcn_cidrs" { type = list(string) }
 variable "vcn_id" { type = string }
+variable "nm_port" { type = list(string)}
 variable "wlsserver_is_public" { type = bool }
 variable "wlsserver_ports" { type = list(string)}
 variable "adminserver_ports" { type = list(string)}
@@ -61,4 +62,19 @@ variable "nsgs" {
     create = optional(string)
     id     = optional(string)
   }))
+}
+variable "backend_ports" {
+  type        = list(number)
+  description = "The list of private IP addresses and Ports of the instances for the backend servers"
+}
+
+variable "pub_lb_subnet_cidr_value" {
+  type        = string
+  description = "load_balancer_subnet_cidr"
+}
+
+variable "add_load_balancer" {
+  type        = bool
+  description = "If this variable is true and existing_load_balancer is blank, a new load balancer will be created for the stack. If existing_load_balancer_id is not blank, the specified load balancer will be used"
+  default     = true
 }

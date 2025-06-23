@@ -1,0 +1,171 @@
+import os
+import argparse
+import shutil
+from infra_utils import InfraUtils
+from ssh_utils import SSHUtils
+
+
+class SpacePrecheck:
+    """
+    Perform a pre‐check of disk space before archiving remote WebLogic environments.
+    This class:
+      1. Loads an infrastructure JSON to find all target hosts.
+      2. SSH’s into each host and discovers key environment directories:
+         - ORACLE_HOME
+         - DOMAIN_HOME
+         - JAVA_HOME
+      3. Optionally includes any extra OS paths defined under “ExtraOSPaths” in that infra.
+      4. Runs `du -sb` remotely to compute each directory’s size in bytes.
+      5. Sums those sizes per host and across all hosts.
+      6. Checks local free space (in an “out” folder) in megabytes.
+      7. Prints per‐host and overall totals, and decides if a 20% safety margin is met.
+    """
+
+    def __init__(self, infra_file: str):
+        """
+        Initializes the SpacePrecheck class with the infrastructure file.
+        Args:
+            infra_file (str): Path to the infrastructure JSON file containing remote host details.
+        """
+        self.infra_file = infra_file
+        self.loader = InfraUtils(infra_file)
+        self.ssh = SSHUtils()
+
+    def get_local_free_space_mb(self, directory_path: str) -> float:
+        """
+        Check available free disk space in megabytes for a local directory.
+        Args:
+            directory_path (str): Local path to check for free space.
+        Returns:
+            float: Free disk space in megabytes.
+        """
+        total, used, free = shutil.disk_usage(directory_path)
+        return free / (1024 ** 2)
+
+    def retrieve_remote_env_var_path(self, hostname: str, env_var_name: str) -> str:
+        """
+        Resolve a remote environment variable to an absolute path.
+        1. Reads `$ENV_VAR_NAME` directly.
+        2. If empty, greps ~/.bash_profile and ~/.bashrc for a definition.
+        3. Uses `readlink -f` to canonicalize (resolve symlinks).
+        4. Falls back to raw value if readlink fails.
+        5. Returns an empty string on errors or if nothing is found.
+        Args:
+            hostname (str): Remote host.
+            env_var_name (str): Name of the environment variable.
+        Returns:
+            str: Resolved (canonical) path or raw value of the environment variable.
+        """
+
+        cmd = f'''VAR_VALUE=${{{env_var_name}}}; [ -z "$VAR_VALUE" ] && VAR_VALUE=$(grep -h "^{env_var_name}=" ~/.bash_profile ~/.bashrc 2>/dev/null | awk -F "=" '{{print $2}}' | tr -d '"' | tail -n1); readlink -f "$VAR_VALUE" || echo "$VAR_VALUE"'''
+        result = self.ssh.execute_ssh_command(hostname, cmd)
+        result_out = result.stdout.strip()
+        # If the SSH command failed or produced no output, skip
+        if result.returncode != 0 or not result_out:
+            return ""
+        return result_out
+
+    def get_remote_directory_size_bytes(self, hostname: str, directory_path: str) -> int:
+        """
+        Compute the size of a remote directory in bytes. Runs: `du -sb <directory_path> 2>/dev/null | cut -f1`
+        Args:
+            hostname (str): Remote host.
+            directory_path (str): Absolute path to the remote directory.
+        Returns:
+            int: Directory size in bytes, or Returns 0 on failure or invalid input.
+        """
+        if not directory_path:
+            return 0
+        cmd = f"du -sb {directory_path} 2>/dev/null | cut -f1"
+        result = self.ssh.execute_ssh_command(hostname, cmd)
+        result_out = result.stdout.strip()
+        try:
+            return int(result_out)
+        except (ValueError, TypeError):
+            return 0
+
+    def run(self):
+        """
+        Run pre‐check:
+          - Load hostnames.
+          - For each host, resolve ORACLE_HOME, DOMAIN_HOME, JAVA_HOME and any ExtraOSPaths,
+            compute their sizes in MB, and print per‐host totals plus current local free space.
+          - Finally, print the combined total and verify it fits within local free space ×1.2.
+        """
+        # Gather all hosts from the infra JSON
+        hosts = self.loader.get_machine_hostnames()
+        total_size_mb = 0.0
+        # Prepare the local “out” folder path for free‐space checks
+        script_path = os.path.realpath(__file__)
+        tool_home = os.path.abspath(os.path.join(script_path, "..", "..", ".."))
+        output_dir = os.path.join(tool_home, "out")
+
+        # Loop each host and measure remote directories
+        for host in hosts:
+            print(f"\n----- {host} -----")
+            host_size_mb = 0.0  # reset per‐host accumulator
+
+            # Standard WebLogic env vars
+            for env_var in ("ORACLE_HOME", "DOMAIN_HOME", "JAVA_HOME"):
+                # Attempt to resolve each environment variable path
+                path = self.retrieve_remote_env_var_path(host, env_var)
+                if not path or "not found" in path.lower():
+                    print(f"{env_var}: Not found.")
+                    continue
+
+                # Get directory size in bytes and convert to MB
+                size_bytes = self.get_remote_directory_size_bytes(host, path)
+                size_mb = size_bytes / (1024 ** 2)
+                # accumulate both per‐host and grand total
+                host_size_mb += size_mb
+                total_size_mb += size_mb
+
+            # Any extra paths defined in infra under “ExtraOSPaths”
+            extra_paths = self.loader.get_machine_property(host, "ExtraOSPaths")
+            for extra in extra_paths:
+                size_bytes = self.get_remote_directory_size_bytes(host, extra)
+                size_mb = size_bytes / (1024 ** 2)
+                host_size_mb += size_mb
+                total_size_mb += size_mb
+
+            # Report per‐host archive total and local free space
+            print(f"Total remote archive size for {host}: {host_size_mb:.2f} MB")
+            # show available local space per host
+            available_space_mb = self.get_local_free_space_mb(output_dir)
+            print(f"Available local disk space on {host}: {available_space_mb:.2f} MB")
+
+        available_space_mb = self.get_local_free_space_mb(output_dir)
+
+        print(f"\n-----------------------------------------------")
+        # Summary report
+        print(f"\nTotal remote archive size combined: {total_size_mb:.2f} MB")
+        print(f"Available local disk space on admin VM: {available_space_mb:.2f} MB")
+
+        # Decision based on 20% safety buffer
+        if available_space_mb >= total_size_mb * 1.2:
+            print("Sufficient space is available to store all nodes archives on the admin VM.")
+        else:
+            print("Insufficient space to store all nodes archives on the admin VM.")
+
+
+def main():
+    """
+    CLI entry point to run the space precheck.
+    Parses:
+      --infrafile  Path to the JSON infra description.
+    """
+    parser = argparse.ArgumentParser(
+        description="Check if the local system has enough space to store archives from remote WebLogic environments."
+    )
+    parser.add_argument(
+        "--infrafile", required=True,
+        help="Path to infrastructure JSON file containing host details."
+    )
+    args = parser.parse_args()
+
+    check_space = SpacePrecheck(args.infrafile)
+    check_space.run()
+
+
+if __name__ == "__main__":
+    main()

@@ -4,12 +4,11 @@
 locals {
   bastion_nsg_config = try(var.nsgs.bastion, { create = "never" })
   bastion_nsg_create = coalesce(lookup(local.bastion_nsg_config, "create", null), "auto")
-  bastion_nsg_enabled = anytrue([
+  bastion_nsg_enabled = var.create_bastion && anytrue([
     local.bastion_nsg_create == "always",
     alltrue([
       local.bastion_nsg_create == "auto",
       coalesce(lookup(local.bastion_nsg_config, "id", null), "none") == "none",
-      var.create_bastion,
     ]),
   ])
   # Return provided NSG when configured with an existing ID or created resource ID

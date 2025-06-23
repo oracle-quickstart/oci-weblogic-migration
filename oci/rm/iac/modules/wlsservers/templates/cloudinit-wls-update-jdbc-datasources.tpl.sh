@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2024, Oracle and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 fileName=$(basename $BASH_SOURCE)
@@ -28,6 +28,18 @@ function log() {
     done
 }
 
+#VCN peering script to update the Weblogic and Database subnet route tables
+eval $(oci-metadata --get is_vcn_peering --export)
+eval $(oci-metadata --get is_admin_instance --export)
+if [ "$is_admin_instance" = "true" ] && [ "$is_vcn_peering" = "true" ]; then
+    output=$(python3 /opt/scripts/vcn_peering.py)
+    exit_code=$?
+    echo "Executed VCN peering script with exit code [$exit_code]" | log >> $log_file
+    echo "$output" | log >> $log_file
+    if [ $exit_code -ne 0 ]; then
+        echo "Error executing VCN peering script. " | log >> $log_file
+    fi
+fi
 
 cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/jdbc" | log >> $log_file ; exit 1)
 
@@ -99,7 +111,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     done
     output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
     exit_code=$?
-    echo "Executed datasource ATP update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
+    echo "Executed datasource update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
     echo "$output" | log >> $log_file
     if [ $exit_code -eq 123 ]; then
                  echo "Non-JRF migration. continuing executing scripts" | log >> $log_file

@@ -65,6 +65,8 @@ variableGroups:
       - wls_discovery_filename
       - compartment_ocid
       - wlsserver_subnet_newbits
+      - allow_rules_internal_lb
+      - allow_rules_public_lb
 
   - title: "Stack Configuration"
     variables:
@@ -152,16 +154,12 @@ variableGroups:
   - title: "Loadbalancer"
     variables:
       - pub_lb_subnet_create
-      - pub_lb_subnet_newbits
+      - pub_lb_subnet_cidr
       - pub_lb_subnet_id
       - pub_lb_nsg_id
       - load_balancer_shape
       - lb_max_bandwidth
       - lb_min_bandwidth
-      - loadbalancer_authorized_cidrs_mgmt
-      - loadbalancer_authorized_cidrs_service
-      - allow_rules_internal_lb
-      - allow_rules_public_lb
 
   - title: "Bastion"
     variables:
@@ -198,9 +196,9 @@ variableGroups:
         - atp_db_level_{{{datasourceName}}}
         - atp_db_uses_private_endpoint_{{{datasourceName}}}
         - atp_db_network_compartment_id_{{{datasourceName}}}
+        - atp_db_existing_vcn_id_{{{datasourceName}}}
         - oci_db_connection_string_{{{datasourceName}}}
         #  Database Service
-        - oci_db_network_compartment_id_{{{datasourceName}}}
         - oci_db_compartment_id_{{{datasourceName}}}
         - oci_db_dbsystem_id_{{{datasourceName}}}
         - oci_db_dbhome_id_{{{datasourceName}}}
@@ -208,7 +206,8 @@ variableGroups:
         - oci_db_database_id_{{{datasourceName}}}
         - oci_db_pdb_service_name_{{{datasourceName}}}
         - oci_db_port_{{{datasourceName}}}
-        - atp_db_existing_vcn_id_{{{datasourceName}}}
+        - oci_db_network_compartment_id_{{{datasourceName}}}
+        - oci_db_existing_vcn_id_{{{datasourceName}}}
 {{/datasources}}
   
     
@@ -455,13 +454,7 @@ variables:
       hidePrivateSubnet: false
       hideRegionalSubnet: false
       hideAdSubnet: true
-    visible:
-      and:
-        - ${orm_create_mode}
-        - not:
-            - ${create_vcn}
-        - not:
-            - ${wlsserver_subnet_create}
+    visible: false
 
   #Network Other
   wlsserver_is_public:
@@ -514,19 +507,12 @@ variables:
     additionalProps:
       allowMultiple: true
     required: false
-    visible:
-      and:
-        - ${create_nsgs}
-        - ${add_load_balancer}
+
   allow_rules_public_lb:
     title: Additional public load balancer rules
     additionalProps:
       allowMultiple: true
     required: false
-    visible:
-      and:
-        - ${create_nsgs}
-        - ${add_load_balancer}
 
   create_drg:
     title: Create DRG
@@ -590,7 +576,6 @@ variables:
   ssh_public_key:
     title: SSH Public Key
     type: oci:core:ssh:publickey
-    pattern: "((^(ssh-rsa AAAAB3NzaC1yc2|ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNT|ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzOD|ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1Mj|ssh-ed25519 AAAAC3NzaC1lZDI1NTE5|ssh-dss AAAAB3NzaC1kc3)[0-9A-Za-z+\/]+[=]{0,3})( [^,]*)?)(,((ssh-rsa AAAAB3NzaC1yc2|ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNT|ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzOD|ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1Mj|ssh-ed25519 AAAAC3NzaC1lZDI1NTE5|ssh-dss AAAAB3NzaC1kc3)[0-9A-Za-z+\/]+[=]{0,3})( [^,]*)?)*$"
     required: true
   ssh_kms_vault_id:
     title: SSH Vault
@@ -624,7 +609,7 @@ variables:
   add_load_balancer:
     title: Provision Public Load Balancer
     description: Provision a load balancer in Oracle Cloud Infrastructure to distribute application traffic to the managed servers in the domain.
-    default: false
+    default: true
     type: boolean
 
   use_existing_loadbalancer:
@@ -686,7 +671,7 @@ variables:
             - "flexible"
 
   lb_min_bandwidth:
-    title: Public Load Balancer Min Bandwith
+    title: Flexible Public Load Balancer Min Bandwith
     description: "Choose Minimum Shape for Flex Load Balancer."
     required: false
     type: enum
@@ -706,28 +691,6 @@ variables:
         - eq:
             - load_balancer_shape
             - "flexible"
-  loadbalancer_authorized_cidrs_service:
-    type: array
-    title: "Authorized list of Network Addresses to connect Loadbalancer Application Ports"
-    required: false
-    description: "Type each network address in cidr format Y.Y.Y.Y/XX. Click after each type to be registered in the text area. Example Format: Network 192.168.1.0/24 or individual host by IP/32 . ex X.X.X.X/32"
-    items:
-      type: string
-    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
-    uniqueItems: true
-    default: [0.0.0.0/0]
-    visible: ${add_load_balancer}
-
-  loadbalancer_authorized_cidrs_mgmt:
-    type: array
-    title: "Authorized list of Network Addresses to connect to Weblogic Console and Admin Ports exposed on the Loadbalancer"
-    required: false
-    description: "Type each network address in cidr format Y.Y.Y.Y/XX. Click after each type to be registered in the text area. Example Format: Network 192.168.1.0/24 or individual host by IP/32 . ex X.X.X.X/32"
-    items:
-      type: string
-    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]).(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
-    uniqueItems: true
-    visible: ${add_load_balancer}
 
   pub_lb_subnet_create:
     title: Create public load balancer subnet
@@ -737,19 +700,6 @@ variables:
       and:
         - add_load_balancer
         - not: use_existing_loadbalancer
-
-  pub_lb_subnet_newbits:
-    title: Public load balancer subnet size
-    description: The number of network prefix bits added to the VCN CIDR block for the created subnet address range (i.e. a higher value is smaller). Refer to the Terraform <a href=https://developer.hashicorp.com/terraform/language/functions/cidrsubnets>cidrsubnets</a> function for more information.
-    type: number
-    visible:
-      and:
-        - ${pub_lb_subnet_create}
-        - and:
-            - ${add_load_balancer}
-            - not:
-                - ${use_existing_loadbalancer}
-
 
   pub_lb_subnet_id:
     title: Public load balancer subnet
@@ -762,13 +712,16 @@ variables:
       hidePrivateSubnet: true
       hideRegionalSubnet: false
       hideAdSubnet: true
-    visible:
-      and:
-        - and:
-            - ${add_load_balancer}
-            - not:
-                - ${use_existing_loadbalancer}
-        - not: [ pub_lb_subnet_create ]
+    visible: false
+
+  pub_lb_subnet_cidr:
+    title: Load Balancer Subnet CIDR
+    description: "The CIDR of the new subnet to create for the load balancer. The new subnet CIDR should not overlap with any other subnet CIDRs."
+    type: string
+    default: 10.0.3.0/24
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])/(3[0-2]|[1-2]?[0-9])$"
+    required: true
+    visible: ${add_load_balancer}
 
   int_lb_subnet_create: # Future version
     title: Create internal load balancer subnet
@@ -1103,18 +1056,20 @@ variables:
     visible:
       and:
         - ${orm_create_mode}
+        - ${update_any_ds}
         - ${update_ds_{{{datasourceName}}}}
-        - edit_ds{{{datasourceName}}}
+        - edit_ds_{{{datasourceName}}}
         - and:
             - eq:
-                - ${db_strategy{{{datasourceName}}}}
+                - ${db_strategy_{{{datasourceName}}}}
                 - "Autonomous Transaction Processing Database"
-            - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
+            - atp_db_uses_private_endpoint_{{{datasourceName}}}
     type: oci:identity:compartment:id
     required: true
-    title: "Autonomous Database Network Compartment"
-    description: "The compartment in which the ATP database Virtual Cloud Network is found"
     default: ${compartment_ocid}
+    title: "Autonomous Database Network Compartment"
+    description: "The compartment in which the Autonomous Transaction Processing(ATP) Database Virtual Cloud Network(VCN) is found."
+
 
   atp_db_compartment_id_{{{datasourceName}}}:
     visible:
@@ -1127,6 +1082,7 @@ variables:
             - "Autonomous Transaction Processing Database"
     type: oci:identity:compartment:id
     required: true
+    default: ${compartment_ocid}
     title: "Autonomous Database Compartment"
     description: "The compartment in which the Autonomous Transaction Processing (ATP) database is found"
 
@@ -1180,11 +1136,23 @@ variables:
     description: "The Autonomous Transaction Processing (ATP) database uses private endpoint for network access"
 
   atp_db_existing_vcn_id_{{{datasourceName}}}:
-    visible: false
-    type: string
-    default: ""
-    required: false
-    title: "The OCID of the VCN used by the ATP database private endpoint"
+    visible:
+      and:
+        - ${orm_create_mode}
+        - ${update_any_ds}
+        - edit_ds_{{{datasourceName}}}
+        - and:
+            - eq:
+                - ${db_strategy_{{{datasourceName}}}}
+                - "Autonomous Transaction Processing Database"
+        - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
+    type: oci:core:vcn:id
+    dependsOn:
+        compartmentId: ${atp_db_network_compartment_id_{{{datasourceName}}}}
+    required: true
+    default: ''
+    title: "Autonomous Database Network"
+    description: "An existing Virtual Cloud Network (VCN) used by ATP database with private endpoint. If the selected VCN is different from WebLogic Server VCN then local VCN peering will be setup. When using VCN peering ensure that the VCNs being peered have non-overlapping CIDR blocks."
 
   ########
   # End section: ATP
@@ -1211,6 +1179,24 @@ variables:
     title: "DB System Network Compartment"
     description: "The compartment in which the DB System Virtual Cloud Network is found"
     default: ${compartment_ocid}
+
+  oci_db_existing_vcn_id_{{{datasourceName}}}:
+    visible:
+        and:
+            - ${orm_create_mode}
+            - ${update_any_ds}
+            - edit_ds_{{{datasourceName}}}
+            - and:
+                - eq:
+                    - ${db_strategy_{{{datasourceName}}}}
+                    - "Database System"
+    type: oci:core:vcn:id
+    dependsOn:
+        compartmentId: ${oci_db_network_compartment_id_{{{datasourceName}}}}
+    required: true
+    default: ''
+    title: "DB System Network"
+    description: "An existing Virtual Cloud Network (VCN) used by DB System. If the selected VCN is different from WebLogic Server VCN then local VCN peering will be setup. When using VCN peering ensure that the VCNs being peered have non-overlapping CIDR blocks."
 
   oci_db_compartment_id_{{{datasourceName}}}:
     visible:

@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 # shellcheck disable=SC1091
 # This is an auto-generated file.
@@ -92,6 +92,12 @@ variable "oci_db_compartment_id_{{{datasourceName}}}" {
 variable "oci_db_network_compartment_id_{{{datasourceName}}}" {
   type        = string
   description = "The OCID of the compartment in which the DB System VCN is found"
+  default     = ""
+}
+
+variable "oci_db_existing_vcn_id_{{{datasourceName}}}" {
+  type        = string
+  description = "The OCID of the VCN used by the OCI database"
   default     = ""
 }
 
