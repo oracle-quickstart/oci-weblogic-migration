@@ -38,12 +38,12 @@ locals {
     "Allow dynamic-group ${local.wlsserver_group_name} to manage tag-namespaces in compartment id %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to use app-catalog-listing in compartment id %v",
   ])
-
+  # This policy with "inspect virtual-network-family" verb is needed to read VCN information like CIDR, etc.
   network_compartment_policy_templates = tolist([
     format("Allow dynamic-group ${local.wlsserver_group_name} to inspect virtual-network-family in compartment id %v", var.network_compartment_id)
   ])
 
-  # Define the optional templates based on conditions
+  # This policy with "use autonomous-transaction-processing-family" verb is needed to download ATP db wallet.
    atp_db_policy_template_1 = compact(concat(
        (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp) ? [
          format(
@@ -52,7 +52,8 @@ locals {
          )
        ] : []
    ))
-
+  # This policy is used to add the db port 1522 in case of ATP db
+  # The functionality is yet to be added till (Jun 25)
    atp_db_policy_template_2 = compact(concat(
      (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp || (var.atp_db_existing_vcn_id_0 != "" && var.atp_has_private_endpoints_0)) ? [
        format(
