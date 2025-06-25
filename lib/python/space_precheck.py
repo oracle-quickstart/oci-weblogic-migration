@@ -97,7 +97,7 @@ class SpacePrecheck:
         # Gather all hosts from the infra JSON
         hosts = self.loader.get_machine_hostnames()
         total_size_mb = 0.0
-        host_statuses = []  # NEW: collect per-host status
+        host_statuses = []  # collect per-host status
 
         # Prepare the local “out” folder path for free‐space checks
         script_path = os.path.realpath(__file__)
@@ -138,7 +138,7 @@ class SpacePrecheck:
             available_space_mb = self.get_local_free_space_mb(output_dir)
             print(f"Available local disk space on {host}: {available_space_mb:.2f} MB")
 
-            # NEW: determine per-host status (0=sufficient,1=insufficient)
+            # determine per-host status (0=sufficient,1=insufficient)
             status = 0 if available_space_mb >= host_size_mb * 1.2 else 1
             host_statuses.append([host, status])
 
