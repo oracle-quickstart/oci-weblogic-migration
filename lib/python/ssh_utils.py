@@ -8,7 +8,7 @@ class SSHUtils:
     private key configuration, executes commands, and captures both stdout and stderr outputs.
     """
 
-    def __init__(self, user: Optional[str] = None, key_file: Optional[str] = None):
+    def __init__(self, user=None, key_file=None):
         """
         Initialize SSHUtils with optional authentication parameters.
 
@@ -21,7 +21,7 @@ class SSHUtils:
         self.user = user
         self.key_file = key_file
 
-    def execute_ssh_command(self, hostname: str, command: str):
+    def execute_ssh_command(self, hostname, command):
         """
         Execute a shell command on a remote host via SSH and return its output.
         Constructs the SSH command, including user@hostname and optional key file, then runs it via subprocess.run, capturing both stdout and stderr.
@@ -32,8 +32,8 @@ class SSHUtils:
             subprocess.CompletedProcess:
             Always returns a CompletedProcess object containing:
               - args: the full SSH command that was run
-              - stdout: the command’s standard output (maybe empty)
-              - stderr: the command’s standard error (may contain the error message)
+              - stdout: the command's standard output (maybe empty)
+              - stderr: the command's standard error (may contain the error message)
               - returncode: 0 on success or non-zero on failure
         """
 

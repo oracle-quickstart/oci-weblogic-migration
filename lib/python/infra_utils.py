@@ -7,7 +7,7 @@ class InfraUtils:
     Loads and parses an infrastructure JSON file to extract machine hostnames or other metadata.
     """
 
-    def __init__(self, infra_file_path: str):
+    def __init__(self, infra_file_path):
         """
         Initialize the loader with a path to the infra JSON file.
         Args:
@@ -16,11 +16,11 @@ class InfraUtils:
         """
 
         self.infra_file_path = infra_file_path
-        self._data: Dict[str, Any] = {}
-        self._machines: Dict[str, Any] = {}
+        self._data = {}
+        self._machines = {}
         self._load_json()
 
-    def _load_json(self) -> None:
+    def _load_json(self):
         """
         Internal helper: Load and parse the JSON file into memory, populating self._data and self._machines.
         """
@@ -30,16 +30,16 @@ class InfraUtils:
         # Normalize path or validate structure if needed
         self._machines = self._data.get("resources", {}).get("Machines", {})
 
-    def get_machine_hostnames(self) -> List[str]:
+    def get_machine_hostnames(self):
         """
         Retrieve a list of all hostnames defined in the infrastructure.
         Iterates over each machine entry under "Machines" and extracts the
-        "DETAILS" → "Hostname" field if present.
+        "DETAILS" -> "Hostname" field if present.
 
         Returns:
             List[str]: A list of hostname strings for each configured machine.
         """
-        hostnames: List[str] = []
+        hostnames = []
         for machine_name, machine_info in self._machines.items():
             details = machine_info.get("DETAILS", {})
             hostname = details.get("Hostname")
@@ -47,12 +47,12 @@ class InfraUtils:
                 hostnames.append(hostname)
         return hostnames
 
-    def get_machine_property(self, hostname: str, key: str) -> Any:
+    def get_machine_property(self, hostname, key):
         """
-        Generic fetch of a top‑level property from a machine entry.
+        Generic fetch of a top-level property from a machine entry.
         Args:
             hostname (str): Name of the host whose entry to look up.
-            key (str): The top‑level field name under Machines[...], e.g. "ExtraOSPaths", "SomeOtherKey".
+            key (str): The top-level field name under Machines[...], e.g. "ExtraOSPaths", "SomeOtherKey".
 
         Returns:
             Any: The value of that field (e.g. a list), or None if the host or key is not found.

@@ -3,6 +3,8 @@ import argparse
 import shutil
 from infra_utils import InfraUtils
 from ssh_utils import SSHUtils
+import json
+import sys
 
 
 class SpacePrecheck:
@@ -95,6 +97,8 @@ class SpacePrecheck:
         # Gather all hosts from the infra JSON
         hosts = self.loader.get_machine_hostnames()
         total_size_mb = 0.0
+        host_statuses = []  # NEW: collect per-host status
+
         # Prepare the local “out” folder path for free‐space checks
         script_path = os.path.realpath(__file__)
         tool_home = os.path.abspath(os.path.join(script_path, "..", "..", ".."))
@@ -134,6 +138,10 @@ class SpacePrecheck:
             available_space_mb = self.get_local_free_space_mb(output_dir)
             print(f"Available local disk space on {host}: {available_space_mb:.2f} MB")
 
+            # NEW: determine per-host status (0=sufficient,1=insufficient)
+            status = 0 if available_space_mb >= host_size_mb * 1.2 else 1
+            host_statuses.append([host, status])
+
         available_space_mb = self.get_local_free_space_mb(output_dir)
 
         print(f"\n-----------------------------------------------")
@@ -141,11 +149,17 @@ class SpacePrecheck:
         print(f"\nTotal remote archive size combined: {total_size_mb:.2f} MB")
         print(f"Available local disk space on admin VM: {available_space_mb:.2f} MB")
 
-        # Decision based on 20% safety buffer
-        if available_space_mb >= total_size_mb * 1.2:
+        # Decision based on 20% safety buffer for combined size
+        overall_status = 0 if (available_space_mb >= total_size_mb * 1.2) else 1
+        if overall_status == 0:
             print("Sufficient space is available to store all nodes archives on the admin VM.")
         else:
             print("Insufficient space to store all nodes archives on the admin VM.")
+
+        print(f"\n-----------------------------------------------")
+        # Convert host_statuses to a dictionary
+        host_status_dict = {host: status for host, status in host_statuses}
+        return host_status_dict, overall_status  # return host_statuses and overall status code
 
 
 def main():
@@ -164,7 +178,10 @@ def main():
     args = parser.parse_args()
 
     check_space = SpacePrecheck(args.infrafile)
-    check_space.run()
+    host_statuses, overall_status = check_space.run()
+    print(f"The hostname : 0 if space is there else 1- {(json.dumps(host_statuses))}")
+    print(f"Admin returncode: {overall_status}")  # send JSON to stdout for shell to consume
+    sys.exit(overall_status)  # exit with admin status code only
 
 
 if __name__ == "__main__":
