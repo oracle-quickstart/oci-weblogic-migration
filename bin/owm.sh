@@ -13,9 +13,10 @@ toolHome=$(builtin cd "$scriptPath/.." ||exit; pwd)
 LOG_FILE_NAME="owm.log"
 # echo $scriptPath
 # echo $toolHome
-ON_PREM_ENV_FILE="$toolHome/config"
+ON_PREM_ENV_FILE="$toolHome/config/on-prem.env"
 
-[ "$user_functions_loaded" ] || source ./shared.sh
+[ "$user_functions_loaded" ] || source "$scriptPath/shared.sh"
+
 
 discover(){
   log "info" "<discoverDomain><discover><entry> args: $*"
@@ -37,11 +38,13 @@ discover_local(){
   discover "local" "$SCRIPT_PATH" "-domain_home $domain_home" "-model_file $toolHome/out/Discovered_$file_timestamp.json" "-skip_archive"
   exit_code=$?
   log "info" "Executed discover WebLogic with exit code [$exit_code]"
-  if [ $exit_code -ne 0 ]; then
-     log "error" "<discoverDomain><discover_local><error> Error executing discover infra"
-     exit 1
+  if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
+     log "error" "<discoverDomain><discover_local><error> Error executing discover domain"
+     exit 2
   fi
   log "info" "<discoverDomain><discover_infra_local><exit> WebLogic Inventory File : $toolHome/out/Discovered_$file_timestamp.json"
+  DISCOVERED_DOMAIN_JSON="$toolHome/out/Discovered_$file_timestamp.json"
+  update_migration_data_json "wls_json" "$DISCOVERED_DOMAIN_JSON"
 }
 
 
@@ -83,18 +86,20 @@ discover_infra_local(){
       model_file_arg="-model_file $toolHome/out/$wls_inventory_file"
    else
        log "error" "<discoverDomain><discover_infra_local><error> model_file $wls_inventory_file not found. exiting."
-       exit 1
+       exit 2
    fi
    local ssh_args
    ssh_args=$(get_ssh_args) # Get SSH options from helper
    discover "local" "$SCRIPT_PATH" "$model_file_arg" "-archive_file $toolHome/out/infra_output_$file_timestamp.json" "$ssh_args"
    exit_code=$?
    log "info" "Executed discover infra with exit code [$exit_code]"
-   if [ $exit_code -ne 0 ]; then
+   if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
        log "error" "<discoverDomain><discover_infra_local><error> Error executing discover infra"
-       exit 1
+       exit $exit_code
    fi
    log "info" "<discoverDomain><discover_infra_local><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
+   DISCOVERED_INFRA_JSON="$toolHome/out/infra_output_$file_timestamp.json"
+   update_migration_data_json "infra_json" "$DISCOVERED_INFRA_JSON"
 }
 
 discover_infra_remote(){
@@ -141,9 +146,9 @@ function process_archives() {
      discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@" "$ssh_args"
      exit_code=$?
      log "info" "Executed discover infra with exit code [$exit_code]"
-     if [ $exit_code -ne 0 ]; then
-         log "error" "<discoverDomain><process_archives><error> Error executing discover infra"
-         exit 1
+     if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
+         log "error" "<discoverDomain><process_archives><error> Error executing archives"
+         exit $exit_code
      fi
      log "info" "<discoverDomain><process_archives><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
 
@@ -215,42 +220,43 @@ fi
 
 case "$1" in
     "wls")
-        load_config "$2"
+        load_config "$ON_PREM_ENV_FILE"
         discover_local
         ;;
     "remote")
-        load_config "$2"
+        load_config "$ON_PREM_ENV_FILE"
         discover_remote
         ;;
     "infra")
-        load_config "$2"
-        discover_infra_local $3
+        load_config "$ON_PREM_ENV_FILE"
+        discover_infra_local $2
         ;;
     "infra-remote")
-        load_config "$2"
-        discover_infra_remote $3
+        load_config "$ON_PREM_ENV_FILE"
+        discover_infra_remote $2
         ;;
     "archive")
-       load_config "$2"
-       shift; shift
-#       process_archives "$3" "$4" "$5"
+       load_config "$ON_PREM_ENV_FILE"
+       shift
        process_archives "$@"
-
        ;;
     "lift")
-       load_config "$2"
-       upload_to_oci "$3" "$4"
+       load_config "$ON_PREM_ENV_FILE"
+       upload_to_oci "$2" "$3"
        ;;
     "ds")
-       load_config "$2"
-       process_datasources $3
+       load_config "$ON_PREM_ENV_FILE"
+       process_datasources "$2"
        ;;
     "orm")
-       build_orm $2 $3
+       build_orm $2 $3 #Inventory file path and Stack name
        ;;
     "test")
            build_orm_test $2 $3
            ;;
+#    "execute")
+#          log "info" "Executing the migration process.."
+#          ;;
     *)
         echo "Unknown option: $1"
         print_help

@@ -154,6 +154,7 @@ create_bundle(){
   fi
   (cd ${TMP_BUILD}; zip -r ${toolHome}/oci/stack/$STACK_NAME.zip *;)
   if [[ -f "${toolHome}/oci/stack/$STACK_NAME.zip" ]]; then
+      update_migration_data_json "stack_file" "${toolHome}/oci/stack/$STACK_NAME.zip"
       log "info" "<build_orm><create_bundle> Stack file created ${toolHome}/oci/stack/$STACK_NAME.zip"
   else
      log "error" "<build_orm><create_bundle> <error> Resource Mananger Stack file not created "
