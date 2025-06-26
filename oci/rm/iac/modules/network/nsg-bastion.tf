@@ -46,7 +46,7 @@ locals {
 resource "oci_core_network_security_group" "bastion" {
   count          = local.bastion_nsg_enabled ? 1 : 0
   compartment_id = var.compartment_id
-  display_name   = "bastion-${var.state_id}"
+  display_name   = "${var.resource_name_prefix}-bastion-${var.state_id}"
   vcn_id         = var.vcn_id
   defined_tags   = var.defined_tags
   freeform_tags  = var.freeform_tags
