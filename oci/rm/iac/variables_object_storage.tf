@@ -26,3 +26,8 @@ variable "bucket_name" {
   description = "OCI Object Storage bucket id"
   default     = null
 }
+variable "bucket_compartment"{
+  type        = string
+  description = "OCI bucket storage compartment id"
+  default     = null
+}
