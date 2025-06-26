@@ -5,10 +5,16 @@
 locals{
   marketplace_images_map={
     # Liting_ids and marketplace related variables are pre populated based on the discovered OS.
-    byol = {
-      listing_id = var.listing_id,
-      listing_resource_version= var.listing_resource_version,
-      instance_image_id = var.instance_image_id
+    ee-byol = {
+      listing_id = var.byol_listing_id,
+      listing_resource_version= var.byol_listing_resource_version,
+      instance_image_id = var.byol_instance_image_id
+      agreement_needed = false
+    }
+    suite-byol = {
+      listing_id = var.suite_byol_listing_id,
+      listing_resource_version= var.suite_byol_listing_resource_version,
+      instance_image_id = var.suite_byol_instance_image_id
       agreement_needed = false
     }
     ee-ucm = {
@@ -37,8 +43,8 @@ locals{
   }
 
   marketplace_images_schema_map = zipmap(
-    ["Oracle WebLogic Server BYOL Image", "Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Suite UCM Image", "custom", "platform"],
-    ["byol", "ee-ucm", "suite-ucm", "custom", "platform"]
+    ["Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Server Suite UCM Image", "Oracle WebLogic Server Enterprise Edition BYOL Image", "Oracle Weblogic Server Suite BYOL Image", "custom", "platform"],
+    ["ee-ucm", "suite-ucm", "ee-byol", "suite-byol", "custom", "platform"]
   )
 
   image_type_selected_key          = local.marketplace_images_schema_map[var.wlsserver_image_type]
@@ -58,7 +64,7 @@ locals{
 }
 
 variable "wlsserver_image_platform_id" {
-  default = null
+  default = "ocid1.image.oc1.iad.aaaaaaaavzb4qckh7yjuszdlgxtl4zduttgdig5ybpoc5ncsiekjkxkqzakq"
   type    = string
 }
 
@@ -67,7 +73,12 @@ variable "wlsserver_image_custom_id" {
   type    = string
 }
 
-variable "instance_image_id" {
+variable "byol_instance_image_id" {
+  type        = string
+  description = "The OCID of the compute image used to create the WebLogic compute instances"
+}
+
+variable "suite_byol_instance_image_id" {
   type        = string
   description = "The OCID of the compute image used to create the WebLogic compute instances"
 }
@@ -102,12 +113,22 @@ variable "use_marketplace_image" {
   default     = true
 }
 
-variable "listing_id" {
+variable "byol_listing_id" {
   type        = string
   description = "The OCID of the marketplace BYOL image listing"
 }
 
-variable "listing_resource_version" {
+variable "byol_listing_resource_version" {
+  type        = string
+  description = "The OCID of the marketplace BYOL image listing resource version"
+}
+
+variable "suite_byol_listing_id" {
+  type        = string
+  description = "The OCID of the marketplace BYOL image listing"
+}
+
+variable "suite_byol_listing_resource_version" {
   type        = string
   description = "The OCID of the marketplace BYOL image listing resource version"
 }

@@ -6,10 +6,14 @@
 # If inventory detected OL/RHEL 8,  Values of images bellow is updated to Weblogic Marketplace Images (mp_images_ol_8.auto.tfvars).
 
 tf_script_version        = "24.3.2-240826233830"
-#[BYOL]
-listing_id               = "ocid1.appcataloglisting.oc1..aaaaaaaaq2vkow7zwkxg6ky4zxsnckdlfgtgmg7i4kkyev3y6zyo72mpkgza"
-listing_resource_version = "24.3.2-ol8.8-23.12.13-240826-1"
-instance_image_id        = "ocid1.image.oc1..aaaaaaaauu7t5rihkowgsfimkdqrlyg46w24ri2bae4bgvsypbemhcewe6eq"
+#[Enterprise BYOL]
+byol_listing_id               = "ocid1.appcataloglisting.oc1..aaaaaaaaq2vkow7zwkxg6ky4zxsnckdlfgtgmg7i4kkyev3y6zyo72mpkgza"
+byol_listing_resource_version = "24.3.2-ol8.8-23.12.13-240826-1"
+byol_instance_image_id        = "ocid1.image.oc1..aaaaaaaamoezz5gwft4hyerr2er6y3cy2gpqyucuyvwuwqixwmdyqonegfwa"
+#[Suite BYOL]
+suite_byol_listing_id               = "ocid1.appcataloglisting.oc1..aaaaaaaaq2vkow7zwkxg6ky4zxsnckdlfgtgmg7i4kkyev3y6zyo72mpkgza"
+suite_byol_listing_resource_version = "24.3.2-ol8.8-23.12.13-240826-1"
+suite_byol_instance_image_id        = "ocid1.image.oc1..aaaaaaaamoezz5gwft4hyerr2er6y3cy2gpqyucuyvwuwqixwmdyqonegfwa"
 #[Enterprise UCM]
 ucm_listing_id               = "ocid1.appcataloglisting.oc1..aaaaaaaa653zc2e4fsem5hhwinmfgnv3xp4dmbq6c6gvf45okxf6xz3smhiq"
 ucm_listing_resource_version = "24.3.2-ol8.8-23.12.13-240826-1"
