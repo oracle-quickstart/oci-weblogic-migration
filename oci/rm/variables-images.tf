@@ -43,7 +43,7 @@ locals{
   }
 
   marketplace_images_schema_map = zipmap(
-    ["Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Server Suite UCM Image", "Oracle WebLogic Server Enterprise Edition BYOL Image", "Oracle Weblogic Server Suite BYOL Image", "custom", "platform"],
+    ["Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Server Suite UCM Image", "Oracle WebLogic Server Enterprise Edition BYOL Image", "Oracle Weblogic Server Suite BYOL Image", "custom", "Platform Image"],
     ["ee-ucm", "suite-ucm", "ee-byol", "suite-byol", "custom", "platform"]
   )
 

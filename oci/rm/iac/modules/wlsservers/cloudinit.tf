@@ -210,26 +210,26 @@ data "cloudinit_config" "wlsservers" {
    }
 
   # Python script to restore OSVM Scripts If mode=dev download from OSS else use image vmscripts
-  dynamic "part" {
-    for_each = each.value.disable_default_cloud_init ? [] : [1]
-    content {
-      content_type = "text/cloud-config"
-      content = jsonencode({
-        write_files = [
-          {
-            content = templatefile("${path.module}/templates/restore-vmscripts.py", {
-              bucket_name=var.bucket_name
-              temporary_path="/tmp"
-              vmscripts_file=var.vm_scripts_path  #"wlsoci-vmscripts.zip"
-            })
-            path    = "/opt/scripts/restore-vmscripts.py"
-          },
-        ]
-      })
-      filename   = "73-wls-restore-vmscripts.yml"
-      merge_type = local.default_cloud_init_merge_type
-    }
-  }
+#  dynamic "part" {
+#    for_each = each.value.disable_default_cloud_init ? [] : [1]
+#    content {
+#      content_type = "text/cloud-config"
+#      content = jsonencode({
+#        write_files = [
+#          {
+#            content = templatefile("${path.module}/templates/restore-vmscripts.py", {
+#              bucket_name=var.bucket_name
+#              temporary_path="/tmp"
+#              vmscripts_file=var.vm_scripts_path  #"wlsoci-vmscripts.zip"
+#            })
+#            path    = "/opt/scripts/restore-vmscripts.py"
+#          },
+#        ]
+#      })
+#      filename   = "73-wls-restore-vmscripts.yml"
+#      merge_type = local.default_cloud_init_merge_type
+#    }
+#  }
 
   # VMscript bootstrap file
   dynamic "part" {

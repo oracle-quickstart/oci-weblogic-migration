@@ -53,17 +53,17 @@ function log(){
     done
 }
 
-echo "Executing unpack vmscript script" | log >> $log_file
-
-#sudo -u ${user} -E python /opt/scripts/restore-vmscripts.py
-python3 /opt/scripts/restore-vmscripts.py
-exit_code=$?
-echo "<cloud-init><vmscripts>Executed restore-vmscripts.py with exit code [$exit_code]" | log >> $log_file
-if [[ $exit_code -ne 0 ]]; then
-  echo "<cloud-init><vmscripts><ERROR> Failed to restore VM Scripts" | log >> $log_file
-  exit 1
-fi
-sudo chown -R oracle:oracle /opt/scripts
-sudo chmod -R 775 /opt/scripts
-echo "<cloud-init><os-vmscripts> Restore completed" | log >> $log_file
+#echo "Executing unpack vmscript script" | log >> $log_file
+#
+##sudo -u ${user} -E python /opt/scripts/restore-vmscripts.py
+#python3 /opt/scripts/restore-vmscripts.py
+#exit_code=$?
+#echo "<cloud-init><vmscripts>Executed restore-vmscripts.py with exit code [$exit_code]" | log >> $log_file
+#if [[ $exit_code -ne 0 ]]; then
+#  echo "<cloud-init><vmscripts><ERROR> Failed to restore VM Scripts" | log >> $log_file
+#  exit 1
+#fi
+#sudo chown -R oracle:oracle /opt/scripts
+#sudo chmod -R 775 /opt/scripts
+#echo "<cloud-init><os-vmscripts> Restore completed" | log >> $log_file
 

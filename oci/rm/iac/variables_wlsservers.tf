@@ -73,9 +73,9 @@ variable "wlsserver_image_id" {
 variable "wlsserver_image_type" {
   type        = string
   description = "Type of image used for provisioning. Image type must be BYOL or UCM"
-  default     = "byol"
+  #default     = "byol"
   validation {
-    condition     = contains(["byol", "platform", "suite-ucm", "ee-ucm", "custom"], var.wlsserver_image_type)
+    condition     = contains(["ee-byol", "suite-byol", "platform", "suite-ucm", "ee-ucm", "custom"], var.wlsserver_image_type)
     error_message = "WLSC-ERROR: Weblogic image type not a valid value."
   }
 }
