@@ -202,6 +202,10 @@ data "cloudinit_config" "wlsservers" {
              content  = file("${path.module}/templates/vcn_peering.py")
              path     = "/opt/scripts/vcn_peering.py"
            },
+           {
+             content  = file("${path.module}/templates/atp_db_util.py")
+             path     = "/opt/scripts/atp_db_util.py"
+           },
          ]
        })
        filename   = "72-wls-ds-scripts.yml"
