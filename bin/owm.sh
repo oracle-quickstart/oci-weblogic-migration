@@ -130,6 +130,15 @@ process_datasources(){
 function process_archives() {
   log "info" "<discoverDomain><process_archives><entry> args: $*"
   wls_inventory_file=$1
+
+  SPACE_PRECHECK=$(python3 "$toolHome/lib/python/space_precheck.py" --infrafile "$wls_inventory_file" 2>&1)
+  SPACE_RETURNCODE=$?
+  log "info" "<process_archives><space_precheck_output> $SPACE_PRECHECK"
+
+  SPACE_JSON=$(echo "$SPACE_PRECHECK" | grep -o '{.*}')
+  export SPACE_STATUS_JSON="$SPACE_JSON"
+  export SPACE_ADMIN_RETURNCODE=$SPACE_RETURNCODE
+
   shift
   SCRIPT_PATH="$toolHome/bin/archiveWLSDomain.sh"
   local model_file_arg=""

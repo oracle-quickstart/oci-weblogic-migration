@@ -85,6 +85,7 @@ update_migration_data_json() {
   local key=$1
   local value=$2
   local MIGRATION_DATA_JSON="$toolHome/logs/migration_data.json"
+  local MIGRATION_SCRIPT_LOG="$toolHome/logs/migration_script.log"
 
   # Creating file with empty JSON object if it doesn't exist or if it an empty file.
   if [ ! -f "$MIGRATION_DATA_JSON" ] || [ ! -s "$MIGRATION_DATA_JSON" ]; then
