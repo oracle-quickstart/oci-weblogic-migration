@@ -160,7 +160,7 @@ function process_archives() {
          exit $exit_code
      fi
 
-     if [ $exit_code -eq 1 ]
+     if [ $exit_code -eq 1 ]; then
          log "warning" "<discoverDomain><process_archives><warning> Archive executed with some warning"
          exit $exit_code
      fi
