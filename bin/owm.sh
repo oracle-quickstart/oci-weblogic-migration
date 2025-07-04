@@ -154,7 +154,7 @@ function process_archives() {
      ssh_args=$(get_ssh_args) # Get SSH options from helper
      discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@" "$ssh_args"
      exit_code=$?
-     log "info" "Executed discover infra with exit code [$exit_code]"
+     log "info" "Executed create archive with exit code [$exit_code]"
      if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
          log "error" "<discoverDomain><process_archives><error> Error executing archives"
          exit $exit_code
