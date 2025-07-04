@@ -159,7 +159,13 @@ function process_archives() {
          log "error" "<discoverDomain><process_archives><error> Error executing archives"
          exit $exit_code
      fi
-     log "info" "<discoverDomain><process_archives><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
+
+     if [ $exit_code -eq 1 ]
+         log "warning" "<discoverDomain><process_archives><warning> Archive executed with some warning"
+         exit $exit_code
+     fi
+
+     log "info" "<discoverDomain><process_archives><exit> Archives created successfully!"
 
 }
 upload_to_oci(){

@@ -54,7 +54,8 @@ run_migration_step() {
     update_migration_data_json "$json_key" "success"
 
     if [ "$return_exit_code" = "true" ]; then
-      return $exit_code
+      RETURN_STATUS=$exit_code
+      return 0
     fi
 
   else
@@ -62,7 +63,8 @@ run_migration_step() {
     log "error" " \"$step_name\" failed. Check $MIGRATION_SCRIPT_LOG for details. Run migration_script.sh again after resolving the issue."
 
     if [ "$return_exit_code" = "true" ]; then
-      return $exit_code
+      RETURN_STATUS=$exit_code
+      return 0
     fi
 
     log "error" "Migration failed."
@@ -111,7 +113,6 @@ if [ "$skip_archive" = "true" ] && [ "$skip_transfer" = "false" ]; then
           https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/managingobjects_topic-To_upload_objects_to_a_bucket.htm" >> "$MIGRATION_SCRIPT_LOG"
   update_migration_data_json "archive_weblogic_domain" "skipped"
   update_migration_data_json "upload_to_oci" "skipped"
-  #What message to put in the end
   exit 1
 fi
 
@@ -127,7 +128,6 @@ if [ "$skip_archive" = "true" ] && [ "$skip_transfer" = "true" ]; then
         https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/managingobjects_topic-To_upload_objects_to_a_bucket.htm" >> "$MIGRATION_SCRIPT_LOG"
   update_migration_data_json "archive_weblogic_domain" "skipped"
   update_migration_data_json "upload_to_oci" "skipped"
-  #What message to put in the end
   exit 1
 fi
 
@@ -136,7 +136,7 @@ fi
 if [ "$skip_archive" = "false" ] && [ "$skip_transfer" = "true" ]; then
 
   run_migration_step "Archiving WebLogic domain" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" archive $INFRA_JSON" "" "archive_weblogic_domain" "true"
-  exit_code=$?
+  exit_code=$RETURN_STATUS
 
   log "info" "Skipping the transfer archives to OCI Object Storage step as  [skip_transfer] : \"$skip_transfer\". Transfer the archives manually by following the instruction in $MIGRATION_SCRIPT_LOG ."
   echo "The restore process expects all of the archives to be stored in a Oracle Cloud Object Storage Bucket. Follow Oracle Cloud documentation on how to transfer files via the Oracle Cloud Console. You can use OCI CLI to create an object store bucket and upload the archives to it.  More information at :
