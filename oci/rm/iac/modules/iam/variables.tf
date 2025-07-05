@@ -61,5 +61,6 @@ variable "atp_db_network_compartment_id_0" {
 variable "bucket_compartment"{
   type = string
 }
+variable "is_vcn_peering" { type = bool }
 
 

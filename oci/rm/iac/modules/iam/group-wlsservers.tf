@@ -9,6 +9,7 @@ locals {
   wlsserver_compartment_rule    = format("ANY {%v}", join(", ", local.wlsserver_compartment_matches))
   bucket_compartment            = var.bucket_compartment
   network_compartment_id        = var.network_compartment_id
+  is_vcn_peering                = var.is_vcn_peering
 
   wlsserver_group_rules = var.use_defined_tags ? format("ALL {%v}", join(", ", [
     format("tag.%v.role.value='wlsserver'", var.tag_namespace),
@@ -52,16 +53,34 @@ locals {
          )
        ] : []
    ))
-  # This policy is used to add the db port 1522 in case of ATP db
+  # This policy is used to add the db port 1522.
   # The functionality is yet to be added till (Jun 25)
-   atp_db_policy_template_2 = compact(concat(
-     (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp || (var.atp_db_existing_vcn_id_0 != "" && var.atp_has_private_endpoints_0)) ? [
-       format(
-         "Allow dynamic-group ${local.wlsserver_group_name} to manage network-security-groups in compartment id %s where request.operation = 'AddNetworkSecurityGroupSecurityRules'",
-          var.atp_db_network_compartment_id_0
-       )
-     ] : []
-   ))
+  # please inspect for this policy
+#      db_policy_template_2 = compact(concat(
+#      (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp || (var.atp_db_existing_vcn_id_0 != "" && var.atp_has_private_endpoints_0)) ? [
+#        format(
+#          "Allow dynamic-group ${local.wlsserver_group_name} to manage network-security-groups in compartment id %s where request.operation = 'AddNetworkSecurityGroupSecurityRules'",
+#           var.atp_db_network_compartment_id_0
+#        )
+#      ] : []
+#    ))
+  wls_vcn_peering_policy_templates = compact(concat(
+  (local.is_vcn_peering ) ? [
+      format("Allow dynamic-group %s to use local-peering-gateways in compartment id  %s", local.wlsserver_group_name, var.network_compartment_id),
+      format("Allow dynamic-group %s to use route-tables in compartment id  %s", local.wlsserver_group_name, var.network_compartment_id)
+    ] : []
+  ))
+
+
+  atp_db0_vcn_peering_policy_templates = compact(concat(
+  (local.is_vcn_peering &&
+   (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp) &&
+   (var.atp_db_network_compartment_id_0 != var.network_compartment_id)) ? [
+    format("Allow dynamic-group %s to use local-peering-gateways in compartment id %s", local.wlsserver_group_name, var.atp_db_network_compartment_id_0),
+    format("Allow dynamic-group %s to use route-tables in compartment id %s", local.wlsserver_group_name, var.atp_db_network_compartment_id_0),
+    format("Allow dynamic-group %s to read subnets in compartment id %s", local.wlsserver_group_name, var.atp_db_network_compartment_id_0)
+  ] : []
+))
 
 
   # Block volume encryption using OCI Key Management System (KMS)
@@ -90,7 +109,9 @@ locals {
     local.migration_compartment_policy_statements,
     local.network_compartment_policy_templates,
     local.atp_db_policy_template_1,
-    local.atp_db_policy_template_2
+    local.atp_db_policy_template_2,
+    local.wls_vcn_peering_policy_templates,
+    local.atp_db0_vcn_peering_policy_templates
   )) : []
 }
 
