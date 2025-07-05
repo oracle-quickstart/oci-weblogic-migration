@@ -109,7 +109,7 @@ locals {
     local.migration_compartment_policy_statements,
     local.network_compartment_policy_templates,
     local.atp_db_policy_template_1,
-    local.atp_db_policy_template_2,
+#     local.atp_db_policy_template_2,
     local.wls_vcn_peering_policy_templates,
     local.atp_db0_vcn_peering_policy_templates
   )) : []

@@ -64,7 +64,7 @@ module "iam" {
   tag_namespace            = var.tag_namespace
   use_defined_tags         = var.use_defined_tags
 
- add_load_balancer              = var.add_load_balancer
+  add_load_balancer                  = var.add_load_balancer
   db_strategy_is_atp                 = var.db_strategy_is_atp
   db_strategy_is_edit_string_atp     = var.db_strategy_is_edit_string_atp
   atp_db_compartment_id_0            = var.atp_db_compartment_id_0
@@ -82,7 +82,7 @@ module "iam" {
   }
   #TODO: JOI: Future release include multiple object storage compartment
   object_storage_compartments = []
-  bucket_compartment = local.bucket_compartment
+  bucket_compartment   = local.bucket_compartment
   resource_name_prefix = local.wls_domain_name
 }
 
