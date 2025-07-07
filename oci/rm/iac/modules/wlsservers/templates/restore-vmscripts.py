@@ -1,7 +1,8 @@
 #
-# Copyright (c) 2020, 2021, 2023 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025 Oracle and/or its affiliates. All rights reserved.
 #
-"""Restore Weblogic Archives.
+# Currently this file is not being used but is retained in case we need the wls-oci vmscripts.
+"""Restores wls-oci vmscripts.
 
 Command line arguments:
     Arg1: (optional) - confirm via tar validation.
@@ -12,17 +13,45 @@ Returns:
 
 import os
 import traceback
-import time
-import sys
 import oci
 import sys
-sys.path.append('/opt/scripts/')
-sys.path.append('/opt/scripts/utils')
-from bootstrap import getMode, getVMScriptsPath, getWlsDomainName, log, unzip_archive
-
+from restore-archives import getAttribute, execute
 
 class_name="restore_vmscripts.py"
 
+def getMode():
+    return getAttribute('mode')
+
+def getVMScriptsPath():
+    return getAttribute('vmscripts_path')
+
+def unzip_archive(zip_file, dest='/', already_unzipped_marker_path=None):
+    """
+    Unzip a zip file to the specified destination directory.
+
+    :param zip_file:
+    :param dest:
+    :param already_unzipped_marker_path: File or directory used to determine if zip_file has already been unzipped.
+    :return:
+    """
+    status = False
+    if os.path.exists(zip_file):
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        if already_unzipped_marker_path is None or not os.path.exists(already_unzipped_marker_path):
+            log('Unzipping zip file [{0}] to destination directory [{1}]'.format(zip_file, dest))
+            execute('unzip -o {0} -d {1}'.format(zip_file, dest))
+            status = True
+        else:
+            log('Zip file [{0}] already unzipped in destination directory [{1}]. Unzip skipped.'.format(zip_file, dest))
+            status = True
+    else:
+        log('Zip file not found at [{0}]'.format(zip_file))
+
+    return status
+
+def log(msg):
+    print(msg)
 
 def download_file_from_oss(bucket_name,file_name,store_path, skip_file=False):
     method_name="download_file_from_oss"
@@ -49,13 +78,13 @@ def download_file_from_oss(bucket_name,file_name,store_path, skip_file=False):
             return file_path
         else:
             log("ERROR- Response Code from OCI: ",str(response.status))
-            raise Exception("Filed to get OSS namespace for bucket {0}. response code [{1}]".format(bucket_name,str(response.status)))
+            raise Exception("Failed to get OSS namespace for bucket {0}. response code [{1}]".format(bucket_name,str(response.status)))
     except oci.exceptions.ServiceError as se:
         if se.status == 404 and skip_file:
             log("<{0}> File {1} not found on this, but has skip flag enabled".format(method_name,file_name))
             return "skipped"
         log("<{0}>Error finding file {1} in OSS".format(method_name,file_name)+str(response.status))
-        raise Exception("Filed to get OSS namespace for bucket {0}. response code [{1}]".format(bucket_name,str(response.status)))
+        raise Exception("Failed to get OSS namespace for bucket {0}. response code [{1}]".format(bucket_name,str(response.status)))
 
 
 

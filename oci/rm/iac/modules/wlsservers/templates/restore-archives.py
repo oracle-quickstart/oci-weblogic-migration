@@ -14,11 +14,31 @@ import os
 import sys
 import traceback
 import subprocess
+import urllib.request, urllib.error, urllib.parse
 
 class_name="restore_archives.py"
 
 def log(msg):
     print(msg)
+
+# Get metadata attribute.
+def getAttribute(attribute, default=None):
+    """
+    Returns attribute or default value if no value is found
+    """
+    try:
+        request_headers = {
+            "Authorization": "Bearer Oracle"
+        }
+        request = urllib.request.Request("http://169.254.169.254/opc/v2/instance/metadata/" + attribute,
+                                         headers=request_headers)
+        result = urllib.request.urlopen(request).read()
+        return result.decode("utf-8")
+    except Exception as ex:
+        print(f"Error: {ex}")
+        pass
+
+    return default
 
 def execute(command):
     """
