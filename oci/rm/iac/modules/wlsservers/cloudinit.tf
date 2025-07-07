@@ -213,6 +213,7 @@ data "cloudinit_config" "wlsservers" {
      }
    }
 
+# Currently this part of the code is not being used but is retained in case we need the wls-oci vmscripts in future.
   # Python script to restore OSVM Scripts If mode=dev download from OSS else use image vmscripts
 #  dynamic "part" {
 #    for_each = each.value.disable_default_cloud_init ? [] : [1]

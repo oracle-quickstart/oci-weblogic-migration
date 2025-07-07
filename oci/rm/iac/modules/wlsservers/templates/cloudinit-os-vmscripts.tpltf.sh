@@ -53,6 +53,7 @@ function log(){
     done
 }
 
+# Currently this part of the code is not being used but is retained in case we need the wls-oci vmscripts in future.
 #echo "Executing unpack vmscript script" | log >> $log_file
 #
 ##sudo -u ${user} -E python /opt/scripts/restore-vmscripts.py
