@@ -8,7 +8,7 @@ Updates the Weblogic and Database subnet route tables for VCN peering.
 
 import oci
 import sys
-from restore-archives import getAttribute
+from restore_archives import getAttribute
 
 # Initialize service clients
 principal = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()

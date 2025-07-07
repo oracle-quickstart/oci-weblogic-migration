@@ -165,7 +165,7 @@ data "cloudinit_config" "wlsservers" {
       content = jsonencode({
         write_files = [
           {
-            content = templatefile("${path.module}/templates/restore-archives.py", {
+            content = templatefile("${path.module}/templates/restore_archives.py", {
                     restore_path="/"
                     bucket_name=var.bucket_name
                     temporary_path=var.stage_archive_path
@@ -174,7 +174,7 @@ data "cloudinit_config" "wlsservers" {
                     domain_archive =format("%s-%s-domain_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
                     custom_archive =format("%s-%s-custom_dirs.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
             })
-            path    = "/opt/scripts/restore-archives.py"
+            path    = "/opt/scripts/restore_archives.py"
           },
         ]
       })

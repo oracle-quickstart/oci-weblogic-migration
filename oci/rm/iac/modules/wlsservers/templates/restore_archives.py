@@ -147,7 +147,7 @@ def delete_file(archive_on_disk, skip_file=False):
         sys.exit(1)
 
 if __name__ == '__main__':
-    """Usage: restore-archives.py"""
+    """Usage: restore_archives.py"""
     # Restores all WLS Archives from Terraform generated template
     bucket="${bucket_name}"
     temp_store="${temporary_path}"

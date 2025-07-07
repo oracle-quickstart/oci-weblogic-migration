@@ -15,7 +15,7 @@ import os
 import traceback
 import oci
 import sys
-from restore-archives import getAttribute, execute
+from restore_archives import getAttribute, execute
 
 class_name="restore_vmscripts.py"
 
