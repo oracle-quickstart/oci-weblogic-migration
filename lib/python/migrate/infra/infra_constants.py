@@ -1,5 +1,5 @@
 """
-Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+Copyright (c) 2017, 2025 Oracle and/or its affiliates.
 Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 """
@@ -36,6 +36,7 @@ GROUP_ID= "gid"
 COMMA_SEPARATOR =","
 COLON_SEPARATOR = ":"
 DOMAIN_HOME_DIR = "DomainPath"
+ADMIN_PORT = "AdministrationPort"
 WL_HOME_DIR = "WLPath"
 JAVA_DIR = "JavaPath"
 CANONICAL_JAVA_DIR = "CanonicalJavaPath"

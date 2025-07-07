@@ -50,10 +50,9 @@ locals {
             source_type = local.rule_type_cidr,
           },
         },
-        local.bastion_nsg_enabled && var.allow_bastion_adminserver_access ? {
-          for port in var.adminserver_ports :
-            "Allow TCP ingress to AdminServer from Bastion on port ${port} (as)" => {
-            protocol = local.tcp_protocol, port = port, source = local.bastion_nsg_id, source_type = local.rule_type_nsg,
+        var.create_bastion ? {
+            "Allow TCP ingress to AdminServer from Bastion on port ${var.adminserver_ports[0]} " : {
+            protocol = local.tcp_protocol, port = var.adminserver_ports[0], source = local.bastion_nsg_id, source_type = local.rule_type_nsg,
           }
         } : {},
         var.allow_adminserver_internet_access ? {

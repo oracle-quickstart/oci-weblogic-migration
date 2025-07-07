@@ -1,12 +1,14 @@
 """
-Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+Copyright (c) 2017, 2025 Oracle and/or its affiliates.
 Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 The entry point for the discoverDomain tool.
 """
 import os
 import sys
+import re
 
+from xml.dom import minidom
 from java.io import File
 from java.lang import IllegalArgumentException
 from java.lang import IllegalStateException
@@ -652,9 +654,70 @@ def __check_and_customize_model(model, model_context, aliases, credential_inject
 
     discoverer.add_to_model(holder_dict, infra_constants.ORACLE_HOME_DIR,
                             archive_entry_path)
+
+    domain_home = holder_dict[infra_constants.DOMAIN_HOME_DIR]
+    admin_server = holder_dict['AdminServerName']
+    config_path = os.path.join(domain_home, 'config', 'config.xml')
+    admin_port = __get_admin_port(config_path, admin_server)
+    if admin_port is not None:
+        holder_dict = model.get_model_topology()['Server'][admin_server]
+        discoverer.add_to_model(holder_dict, infra_constants.ADMIN_PORT, int(admin_port))
+
     __logger.exiting(class_name=_class_name, method_name=_method_name)
     return model
 
+def __getTextValue(parent, tag):
+    elements = parent.getElementsByTagName(tag)
+    if elements.length == 0:
+        return None
+    if elements.item(0).firstChild:
+        return elements.item(0).firstChild.nodeValue
+    else:
+        return None
+
+def __get_admin_port(configPath, serverName):
+    config = minidom.parse(configPath)
+    servers = config.getElementsByTagName("server")
+
+    # Try to get from server-start arguments
+    for server in servers:
+        serverStartList = server.getElementsByTagName("server-start")
+        if serverStartList.length > 0:
+            args = __getTextValue(serverStartList.item(0), "arguments")
+            if args:
+                match = re.search(r"-Dweblogic\.management\.server=.*?:(\d+)", args)
+                if match:
+                    port = match.group(1)
+                    return port
+
+    for server in servers:
+        name = __getTextValue(server, "name")
+        if name != serverName:
+            continue
+
+        # Try SecuredExternAdmin NAP
+        naps = server.getElementsByTagName("network-access-point")
+        for nap in naps:
+            napName = __getTextValue(nap, "name")
+            if napName == "SecuredExternAdmin":
+                port = __getTextValue(nap, "listen-port")
+                if port:
+                    return port
+
+        # Try SSL listen-port
+        sslList = server.getElementsByTagName("ssl")
+        if sslList.length > 0:
+            port = __getTextValue(sslList.item(0), "listen-port")
+            if port:
+                return port
+
+        # Fallback to HTTP listen-port
+        for node in server.childNodes:
+            if node.nodeType == node.ELEMENT_NODE and node.tagName == "listen-port":
+                port = node.firstChild.nodeValue
+                if port:
+                    return port
+    return None
 
 def __generate_remote_report_json(model_context):
     _method_name = '__remote_report'
