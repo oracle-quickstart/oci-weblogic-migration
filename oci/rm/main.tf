@@ -28,6 +28,7 @@ locals {
   atp_db_network_comp_id_0    = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.network_compartment_id : ""
   atp_db_existing_vcn_id_0    = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.existing_vcn_id : ""
   atp_db_subnet_id_0          = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.subnet_id : ""
+  atp_db_compartment_id_0     = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.compartment_id : ""
 
   db_network_compartment_id = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_network_comp_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_network_comp_id_0 : ""))
   db_existing_vcn_id        = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_existing_vcn_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_existing_vcn_id_0 : ""))
@@ -205,6 +206,11 @@ module "wls" {
   lb_shape = {
     pub_lb = { shape = var.load_balancer_shape, min = var.lb_min_bandwidth, max = var.lb_max_bandwidth }
   }
+  #Autonomous Database Variables
+  atp_db_compartment_id_0           = local.atp_db_compartment_id_0
+  atp_has_private_endpoints_0       = local.atp_has_private_endpoints_0
+  atp_db_existing_vcn_id_0          = local.atp_db_existing_vcn_id_0
+  atp_db_network_compartment_id_0   = local.atp_db_network_comp_id_0
 
 
 
