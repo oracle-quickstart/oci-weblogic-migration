@@ -834,7 +834,7 @@ variables:
     description: The selected image is used for Weblogic instances.
     type: enum
     default: "Oracle WebLogic Server Enterprise Edition UCM Image"
-    enum: ["Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Server Suite UCM Image", "Oracle WebLogic Server Enterprise Edition BYOL Image", "Oracle Weblogic Server Suite BYOL Image", "Platform Image"]
+    enum: ["Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Suite UCM Image", "Oracle WebLogic Server Enterprise Edition BYOL Image", "Oracle Weblogic Suite BYOL Image", "Platform Image"]
     required: true
     and:
       - ${orm_create_mode}
@@ -887,7 +887,7 @@ variables:
             - "Oracle WebLogic Server Enterprise Edition UCM Image"
         - eq:
             - wlsserver_image_type
-            - "Oracle Weblogic Server Suite UCM Image"
+            - "Oracle Weblogic Suite UCM Image"
     type: boolean
     default: false
     title: "I have reviewed and accept the Oracle Terms of Use"
