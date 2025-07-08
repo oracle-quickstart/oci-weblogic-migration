@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 # Common
@@ -43,23 +43,27 @@ variable "db_strategy_is_atp" {
 variable "db_strategy_is_edit_string_atp" {
   type = string
 }
-variable "network_compartment_id"{
-    type = string
-}
-variable "atp_db_compartment_id_0"{
+variable "network_compartment_id" {
   type = string
 }
-variable "atp_has_private_endpoints_0"{
+variable "atp_db_compartment_id_0" {
   type = string
 }
-variable "atp_db_existing_vcn_id_0"{
+variable "atp_has_private_endpoints_0" {
+  type = string
+}
+variable "atp_db_existing_vcn_id_0" {
   type = string
 }
 variable "atp_db_network_compartment_id_0" {
   type = string
 }
-variable "bucket_compartment"{
+variable "bucket_compartment" {
   type = string
 }
-
-
+variable "is_vcn_peering" {
+  type = string
+}
+variable "db_network_compartment_id" {
+  type = string
+}
