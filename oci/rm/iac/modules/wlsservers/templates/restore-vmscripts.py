@@ -15,15 +15,15 @@ import os
 import traceback
 import oci
 import sys
-from restore_archives import getAttribute, execute
+from restore_archives import get_attribute, execute
 
 class_name="restore_vmscripts.py"
 
-def getMode():
-    return getAttribute('mode')
+def get_mode():
+    return get_attribute('mode')
 
-def getVMScriptsPath():
-    return getAttribute('vmscripts_path')
+def get_vm_scripts_path():
+    return get_attribute('vmscripts_path')
 
 def unzip_archive(zip_file, dest='/', already_unzipped_marker_path=None):
     """
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     # Filename to be restored is replaced directly by terraform template. $${vmscripts_file} to ${vmscripts_file}
     bucket="${bucket_name}"
     temp_store="${temporary_path}"
-    mode=getMode()
+    mode=get_mode()
     try:
         vmscripts_status=True
         if mode is not None and mode.strip().lower() == 'dev':
@@ -123,7 +123,7 @@ if __name__ == '__main__':
             vmscripts_status = unzip_archive(archive_on_disk, '/', '/opt/scripts/databag.py')
             delete_file(archive_on_disk)
         elif mode is not None and mode.strip().lower() == 'prod':
-            archive_on_disk=getVMScriptsPath()
+            archive_on_disk=get_vm_scripts_path()
             log("INFO - Prod mode. Using Archive On Disk {0} ".format(archive_on_disk))
             vmscripts_status = unzip_archive(archive_on_disk, '/', '/opt/scripts/databag.py')
         else:

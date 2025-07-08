@@ -22,7 +22,7 @@ def log(msg):
     print(msg)
 
 # Get metadata attribute.
-def getAttribute(attribute, default=None):
+def get_attribute(attribute, default=None):
     """
     Returns attribute or default value if no value is found
     """

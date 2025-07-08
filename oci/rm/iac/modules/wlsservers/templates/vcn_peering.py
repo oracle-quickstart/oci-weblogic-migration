@@ -8,7 +8,7 @@ Updates the Weblogic and Database subnet route tables for VCN peering.
 
 import oci
 import sys
-from restore_archives import getAttribute
+from restore_archives import get_attribute
 
 # Initialize service clients
 principal = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
@@ -17,16 +17,16 @@ core_client = oci.core.VirtualNetworkClient(config={}, signer=principal)
 virtual_network_composite_operations = oci.core.VirtualNetworkClientCompositeOperations(core_client)
 
 def get_db_subnet_id():
-    return getAttribute("db_subnet_id")
+    return get_attribute("db_subnet_id")
 
 def get_db_lpg_id():
-    return getAttribute("db_lpg")
+    return get_attribute("db_lpg")
 
 def get_wls_subnet_id():
-    return getAttribute("wlsserver_subnet_id")
+    return get_attribute("wlsserver_subnet_id")
 
 def get_wls_lpg_id():
-    return getAttribute("wlsserver_lpg")
+    return get_attribute("wlsserver_lpg")
 
 def get_subnet_details(subnet_id):
     get_subnet_response = core_client.get_subnet(subnet_id=subnet_id)
