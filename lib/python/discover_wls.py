@@ -661,7 +661,7 @@ def __check_and_customize_model(model, model_context, aliases, credential_inject
     admin_port = __get_admin_port(config_path, admin_server)
     if admin_port is not None:
         holder_dict = model.get_model_topology()['Server'][admin_server]
-        discoverer.add_to_model(holder_dict, infra_constants.ADMIN_PORT, int(admin_port))
+        discoverer.add_to_model(holder_dict, infra_constants.ADMIN_CONSOLE_PORT, int(admin_port))
 
     __logger.exiting(class_name=_class_name, method_name=_method_name)
     return model
@@ -677,6 +677,15 @@ def __getTextValue(parent, tag):
 
 def __get_admin_port(configPath, serverName):
     config = minidom.parse(configPath)
+
+    # Check domain-level administration-port
+    admin_port_elements = config.getElementsByTagName("administration-port")
+    for elem in admin_port_elements:
+        if elem.parentNode.tagName == "domain":
+            if elem.firstChild:
+                port = elem.firstChild.nodeValue
+                return port
+
     servers = config.getElementsByTagName("server")
 
     # Try to get from server-start arguments

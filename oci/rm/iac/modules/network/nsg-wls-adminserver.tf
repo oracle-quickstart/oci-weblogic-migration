@@ -51,8 +51,8 @@ locals {
           },
         },
         var.create_bastion ? {
-            "Allow TCP ingress to AdminServer from Bastion on port ${var.adminserver_ports[0]} " : {
-            protocol = local.tcp_protocol, port = var.adminserver_ports[0], source = local.bastion_nsg_id, source_type = local.rule_type_nsg,
+            "Allow TCP ingress to AdminServer from Bastion on port ${var.wls_admin_console_port} " : {
+            protocol = local.tcp_protocol, port = var.wls_admin_console_port, source = local.bastion_nsg_id, source_type = local.rule_type_nsg,
           }
         } : {},
         var.allow_adminserver_internet_access ? {
