@@ -42,12 +42,14 @@ locals {
 #      coalesce(var.cluster_kms_key_id, "none") != "none",
     ])
   ])
+  bucket_compartment = data.oci_objectstorage_bucket.wls_archives.compartment_id
 }
 
 # Default IAM sub-module implementation for Weblogic Domain
 module "iam" {
   source                       = "./modules/iam"
   compartment_id               = local.compartment_id
+  network_compartment_id       = local.network_compartment_id
   state_id                     = local.state_id
   tenancy_id                   = local.tenancy_id
   create_iam_resources         = var.create_iam_resources
@@ -62,9 +64,13 @@ module "iam" {
   tag_namespace            = var.tag_namespace
   use_defined_tags         = var.use_defined_tags
 
-  add_load_balancer              = var.add_load_balancer
-  db_strategy_is_atp             = var.db_strategy_is_atp
-  db_strategy_is_edit_string_atp = var.db_strategy_is_edit_string_atp
+  add_load_balancer                  = var.add_load_balancer
+  db_strategy_is_atp                 = var.db_strategy_is_atp
+  db_strategy_is_edit_string_atp     = var.db_strategy_is_edit_string_atp
+  atp_db_compartment_id_0            = var.atp_db_compartment_id_0
+  atp_has_private_endpoints_0        = var.atp_has_private_endpoints_0
+  atp_db_existing_vcn_id_0           = var.atp_db_existing_vcn_id_0
+  atp_db_network_compartment_id_0    = var.atp_db_network_compartment_id_0
 
   wlsserver_volume_kms_key_id  = var.wlsserver_volume_kms_key_id
 
@@ -75,6 +81,7 @@ module "iam" {
   }
   #TODO: JOI: Future release include multiple object storage compartment
   object_storage_compartments = []
+  bucket_compartment   = local.bucket_compartment
   resource_name_prefix = local.wls_domain_name
 }
 
