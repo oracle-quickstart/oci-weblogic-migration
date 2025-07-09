@@ -304,17 +304,19 @@ def __generate_remote_report_json(model_context):
 
 
 def load_env_file(file_path):
-    """Reads key=value lines from an env file and loads them into os.environ.
+    """Reads key=value lines from an env file and returns them as a dict.
 
     :param file_path: path of the file to be loaded
+    :return: dict of keys : values from the file
     """
     _method_name = 'load_env_file'
+    env = {}
     if not os.path.isfile(file_path):
         __logger.info('WLSDPLY-05027', 'on-prem.env file not found, skipping load_env_file function...',
                       class_name=_class_name, method_name=_method_name)
-        return
-    f = open(file_path, 'r')
-    try:
+        return env
+
+    with open(file_path) as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith('#') or '=' not in line:
@@ -322,12 +324,8 @@ def load_env_file(file_path):
             key, val = line.split('=', 1)
             key = key.strip()
             val = val.strip().strip('"').strip("'")
-            os.environ[key] = val
-    finally:
-        try:
-            f.close()
-        except:
-            pass
+            env[key] = val
+    return env
 
 
 def ensure_bucket(oci_bucket_name, oci_compartment_id, log_file):
@@ -366,7 +364,7 @@ def ensure_bucket(oci_bucket_name, oci_compartment_id, log_file):
         __logger.info('WLSDPLY-05027',"Bucket created.", class_name=_class_name, method_name=_method_name)
 
 
-def upload_to_bucket(file_path, log_file):
+def upload_to_bucket(file_path, log_file, on_prem_values):
     """
     Upload a file to OCI Object Storage using direct OCI CLI calls.
     Reads bucket_name and tenancy_namespace from on-prem.env.
@@ -374,14 +372,15 @@ def upload_to_bucket(file_path, log_file):
 
     :param file_path: path of the file to be uploaded to the bucket
     :param log_file: path to a logfile to append oci CLI output to
+    :param on_prem_values: The dictionary have all the on-prem.env file values
     """
     global __logger, _class_name
     _method_name = 'upload_to_bucket'
 
-    # Read bucket and namespace
-    bucket = os.environ.get('bucket_name') or os.environ.get('OCI_BUCKET_NAME')
-    namespace = os.environ.get('tenancy_namespace') or os.environ.get('OCI_NAMESPACE')
-    compartment_id = os.environ.get('compartment_ocid')
+    # Read bucket and namespace and compartment
+    bucket = on_prem_values.get('bucket_name')
+    namespace = on_prem_values.get('tenancy_namespace')
+    compartment_id = on_prem_values.get('compartment_ocid')
 
     if not bucket or not namespace or not compartment_id:
         msg = "Missing bucket or namespace or compartment ocid: bucket=%s, namespace=%s, compartment_ocid=%s. Cannot upload %s" % (bucket, namespace, compartment_id, file_path)
@@ -459,7 +458,7 @@ def __archive_directories(model, model_context, helper):
     log_file = os.path.abspath(os.path.join(base_dir,'..', 'logs', 'upload_to_oci_archive.log'))
 
     # Load the on-prem.env file
-    load_env_file(env_file)
+    on_prem_values = load_env_file(env_file)
 
     # Read admin-level precheck return code (0=OK,1=not enough space)
     space_admin_rc = int(os.environ.get('SPACE_ADMIN_RETURNCODE', '0'))
@@ -471,7 +470,7 @@ def __archive_directories(model, model_context, helper):
         space_status = {}
 
     # Read skip_transfer flag from on-prem.env
-    skip_transfer = os.environ.get('skip_transfer', 'false').lower() == 'true'
+    skip_transfer = on_prem_values.get('skip_transfer', 'false').lower() == 'true'
 
     admin_server_name = topology['AdminServerName']
     admin_machine = None
@@ -511,7 +510,7 @@ def __archive_directories(model, model_context, helper):
             admin_out = model_context.get_local_output_dir()
             for fname in os.listdir(admin_out):
                 if fname.endswith('.tar.gz'):
-                    upload_to_bucket(os.path.join(admin_out, fname), log_file)
+                    upload_to_bucket(os.path.join(admin_out, fname), log_file, on_prem_values)
                     delete_local(os.path.join(admin_out, fname))
 
     # Case 2: Admin has NO space and skip_transfer = true (Manual steps only)
@@ -551,7 +550,7 @@ def __archive_directories(model, model_context, helper):
             for fname in os.listdir(node_dir):
                 if fname.endswith('.tar.gz'):
                     path = os.path.join(node_dir, fname)
-                    upload_to_bucket(path,log_file)
+                    upload_to_bucket(path,log_file,on_prem_values)
                     delete_local(path)
 
     if len(hosts_details) == 0:
