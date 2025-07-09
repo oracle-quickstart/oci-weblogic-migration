@@ -671,24 +671,54 @@ def __getTextValue(parent, tag):
     if elements.length == 0:
         return None
     if elements.item(0).firstChild:
-        return elements.item(0).firstChild.nodeValue
+        return elements.item(0).firstChild.nodeValue.strip()
     else:
         return None
+
+def __is_admin_port_enabled(config):
+    elements = config.getElementsByTagName("administration-port-enabled")
+    for elem in elements:
+        if elem.parentNode.tagName == "domain":
+            if elem.firstChild and elem.firstChild.nodeValue.strip().lower() == "true":
+                return True
+    return False
+
+def __get_admin_server_node(config, serverName):
+    servers = config.getElementsByTagName("server")
+    for server in servers:
+        name = __getTextValue(server, "name")
+        if name == serverName:
+            return server
+    return None
+
+def __get_domain_level_admin_port(config):
+    elements = config.getElementsByTagName("administration-port")
+    for elem in elements:
+        if elem.parentNode.tagName == "domain":
+            if elem.firstChild:
+                port = elem.firstChild.nodeValue.strip()
+                return port
+    return None
 
 def __get_admin_port(configPath, serverName):
     config = minidom.parse(configPath)
 
-    # Check domain-level administration-port
-    admin_port_elements = config.getElementsByTagName("administration-port")
-    for elem in admin_port_elements:
-        if elem.parentNode.tagName == "domain":
-            if elem.firstChild:
-                port = elem.firstChild.nodeValue
+    admin_port_enabled = __is_admin_port_enabled(config)
+    if admin_port_enabled:
+        admin_server = __get_admin_server_node(config, serverName)
+        if admin_server:
+            port = __getTextValue(admin_server, "administration-port")
+            if port:
                 return port
+
+        # fallback to domain-level admin port
+        port = __get_domain_level_admin_port(config)
+        if port:
+            return port
 
     servers = config.getElementsByTagName("server")
 
-    # Try to get from server-start arguments
+    # Look for -Dweblogic.management.server
     for server in servers:
         serverStartList = server.getElementsByTagName("server-start")
         if serverStartList.length > 0:
@@ -699,13 +729,11 @@ def __get_admin_port(configPath, serverName):
                     port = match.group(1)
                     return port
 
-    for server in servers:
-        name = __getTextValue(server, "name")
-        if name != serverName:
-            continue
-
-        # Try SecuredExternAdmin NAP
-        naps = server.getElementsByTagName("network-access-point")
+    # Fallback to NAP/SSL/HTTP
+    admin_server = __get_admin_server_node(config, serverName)
+    if admin_server:
+        # Check SecuredExternAdmin NAP
+        naps = admin_server.getElementsByTagName("network-access-point")
         for nap in naps:
             napName = __getTextValue(nap, "name")
             if napName == "SecuredExternAdmin":
@@ -713,19 +741,20 @@ def __get_admin_port(configPath, serverName):
                 if port:
                     return port
 
-        # Try SSL listen-port
-        sslList = server.getElementsByTagName("ssl")
+        # Check SSL
+        sslList = admin_server.getElementsByTagName("ssl")
         if sslList.length > 0:
             port = __getTextValue(sslList.item(0), "listen-port")
             if port:
                 return port
 
-        # Fallback to HTTP listen-port
-        for node in server.childNodes:
+        # Check HTTP
+        for node in admin_server.childNodes:
             if node.nodeType == node.ELEMENT_NODE and node.tagName == "listen-port":
-                port = node.firstChild.nodeValue
-                if port:
-                    return port
+                if node.firstChild:
+                    port = node.firstChild.nodeValue.strip()
+                    if port:
+                        return port
     return None
 
 def __generate_remote_report_json(model_context):
