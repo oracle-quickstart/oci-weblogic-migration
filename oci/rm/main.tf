@@ -23,7 +23,7 @@ locals {
   oci_db_network_comp_id_0 = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.network_compartment_id : ""
   oci_db_existing_vcn_id_0 = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.existing_vcn_id : ""
   oci_db_subnet_id_0       = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.subnet_id : ""
-  oci_db_port_0            = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.oci_db_port : ""
+  oci_db_port_0            = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.oci_db_port : 1521
   create_db_ingress_sl     = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.create_db_ingress_sl : false
 
   atp_has_private_endpoints_0 = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.is_atp_with_private_endpoints : false
