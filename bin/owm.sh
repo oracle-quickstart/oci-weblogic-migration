@@ -130,6 +130,15 @@ process_datasources(){
 function process_archives() {
   log "info" "<discoverDomain><process_archives><entry> args: $*"
   wls_inventory_file=$1
+
+  SPACE_PRECHECK=$(python3 "$toolHome/lib/python/space_precheck.py" --infrafile "$wls_inventory_file" 2>&1)
+  SPACE_RETURNCODE=$?
+  log "info" "<process_archives><space_precheck_output> $SPACE_PRECHECK"
+
+  SPACE_JSON=$(echo "$SPACE_PRECHECK" | grep -o '{.*}')
+  export SPACE_STATUS_JSON="$SPACE_JSON"
+  export SPACE_ADMIN_RETURNCODE=$SPACE_RETURNCODE
+
   shift
   SCRIPT_PATH="$toolHome/bin/archiveWLSDomain.sh"
   local model_file_arg=""
@@ -145,12 +154,18 @@ function process_archives() {
      ssh_args=$(get_ssh_args) # Get SSH options from helper
      discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@" "$ssh_args"
      exit_code=$?
-     log "info" "Executed discover infra with exit code [$exit_code]"
+     log "info" "Executed create archive with exit code [$exit_code]"
      if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
          log "error" "<discoverDomain><process_archives><error> Error executing archives"
          exit $exit_code
      fi
-     log "info" "<discoverDomain><process_archives><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
+
+     if [ $exit_code -eq 1 ]; then
+         log "warning" "<discoverDomain><process_archives><warning> Archive executed with some warning"
+         exit $exit_code
+     fi
+
+     log "info" "<discoverDomain><process_archives><exit> Archives created successfully!"
 
 }
 upload_to_oci(){

@@ -242,10 +242,6 @@ if [[ -n "${env_vars[ssh_password_file]:-}" ]]; then
 fi
 
 
-if ! rpm -qa | grep -i python3-paramiko >/dev/null 2>&1 && ! python3 -c "import paramiko" >/dev/null 2>&1; then
-    errors+=("Unable to find Paramiko Python SSH client library")
-fi
-
 if ! which jq 2>&1 > /dev/null; then
     errors+=("Unable to find jq. For more information see https://jqlang.github.io/jq/download/")
 fi
