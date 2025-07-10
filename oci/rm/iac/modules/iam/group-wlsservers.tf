@@ -109,7 +109,7 @@ locals {
     local.network_compartment_policy_templates,
     local.atp_db_policy_template_1,
     local.atp_db_policy_template_2,
-    local.db_network_compartment_policy_templates
+    local.db_network_compartment_policy_templates,
     local.db_ingress_policy_templates
   )) : []
 }
