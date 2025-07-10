@@ -204,14 +204,14 @@ function set_java_home() {
 
 check_fs | log >> $log_file
 set_fs_ownership;
-python /opt/scripts/restore-archives.py
+python /opt/scripts/restore_archives.py
 exit_code=$?
 echo $output | log >> $log_file
 if [[ $exit_code -ne 0 ]]; then
   echo "<cloud-init><restore><ERROR> Failed to restore WebLogic Archives " | log >> $log_file
   exit 1
 fi
-echo "Executed restore-archives via ${user} with exit code [$exit_code]" | log >> $log_file
+echo "Executed restore_archives via ${user} with exit code [$exit_code]" | log >> $log_file
 # Create Java symlinks after restore is complete
 create_java_symlinks | log >> $log_file
 # set JAVA_HOME for the user
