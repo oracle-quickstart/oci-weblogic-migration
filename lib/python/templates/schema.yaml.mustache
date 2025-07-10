@@ -205,6 +205,7 @@ variableGroups:
         - atp_db_uses_private_endpoint_{{{datasourceName}}}
         - atp_db_network_compartment_id_{{{datasourceName}}}
         - atp_db_existing_vcn_id_{{{datasourceName}}}
+        - open_port_1522_atp_db_{{{datasourceName}}}
         - oci_db_connection_string_{{{datasourceName}}}
         #  Database Service
         - oci_db_compartment_id_{{{datasourceName}}}
@@ -1134,7 +1135,22 @@ variables:
     type: boolean
     default: false
     title: "Database uses private endpoint"
-    description: "The Autonomous Transaction Processing (ATP) database uses private endpoint for network access"
+    description: "The Autonomous Transaction Processing (ATP) database uses private endpoint for network access."
+
+  open_port_1522_atp_db_{{{datasourceName}}}:
+    visible:
+      and:
+        - ${orm_create_mode}
+        - ${update_any_ds}
+        - edit_ds_{{{datasourceName}}}
+        - eq:
+          - ${db_strategy_{{{datasourceName}}}}
+          - "Autonomous Transaction Processing Database"
+        - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
+    type: boolean
+    default: true
+    title: "Allow WebLogic Access to ATP over Port 1522"
+    description: "Open ingress port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database to allow access from the WebLogic Server subnet."
 
   atp_db_existing_vcn_id_{{{datasourceName}}}:
     visible:

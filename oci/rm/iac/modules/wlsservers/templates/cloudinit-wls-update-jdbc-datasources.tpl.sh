@@ -28,6 +28,18 @@ function log() {
     done
 }
 
+# Script to open ingress port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database.
+eval $(oci-metdata --get open_atp_db_port_1522 --export)
+if [ "$open_atp_db_port_1522" = "true" ]; then
+    output=$(python3 /opt/scripts/open_atpdb_port.py)
+    exit_code=$?
+    echo "Executed script to open ingress port 1522 in db subnet with exit code [$exit_code]" | log >> $log_file
+    echo "$output" | log >> $log_file
+    if [ @exit_code -ne 0 ]; then
+        echo "Error executing the script to open ingress port 1522 in db subnet. " | log >> $log_file
+    fi
+fi
+
 #VCN peering script to update the Weblogic and Database subnet route tables
 eval $(oci-metadata --get is_vcn_peering --export)
 eval $(oci-metadata --get is_admin_instance --export)

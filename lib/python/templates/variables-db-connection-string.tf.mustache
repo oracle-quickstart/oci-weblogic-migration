@@ -61,6 +61,12 @@ variable "atp_db_level_{{{datasourceName}}}" {
   }
 }
 
+variable "open_port_1522_atp_db_{{{datasourceName}}}" {
+  type        = bool
+  description = "Open ingress port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database."
+  default     = true
+}
+
 variable "db_strategy_{{{datasourceName}}}" {
   type=string
   default     = "Autonomous Transaction Processing Database"
