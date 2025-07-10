@@ -1,12 +1,14 @@
 """
-Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+Copyright (c) 2017, 2025 Oracle and/or its affiliates.
 Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 The entry point for the discoverDomain tool.
 """
 import os
 import sys
+import re
 
+from xml.dom import minidom
 from java.io import File
 from java.lang import IllegalArgumentException
 from java.lang import IllegalStateException
@@ -652,9 +654,208 @@ def __check_and_customize_model(model, model_context, aliases, credential_inject
 
     discoverer.add_to_model(holder_dict, infra_constants.ORACLE_HOME_DIR,
                             archive_entry_path)
+
+    domain_home = holder_dict[infra_constants.DOMAIN_HOME_DIR]
+    admin_server = holder_dict['AdminServerName']
+    config_path = os.path.join(domain_home, 'config', 'config.xml')
+    admin_port = __get_admin_port(config_path, admin_server)
+    if admin_port is not None:
+        holder_dict = model.get_model_topology()['Server'][admin_server]
+        discoverer.add_to_model(holder_dict, infra_constants.ADMIN_CONSOLE_PORT, int(admin_port))
+
     __logger.exiting(class_name=_class_name, method_name=_method_name)
     return model
 
+def __getTextValue(parent, tag):
+    """
+    Extracts and returns the text value of the given tag from a parent XML node.
+    Strips leading/trailing whitespace. Returns None if tag not found or empty.
+    """
+    elements = parent.getElementsByTagName(tag)
+    if elements.length == 0:
+        return None
+    if elements.item(0).firstChild:
+        return elements.item(0).firstChild.nodeValue.strip()
+    return None
+
+def __is_admin_port_enabled(config):
+    """
+    Checks whether administration port is enabled for the domain.
+    - Returns True if <administration-port-enabled> is 'true'.
+    - Returns False if explicitly set to 'false'.
+    - If the tag is missing, returns True only if <administration-port> is defined at domain level.
+    """
+    elements = config.getElementsByTagName("administration-port-enabled")
+    found = False
+    for elem in elements:
+        if elem.parentNode.tagName == "domain":
+            found = True
+            if elem.firstChild and elem.firstChild.nodeValue.strip().lower() == "true":
+                return True
+            else:
+                return False
+    if not found:
+        port = __get_domain_level_admin_port(config)
+        if port:
+            return True
+    return False
+
+def __get_admin_server_node(config, serverName):
+    """
+    Finds and returns the <server> XML node that matches the given admin server name.
+    Returns None if not found.
+    """
+    servers = config.getElementsByTagName("server")
+    for server in servers:
+        name = __getTextValue(server, "name")
+        if name == serverName:
+            return server
+    return None
+
+def __get_domain_level_admin_port(config):
+    """
+    Returns the domain-wide <administration-port> value, if present.
+    Returns None if not found.
+    """
+    elements = config.getElementsByTagName("administration-port")
+    for elem in elements:
+        if elem.parentNode.tagName == "domain":
+            if elem.firstChild:
+                port = elem.firstChild.nodeValue.strip()
+                return port
+    return None
+
+def __get_nap_port(admin_server, nap_name):
+    """
+    Searches for a <network-access-point> with the given name under the admin server,
+    and returns its <listen-port> value. Returns None if not found.
+    """
+    naps = admin_server.getElementsByTagName("network-access-point")
+    for nap in naps:
+        napName = __getTextValue(nap, "name")
+        if napName == nap_name:
+            port = __getTextValue(nap, "listen-port")
+            if port:
+                return port
+    return None
+
+def __is_ssl_enabled(admin_server):
+    """
+    Checks if SSL is enabled on the admin server by looking for the <enabled>true</enabled>
+    under the <ssl> tag. Returns True if enabled, False otherwise.
+    """
+    sslList = admin_server.getElementsByTagName("ssl")
+    if sslList.length > 0:
+        ssl = sslList.item(0)
+        enabled = __getTextValue(ssl, "enabled")
+        if enabled and enabled.lower() == "true":
+            return True
+    return False
+
+def __get_ssl_port(admin_server):
+    """
+    Returns the <listen-port> value under the <ssl> block of the admin server.
+    Returns None if not found.
+    """
+    sslList = admin_server.getElementsByTagName("ssl")
+    if sslList.length > 0:
+        port = __getTextValue(sslList.item(0), "listen-port")
+        if port:
+            return port
+    return None
+
+def __get_server_start_port(config):
+    """
+    Parses <server-start><arguments> for all servers and extracts the admin port
+    from the -Dweblogic.management.server argument. Returns port if found, else None.
+    """
+    servers = config.getElementsByTagName("server")
+    for server in servers:
+        serverStartList = server.getElementsByTagName("server-start")
+        if serverStartList.length > 0:
+            args = __getTextValue(serverStartList.item(0), "arguments")
+            if args:
+                match = re.search(r"-Dweblogic\.management\.server=.*?:(\d+)", args)
+                if match:
+                    port = match.group(1)
+                    return port
+    return None
+
+def __get_http_listen_port(admin_server):
+    """
+    Returns the <listen-port> (non-SSL) of the admin server.
+    Looks for the tag directly under the <server> node.
+    Returns None if not found.
+    """
+    for node in admin_server.childNodes:
+        if node.nodeType == node.ELEMENT_NODE and node.tagName == "listen-port":
+            if node.firstChild:
+                port = node.firstChild.nodeValue.strip()
+                if port:
+                    return port
+    return None
+
+def __get_admin_port(configPath, serverName):
+    """
+    Main logic to determine the admin port from config.xml for the given server name.
+
+    Order of priority:
+    1. If admin port is enabled:
+       - Check <administration-port> in admin server block
+       - Then <administration-port> at domain level
+    2. If SSL is enabled:
+       - Check 'SecuredExternAdmin' NAP
+       - Then <ssl><listen-port>
+    3. Then parse server-start args
+    4. Then check 'ExternAdmin' NAP
+    5. Fallback to plain <listen-port> from admin server
+    """
+    config = minidom.parse(configPath)
+
+    # Get the <server> node corresponding to the admin server
+    admin_server = __get_admin_server_node(config, serverName)
+
+    # Step 1: Check if administration port is enabled
+    if __is_admin_port_enabled(config):
+        if admin_server:
+            # Check <administration-port> inside the admin server block
+            port = __getTextValue(admin_server, "administration-port")
+            if port:
+                return port
+        # Fallback to domain-level <administration-port>
+        port = __get_domain_level_admin_port(config)
+        if port:
+            return port
+
+    # Step 2: If admin port is disabled or missing, check SSL
+    if admin_server:
+        # Check if <ssl><enabled>true</enabled> is set
+        if __is_ssl_enabled(admin_server):
+            # Try to fetch port from 'SecuredExternAdmin' NAP
+            port = __get_nap_port(admin_server, "SecuredExternAdmin")
+            if port:
+                return port
+            # Fallback to <ssl><listen-port>
+            port = __get_ssl_port(admin_server)
+            if port:
+                return port
+
+    # Step 3: Check for -Dweblogic.management.server in server-start args
+    port = __get_server_start_port(config)
+    if port:
+        return port
+
+    # Step 4: Try to get port from 'ExternAdmin' NAP
+    if admin_server:
+        port = __get_nap_port(admin_server, "ExternAdmin")
+        if port:
+            return port
+
+        # Fallback to standard <listen-port> of the admin server
+        port = __get_http_listen_port(admin_server)
+        if port:
+            return port
+    return None
 
 def __generate_remote_report_json(model_context):
     _method_name = '__remote_report'

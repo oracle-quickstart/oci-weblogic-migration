@@ -24,6 +24,7 @@ variable "allow_wlsserver_internet_access" { type = bool }
 variable "allow_wlsserver_ssh_access" { type = bool }
 variable "allow_bastion_domain_access" { type = bool }
 variable "allow_bastion_adminserver_access" { type = bool }
+variable "wls_admin_console_port" {type = number}
 variable "assign_dns" { type = bool }
 variable "bastion_allowed_cidrs" { type = set(string) }
 variable "bastion_is_public" { type = bool }
