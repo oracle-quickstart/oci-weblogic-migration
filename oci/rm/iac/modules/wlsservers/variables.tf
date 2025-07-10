@@ -320,3 +320,15 @@ variable "text_to_replace_in_config" {
   type = any
   default= {}
 }
+
+variable "create_db_ingress_sl" {
+  description = "Whether to create a DB ingress SL for datasource 0"
+  type        = bool
+  default     = true
+}
+
+variable "db_security_list_id" {
+  type        = string
+  description = "Security List to attach to DB subnet if needed"
+  default     = null
+}

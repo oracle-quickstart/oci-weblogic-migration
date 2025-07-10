@@ -9,6 +9,8 @@ locals {
   wlsserver_compartment_rule    = format("ANY {%v}", join(", ", local.wlsserver_compartment_matches))
   bucket_compartment            = var.bucket_compartment
   network_compartment_id        = var.network_compartment_id
+  db_network_compartment_id     = var.db_network_compartment_id
+  create_db_ingress_sl          = var.create_db_ingress_sl
 
   wlsserver_group_rules = var.use_defined_tags ? format("ALL {%v}", join(", ", [
     format("tag.%v.role.value='wlsserver'", var.tag_namespace),
@@ -72,6 +74,13 @@ locals {
     ] : []
   ))
 
+  # This policy is used to update the db subnet with the secuirty list
+  db_ingress_policy_templates = compact(concat(
+    var.create_db_ingress_sl ? [
+      format("Allow dynamic-group ${local.wlsserver_group_name} to manage security-lists in compartment id %v", var.db_network_compartment_id),
+      format("Allow dynamic-group ${local.wlsserver_group_name} to manage subnets in compartment id %v", var.db_network_compartment_id)
+    ] : []
+  ))
 
   # Block volume encryption using OCI Key Management System (KMS)
   wlsserver_kms_volume_statements = coalesce(var.wlsserver_volume_kms_key_id, "none") != "none" ? flatten(tolist([
@@ -101,6 +110,7 @@ locals {
     local.atp_db_policy_template_1,
     local.atp_db_policy_template_2,
     local.db_network_compartment_policy_templates
+    local.db_ingress_policy_templates
   )) : []
 }
 

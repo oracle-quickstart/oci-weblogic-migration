@@ -203,6 +203,10 @@ data "cloudinit_config" "wlsservers" {
              path     = "/opt/scripts/vcn_peering.py"
            },
            {
+             content = file("${path.module}/templates/open_dbport.py")
+             path    = "/opt/scripts/open_dbport.py"
+           },
+           {
              content  = file("${path.module}/templates/atp_db_util.py")
              path     = "/opt/scripts/atp_db_util.py"
            },

@@ -340,7 +340,13 @@ module "network" {
   adminserver_ports    = local.wls_admin_server_ports
   resource_name_prefix = local.wls_domain_name
   backend_ports        = local.wls_all_ports_application_traffic_servers
-  pub_lb_subnet_cidr_value = try(var.pub_lb_subnet_cidr, null)
+  pub_lb_subnet_cidr_value    = try(var.pub_lb_subnet_cidr, null)
+  wlsserver_subnet_cidr       = var.wlsserver_subnet_cidr
+  db_subnet_id                = var.db_subnet_id
+  create_db_ingress_sl        = var.create_db_ingress_sl
+  oci_db_port_0               = var.oci_db_port_0
+  db_existing_vcn_id          = var.db_existing_vcn_id
+  db_network_compartment_id   = var.db_network_compartment_id
 }
 
 /* Create LPGs for VCN Peering */

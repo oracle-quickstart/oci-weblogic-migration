@@ -28,6 +28,25 @@ function log() {
     done
 }
 
+#db port script
+eval $(oci-metadata --get is_admin_instance --export)
+eval $(oci-metadata --get create_db_ingress_sl --export)
+eval $(oci-metadata --get db_subnet_id --export)
+eval $(oci-metadata --get db_security_list_id --export)
+
+if [ "$is_admin_instance" = "true" ] && [ "$create_db_ingress_sl" = "true" ]; then
+  echo "[INFO] Running open_dbport.py" >> $log_file
+  output=$(python3 /opt/scripts/open_dbport.py \
+    --db_subnet_id "$db_subnet_id" \
+    --new_seclist_id "$db_security_list_id")
+  exit_code=$?
+  echo "$output" | log >> $log_file
+  echo "Executed open_dbport.py with exit code [$exit_code]" | log >> $log_file
+  if [ $exit_code -ne 0 ]; then
+    echo "Error running open_dbport.py" | log >> $log_file
+  fi
+fi
+
 #VCN peering script to update the Weblogic and Database subnet route tables
 eval $(oci-metadata --get is_vcn_peering --export)
 eval $(oci-metadata --get is_admin_instance --export)

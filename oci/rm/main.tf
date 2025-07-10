@@ -23,6 +23,8 @@ locals {
   oci_db_network_comp_id_0 = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.network_compartment_id : ""
   oci_db_existing_vcn_id_0 = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.existing_vcn_id : ""
   oci_db_subnet_id_0       = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.subnet_id : ""
+  oci_db_port_0            = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.oci_db_port : ""
+  create_db_ingress_sl     = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.create_db_ingress_sl : false
 
   atp_has_private_endpoints_0 = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.is_atp_with_private_endpoints : false
   atp_db_network_comp_id_0    = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.network_compartment_id : ""
@@ -190,6 +192,8 @@ module "wls" {
   db_existing_vcn_id        = local.db_existing_vcn_id
   db_subnet_id              = local.db_subnet_id
 
+  create_db_ingress_sl      = local.create_db_ingress_sl
+  oci_db_port_0             = local.oci_db_port_0
   #Object Storage Archive Repository
   bucket_name          = var.bucket_name
   restore_wls_archives = "none" #all

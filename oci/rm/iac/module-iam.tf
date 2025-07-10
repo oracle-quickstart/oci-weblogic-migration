@@ -82,9 +82,11 @@ module "iam" {
     oci.home = oci.home
   }
   #TODO: JOI: Future release include multiple object storage compartment
-  object_storage_compartments = []
-  bucket_compartment          = local.bucket_compartment
-  resource_name_prefix        = local.wls_domain_name
+  object_storage_compartments   = []
+  bucket_compartment            = local.bucket_compartment
+  resource_name_prefix          = local.wls_domain_name
+  db_network_compartment_id     = var.db_network_compartment_id
+  create_db_ingress_sl          = var.create_db_ingress_sl
 }
 
 output "availability_domains" {

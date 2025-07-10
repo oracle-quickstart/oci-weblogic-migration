@@ -214,6 +214,7 @@ variableGroups:
         - oci_db_database_id_{{{datasourceName}}}
         - oci_db_pdb_service_name_{{{datasourceName}}}
         - oci_db_port_{{{datasourceName}}}
+        - create_db_ingress_sl_{{{datasourceName}}}
         - oci_db_network_compartment_id_{{{datasourceName}}}
         - oci_db_existing_vcn_id_{{{datasourceName}}}
 {{/datasources}}
@@ -1343,6 +1344,23 @@ variables:
     title: "Database Listener Port"
     description: "The Listener Port for the Database"
     required: false
+
+  create_db_ingress_sl_{{{datasourceName}}}:
+    type: boolean
+    title: "Create Database Security List"
+    description: "Add a security list to the DB subnet or a security rule to the Network Security Group for ATP Database with private endpoint that allows connections from the WebLogic Server subnet"
+    default: true
+    visible:
+      and:
+        - ${orm_create_mode}
+        - ${update_any_ds}
+        - edit_ds_{{{datasourceName}}}
+        - and:
+            - eq:
+                - ${db_strategy_{{{datasourceName}}}}
+                - "Database System"
+            - ${use_oci_db}
+
   ########
   # End section: Database Service
   ########

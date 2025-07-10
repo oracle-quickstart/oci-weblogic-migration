@@ -94,6 +94,8 @@ module "wlsservers" {
   wlsserver_vcn_id    = var.create_vcn ? try(one(module.vcn[*].vcn_id), var.vcn_id) : var.vcn_id
   db_subnet_id        = var.db_subnet_id
   is_vcn_peering      = var.is_vcn_peering
+  create_db_ingress_sl = var.create_db_ingress_sl
+  db_security_list_id  = module.network.wls_to_db_security_list_id
   db_lpg              = element(concat(module.lpg[*].db_lpg, [""]), 0)
   wlsserver_lpg       = element(concat(module.lpg[*].wls_lpg, [""]), 0)
   wlsserver_ports     = local.wls_domain_all_discovered_ports

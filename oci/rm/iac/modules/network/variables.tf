@@ -78,3 +78,36 @@ variable "add_load_balancer" {
   description = "If this variable is true and existing_load_balancer is blank, a new load balancer will be created for the stack. If existing_load_balancer_id is not blank, the specified load balancer will be used"
   default     = true
 }
+
+variable "wlsserver_subnet_cidr" {
+  type        = string
+  description = "CIDR for weblogic subnet"
+  default     = ""
+}
+
+variable "db_subnet_id" {
+  type        = string
+  description = "The OCID of the subnet for the OCI DB or ATP DB (when using private endpoint)"
+}
+
+variable "create_db_ingress_sl" {
+  description = "Whether to create a DB ingress SL for datasource 0"
+  type        = bool
+  default     = true
+}
+
+variable "oci_db_port_0" {
+  type        = number
+  description = "The listener port for the OCI database"
+  default     = 1521
+}
+
+variable "db_existing_vcn_id" {
+  type        = string
+  description = "The OCID of the VCN used by the ATP database private endpoint"
+}
+
+variable "db_network_compartment_id" {
+  type        = string
+  description = "The OCID of the compartment in which the DB System VCN is found"
+}

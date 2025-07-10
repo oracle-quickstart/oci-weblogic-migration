@@ -83,6 +83,12 @@ variable "oci_db_port_{{{datasourceName}}}" {
   default     = 1521
 }
 
+variable "create_db_ingress_sl_{{{datasourceName}}}" {
+  description = "Whether to create a security list to open DB port 1521 for datasource <dsname>"
+  type        = bool
+  default     = true
+}
+
 variable "oci_db_compartment_id_{{{datasourceName}}}" {
   type        = string
   description = "The OCID of the compartment of the OCI database"

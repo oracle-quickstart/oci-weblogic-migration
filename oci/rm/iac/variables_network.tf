@@ -335,3 +335,15 @@ variable "pub_lb_subnet_cidr" {
   description = "The CIDR of the new public subnet to create for a Bastion compute instance. The new subnet's CIDR should not overlap with any other subnet CIDRs."
   default     = "10.0.3.0/24"
 }
+
+variable "create_db_ingress_sl" {
+  description = "Whether to create a DB ingress SL for datasource 0"
+  type        = bool
+  default     = true
+}
+
+variable "oci_db_port_0" {
+  type        = number
+  description = "The listener port for the OCI database"
+  default     = 1521
+}

@@ -67,3 +67,6 @@ variable "is_vcn_peering" {
 variable "db_network_compartment_id" {
   type = string
 }
+variable "create_db_ingress_sl" {
+  type        = bool
+}

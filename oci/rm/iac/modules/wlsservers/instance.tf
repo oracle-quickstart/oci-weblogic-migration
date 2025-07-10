@@ -164,6 +164,8 @@ resource "oci_core_instance" "wlsservers" {
       is_vcn_peering          = var.is_vcn_peering
       db_lpg                  = var.db_lpg
       wlsserver_lpg           = var.wlsserver_lpg
+      create_db_ingress_sl    = var.create_db_ingress_sl
+      db_security_list_id     = var.db_security_list_id
     },
 
     # Extra user-defined fields merged last
