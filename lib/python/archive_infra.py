@@ -327,24 +327,6 @@ def load_env_file(file_path):
             env[key] = val
     return env
 
-def precheck_oci_cli():
-    """
-    Function to make sure the OCI CLI is installed and set up. If not then exit the code and log failure.
-    """
-    _method_name = 'precheck_oci_cli'
-    # 1. check presence of oci-cli in the path (usually /usr/bin/oci)
-    if os.system("which oci > /dev/null 2>&1") != 0:
-        __logger.severe('WLSDPLY-05027','OCI CLI not found on PATH. Set up and install OCI-CLI and rerun the script: bash migration_script.sh',
-                        class_name=_class_name, method_name=_method_name)
-        sys.exit(1)
-
-    # 2. check that it actually runs (no version‐conflict)
-    #  we run `oci --version` as oracle user with all output silenced
-    if os.system("oci --version > /dev/null 2>&1") != 0:
-        __logger.severe('WLSDPLY-05027','OCI CLI present in the path but failed to run `oci --version`. '
-                                        'Please fix your OCI CLI installation (dependencies, PYTHONPATH, etc.) as ssh user',
-                        class_name=_class_name, method_name=_method_name)
-        sys.exit(1)
 
 def ensure_bucket(oci_bucket_name, oci_compartment_id, log_file):
     """
@@ -394,9 +376,6 @@ def upload_to_bucket(file_path, log_file, on_prem_values):
     """
     global __logger, _class_name
     _method_name = 'upload_to_bucket'
-
-    # checking if oci-cli is installed and setup or not
-    precheck_oci_cli()
 
     # Read bucket and namespace and compartment
     bucket = on_prem_values.get('bucket_name')

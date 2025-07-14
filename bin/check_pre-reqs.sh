@@ -178,7 +178,7 @@ else
     done < <(grep '=' "$env_file")
 
     # Define the list of required keys to check
-    required_keys=("ssh_user" "domain_home" "oracle_home" "bucket_name" "compartment_ocid" "tenancy_namespace")
+    required_keys=("ssh_user" "domain_home" "oracle_home" "bucket_name" "compartment_ocid" "tenancy_namespace" "skip_archive" "skip_transfer")
 
     # Track missing keys
     missing_keys=()
@@ -213,6 +213,17 @@ else
     if [[ -n "${env_vars[ssh_password_file]:-}" && ! -f "${env_vars[ssh_password_file]}" ]]; then
         errors+=("The file specified for 'ssh_password_file' (${env_vars[ssh_password_file]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
     fi
+
+    # Check if skip_transfer value is valid or not (valid values: true or false)
+    if [[ "${env_vars[skip_transfer]}" != "false" && "${env_vars[skip_transfer]}" != "true" ]]; then
+        errors+=("skip_transfer value in the $env_file can be true or false")
+    fi
+
+    # Check if skip_archive value is valid or not (valid values: true or false)
+    if [[ "${env_vars[skip_archive]}" != "false" && "${env_vars[skip_archive]}" != "true" ]]; then
+        errors+=("skip_archive value in the $env_file can be true or false")
+    fi
+
 fi
 
 set -e
@@ -246,6 +257,32 @@ if ! which jq 2>&1 > /dev/null; then
     errors+=("Unable to find jq. For more information see https://jqlang.github.io/jq/download/")
 fi
 
+
+set -e
+
+end_section
+
+################################################ OCI CLI Pre-Check ####################################################
+
+start_section "OCI CLI Pre-Check"
+
+# allow failures in this block
+set +e
+
+# only do the check if skip_transfer is "false"
+if [ "${env_vars[skip_transfer]}" = "false" ]; then
+
+  # make sure oci is on $PATH
+  if ! oci > /dev/null 2>&1; then
+    errors+=("Oracle Cloud Infrastructure CLI (oci) not found in the path.")
+  fi
+
+  # make sure oci is configured for the current ssh user
+  if ! echo n |oci iam region list > /dev/null 2>&1; then
+    errors+=("Failed to verify OCI CLI is configured. For more information visit: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm")
+  fi
+
+fi
 
 set -e
 
