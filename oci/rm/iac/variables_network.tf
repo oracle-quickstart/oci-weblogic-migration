@@ -318,7 +318,7 @@ variable "db_existing_vcn_id" {
   default     = ""
 }
 
-variable "open_db_port_1522" {
+variable "open_atp_db_port_1522" {
   type        = bool
   description = "Open ingress port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database."
 }
