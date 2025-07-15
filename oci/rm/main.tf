@@ -11,7 +11,7 @@ locals {
   }] : []
   db_strategy_is_atp = local.datasources == null ? false : anytrue([for _, v in local.datasources : v.is_atp])
   db_strategy_is_edit_string_atp = local.datasources == null ? false : anytrue([
-  for _, v in local.datasources : can(regex("adb", v.connection_string))])
+    for _, v in local.datasources : can(regex("adb", v.connection_string))])
   network_compartment_id = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
 
   db_strategy_0_is_atp_db = local.datasources == null ? false : local.datasources[0].is_atp
@@ -25,7 +25,7 @@ locals {
   oci_db_subnet_id_0       = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.subnet_id : ""
 
   atp_has_private_endpoints_0 = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.is_atp_with_private_endpoints : false
-  open_atp_db_port_1522_0      = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.open_atp_db_port_1522 : false
+  open_atp_db_port_1522_0     = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.open_atp_db_port_1522 : false
   atp_db_network_comp_id_0    = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.network_compartment_id : ""
   atp_db_existing_vcn_id_0    = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.existing_vcn_id : ""
   atp_db_subnet_id_0          = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.subnet_id : ""
@@ -212,7 +212,7 @@ module "wls" {
   atp_has_private_endpoints_0       = local.atp_has_private_endpoints_0
   atp_db_existing_vcn_id_0          = local.atp_db_existing_vcn_id_0
   atp_db_network_compartment_id_0   = local.atp_db_network_comp_id_0
-  open_atp_db_port_1522_0           = local.open_atp_db_port_1522_0
+  open_atp_db_port_1522             = local.open_atp_db_port_1522_0
 
 
   #Bastion

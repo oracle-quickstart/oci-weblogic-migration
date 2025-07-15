@@ -318,6 +318,11 @@ variable "db_existing_vcn_id" {
   default     = ""
 }
 
+variable "open_db_port_1522" {
+  type        = bool
+  description = "Open ingress port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database."
+}
+
 variable "is_vcn_peering" {
   type        = bool
   description = "Indicates whether VCN peering will be set up"
