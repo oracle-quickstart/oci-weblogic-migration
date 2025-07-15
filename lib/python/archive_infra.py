@@ -356,7 +356,7 @@ def ensure_bucket(oci_bucket_name, oci_compartment_id, log_file):
         result2 = os.system(create_cmd)
         if result2 != 0:
             # creation failed
-            __logger.warning('WLSDPLY-05027',"Error: Failed to create bucket. Check OCI credentials. Exiting...", class_name=_class_name, method_name=_method_name)
+            __logger.warning('WLSDPLY-05027',"Error: Failed to create bucket. Check OCI credentials, policies or compartment OCID: %s. Exiting..." %oci_compartment_id, class_name=_class_name, method_name=_method_name)
             # under Jython/WLST, sys.exit(1) will abort the WLST tool with error
             sys.exit(1)
 
@@ -385,7 +385,8 @@ def upload_to_bucket(file_path, log_file, on_prem_values):
     if not bucket or not namespace or not compartment_id:
         msg = "Missing bucket or namespace or compartment ocid: bucket=%s, namespace=%s, compartment_ocid=%s. Cannot upload %s" % (bucket, namespace, compartment_id, file_path)
         __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
-        return
+        # under Jython/WLST, sys.exit(1) will abort the WLST tool with error
+        sys.exit(1)
 
     ensure_bucket(bucket, compartment_id, log_file)
 
@@ -403,8 +404,10 @@ def upload_to_bucket(file_path, log_file, on_prem_values):
         msg = 'Successfully uploaded %s to bucket %s' % (file_path, bucket)
         __logger.info('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
     else:
-        msg = "Upload failed (exit code %s) for %s. Retry with: %s" % (result, file_path, cmd)
+        msg = "Upload failed (exit code %s) for %s. Retry running bash migration_script.sh after fixing the issue." % (result, file_path)
         __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
+        # under Jython/WLST, sys.exit(1) will abort the WLST tool with error
+        sys.exit(1)
 
 
 def delete_local(file_path):
