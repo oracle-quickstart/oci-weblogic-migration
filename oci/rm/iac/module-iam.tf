@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 data "oci_identity_availability_domains" "all" {
@@ -13,7 +13,7 @@ locals {
   // Map of parsed availability domain numbers to tenancy-specific names
   // Used by resources with AD placement for generic selection
   ad_numbers_to_names = local.ads != null ? {
-  for ad in local.ads : parseint(substr(ad.name, -1, -1), 10) => ad.name
+    for ad in local.ads : parseint(substr(ad.name, -1, -1), 10) => ad.name
   } : { -1 : "" } # Fallback handles failure when unavailable but not required
 
   // List of availability domain numbers in region
@@ -39,7 +39,7 @@ locals {
     var.create_iam_kms_policy == "always",
     var.create_iam_kms_policy == "auto" && anytrue([
       coalesce(var.wlsserver_volume_kms_key_id, "none") != "none",
-#      coalesce(var.cluster_kms_key_id, "none") != "none",
+      #      coalesce(var.cluster_kms_key_id, "none") != "none",
     ])
   ])
   bucket_compartment = data.oci_objectstorage_bucket.wls_archives.compartment_id
@@ -64,25 +64,27 @@ module "iam" {
   tag_namespace            = var.tag_namespace
   use_defined_tags         = var.use_defined_tags
 
-  add_load_balancer                  = var.add_load_balancer
-  db_strategy_is_atp                 = var.db_strategy_is_atp
-  db_strategy_is_edit_string_atp     = var.db_strategy_is_edit_string_atp
-  atp_db_compartment_id_0            = var.atp_db_compartment_id_0
-  atp_has_private_endpoints_0        = var.atp_has_private_endpoints_0
-  atp_db_existing_vcn_id_0           = var.atp_db_existing_vcn_id_0
-  atp_db_network_compartment_id_0    = var.atp_db_network_compartment_id_0
+  add_load_balancer               = var.add_load_balancer
+  db_strategy_is_atp              = var.db_strategy_is_atp
+  db_strategy_is_edit_string_atp  = var.db_strategy_is_edit_string_atp
+  atp_db_compartment_id_0         = var.atp_db_compartment_id_0
+  atp_has_private_endpoints_0     = var.atp_has_private_endpoints_0
+  atp_db_existing_vcn_id_0        = var.atp_db_existing_vcn_id_0
+  atp_db_network_compartment_id_0 = var.atp_db_network_compartment_id_0
+  is_vcn_peering                  = var.is_vcn_peering
+  db_network_compartment_id       = var.db_network_compartment_id
 
-  wlsserver_volume_kms_key_id  = var.wlsserver_volume_kms_key_id
+  wlsserver_volume_kms_key_id = var.wlsserver_volume_kms_key_id
 
-  wlsserver_compartments     = local.wlsserver_compartments
+  wlsserver_compartments = local.wlsserver_compartments
 
   providers = {
     oci.home = oci.home
   }
   #TODO: JOI: Future release include multiple object storage compartment
   object_storage_compartments = []
-  bucket_compartment   = local.bucket_compartment
-  resource_name_prefix = local.wls_domain_name
+  bucket_compartment          = local.bucket_compartment
+  resource_name_prefix        = local.wls_domain_name
 }
 
 output "availability_domains" {

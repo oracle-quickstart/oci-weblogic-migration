@@ -58,13 +58,11 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     echo $output | log >> $log_file
     atp_wallet_password=$(python3 -c'import sys; sys.path.append("/opt/scripts"); import atp_db_util; wallet_password = atp_db_util.get_md5_hash("${jdbc_string.db_id}" + ":" + "${jdbc_string.atp_db.db_name}") + "Z%%"; print(wallet_password)')
     wallet_pass_exit_code=$?
-    download=$(sudo -E -u ${user} echo "$${atp_wallet_password}" | python3 /opt/scripts/oci_api_utils.py download_atp_wallet_with_pwd ${jdbc_string.db_id} "$wallet_location" 2>&1 )
+    download=$(sudo -E -u ${user} echo "$${atp_wallet_password}" | python3 /opt/scripts/atp_db_util.py ${jdbc_string.db_id} "$wallet_location" 2>&1 )
     download_exit_code=$?
     echo "Executed ATP wallet download and unzip with exit code [$download_exit_code] and [$unzip_oper_exit_code]" | log >> $log_file
     if [[ $wallet_pass_exit_code -ne 0 ]] || [[ $download_exit_code -ne 0 ]]; then
         echo "Error downloading ATP wallet.. Exiting provisioning" | log >> $log_file
-        #clean up script
-        #/opt/scripts/tidyup.sh
         exit 1
     fi
     files=$(grep -il "$on_prem_jdbc_string" "${domain_home}/config/jdbc/"*.xml)
@@ -75,8 +73,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
         echo "$output" | log >> $log_file
         if [ $exit_code -ne 0 ]; then
             echo "Error executing datasource update for ATP database.. Exiting provisioning" | log >> $log_file
-            #clean up script
-            #/opt/scripts/tidyup.sh
             exit 1
         fi
     done
@@ -90,8 +86,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
                      echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
     elif [ $exit_code -ne 0 ]; then
         echo "Executed datasource ATP update on jps-config*.xml with ATP database.. Exiting provisioning" | log >> $log_file
-        #clean up script
-        #/opt/scripts/tidyup.sh
         exit 1
     fi
 
@@ -104,8 +98,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
         echo "$output" | log >> $log_file
         if [ $exit_code -ne 0 ]; then
             echo "Error executing datasource update for DB System database.. Exiting provisioning" | log >> $log_file
-            #clean up script
-            #/opt/scripts/tidyup.sh
             exit 1
         fi
     done
@@ -117,8 +109,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
                  echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
     elif [ $exit_code -ne 0 ]; then
         echo "Error executing datasource update for DB System database on jspconfig files.. Exiting provisioning" | log >> $log_file
-        #clean up script
-        #/opt/scripts/tidyup.sh
         exit 1
     fi
   elif [[ $is_custom_jdbc == "true" ]]; then
@@ -129,21 +119,17 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
         echo "$output" | log >> $log_file
         if [ $exit_code -ne 0 ]; then
             echo "Error executing datasource update with custom JDBC connection string on jdbc config files.. Exiting provisioning" | log >> $log_file
-            #clean up script
-            #/opt/scripts/tidyup.sh
             exit 1
         fi
         # Modify jspconfig if exists.
          output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
          exit_code=$?
-         echo "Executed datasource ATP update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
+         echo "Executed datasource update for custom JDBC connection string on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
          echo "$output" | log >> $log_file
          if [ $exit_code -eq 123 ]; then
              echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
          elif [ $exit_code -ne 0 ]; then
              echo "Error executing datasource update for custom JDBC connection string on jspconfig files.. Exiting provisioning" | log >> $log_file
-             #clean up script
-             #/opt/scripts/tidyup.sh
              exit 1
          fi
   fi

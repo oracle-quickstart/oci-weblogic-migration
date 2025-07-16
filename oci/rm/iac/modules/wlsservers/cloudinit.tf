@@ -165,7 +165,7 @@ data "cloudinit_config" "wlsservers" {
       content = jsonencode({
         write_files = [
           {
-            content = templatefile("${path.module}/templates/restore-archives.py", {
+            content = templatefile("${path.module}/templates/restore_archives.py", {
                     restore_path="/"
                     bucket_name=var.bucket_name
                     temporary_path=var.stage_archive_path
@@ -174,7 +174,7 @@ data "cloudinit_config" "wlsservers" {
                     domain_archive =format("%s-%s-domain_home.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
                     custom_archive =format("%s-%s-custom_dirs.tar.gz",each.value.wls_machine_name,var.resource_name_prefix)
             })
-            path    = "/opt/scripts/restore-archives.py"
+            path    = "/opt/scripts/restore_archives.py"
           },
         ]
       })
@@ -202,6 +202,10 @@ data "cloudinit_config" "wlsservers" {
              content  = file("${path.module}/templates/vcn_peering.py")
              path     = "/opt/scripts/vcn_peering.py"
            },
+           {
+             content  = file("${path.module}/templates/atp_db_util.py")
+             path     = "/opt/scripts/atp_db_util.py"
+           },
          ]
        })
        filename   = "72-wls-ds-scripts.yml"
@@ -209,27 +213,28 @@ data "cloudinit_config" "wlsservers" {
      }
    }
 
+# Currently this part of the code is not being used but is retained in case we need the wls-oci vmscripts in future.
   # Python script to restore OSVM Scripts If mode=dev download from OSS else use image vmscripts
-  dynamic "part" {
-    for_each = each.value.disable_default_cloud_init ? [] : [1]
-    content {
-      content_type = "text/cloud-config"
-      content = jsonencode({
-        write_files = [
-          {
-            content = templatefile("${path.module}/templates/restore-vmscripts.py", {
-              bucket_name=var.bucket_name
-              temporary_path="/tmp"
-              vmscripts_file=var.vm_scripts_path  #"wlsoci-vmscripts.zip"
-            })
-            path    = "/opt/scripts/restore-vmscripts.py"
-          },
-        ]
-      })
-      filename   = "73-wls-restore-vmscripts.yml"
-      merge_type = local.default_cloud_init_merge_type
-    }
-  }
+#  dynamic "part" {
+#    for_each = each.value.disable_default_cloud_init ? [] : [1]
+#    content {
+#      content_type = "text/cloud-config"
+#      content = jsonencode({
+#        write_files = [
+#          {
+#            content = templatefile("${path.module}/templates/restore-vmscripts.py", {
+#              bucket_name=var.bucket_name
+#              temporary_path="/tmp"
+#              vmscripts_file=var.vm_scripts_path  #"wlsoci-vmscripts.zip"
+#            })
+#            path    = "/opt/scripts/restore-vmscripts.py"
+#          },
+#        ]
+#      })
+#      filename   = "73-wls-restore-vmscripts.yml"
+#      merge_type = local.default_cloud_init_merge_type
+#    }
+#  }
 
   # VMscript bootstrap file
   dynamic "part" {

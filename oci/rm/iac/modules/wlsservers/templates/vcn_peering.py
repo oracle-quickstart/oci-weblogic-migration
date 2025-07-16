@@ -8,7 +8,7 @@ Updates the Weblogic and Database subnet route tables for VCN peering.
 
 import oci
 import sys
-import urllib.request, urllib.error, urllib.parse
+from restore_archives import get_attribute
 
 # Initialize service clients
 principal = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
@@ -16,36 +16,17 @@ database_client = oci.database.DatabaseClient(config={}, signer=principal)
 core_client = oci.core.VirtualNetworkClient(config={}, signer=principal)
 virtual_network_composite_operations = oci.core.VirtualNetworkClientCompositeOperations(core_client)
 
-# Get metadata attribute.
-def getAttribute(attribute, default=None):
-    """
-    Returns attribute or default value if no value is found
-    """
-    try:
-        request_headers = {
-            "Authorization": "Bearer Oracle"
-        }
-        request = urllib.request.Request("http://169.254.169.254/opc/v2/instance/metadata/" + attribute,
-                                         headers=request_headers)
-        result = urllib.request.urlopen(request).read()
-        return result.decode("utf-8")
-    except Exception as ex:
-        print(f"Error: {ex}")
-        pass
-
-    return default
-
 def get_db_subnet_id():
-    return getAttribute("db_subnet_id")
+    return get_attribute("db_subnet_id")
 
 def get_db_lpg_id():
-    return getAttribute("db_lpg")
+    return get_attribute("db_lpg")
 
 def get_wls_subnet_id():
-    return getAttribute("wlsserver_subnet_id")
+    return get_attribute("wlsserver_subnet_id")
 
 def get_wls_lpg_id():
-    return getAttribute("wlsserver_lpg")
+    return get_attribute("wlsserver_lpg")
 
 def get_subnet_details(subnet_id):
     get_subnet_response = core_client.get_subnet(subnet_id=subnet_id)

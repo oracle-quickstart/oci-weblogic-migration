@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
@@ -39,29 +39,38 @@ locals {
     "Allow dynamic-group ${local.wlsserver_group_name} to use app-catalog-listing in compartment id %v",
   ])
   # This policy with "inspect virtual-network-family" verb is needed to read VCN information like CIDR, etc.
-  network_compartment_policy_templates = tolist([
+  # This policy with "manage virtual-network-family" verb is needed for vcn peering.
+  network_compartment_policy_templates = !var.is_vcn_peering ? tolist([
     format("Allow dynamic-group ${local.wlsserver_group_name} to inspect virtual-network-family in compartment id %v", var.network_compartment_id)
+  ]) : tolist([
+    format("Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v", var.network_compartment_id)
   ])
 
+  # This policy with "manage virtual-network-family" verb is needed for vcn peering.
+  db_network_compartment_policy_templates = var.is_vcn_peering ? [
+    format(
+    "Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v", var.db_network_compartment_id)
+  ] : []
+
   # This policy with "use autonomous-transaction-processing-family" verb is needed to download ATP db wallet.
-   atp_db_policy_template_1 = compact(concat(
-       (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp) ? [
-         format(
-           "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %s",
-           var.atp_db_compartment_id_0
-         )
-       ] : []
-   ))
+  atp_db_policy_template_1 = compact(concat(
+    (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp) ? [
+      format(
+        "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %s",
+        var.atp_db_compartment_id_0
+      )
+    ] : []
+  ))
   # This policy is used to add the db port 1522 in case of ATP db
   # The functionality is yet to be added till (Jun 25)
-   atp_db_policy_template_2 = compact(concat(
-     (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp || (var.atp_db_existing_vcn_id_0 != "" && var.atp_has_private_endpoints_0)) ? [
-       format(
-         "Allow dynamic-group ${local.wlsserver_group_name} to manage network-security-groups in compartment id %s where request.operation = 'AddNetworkSecurityGroupSecurityRules'",
-          var.atp_db_network_compartment_id_0
-       )
-     ] : []
-   ))
+  atp_db_policy_template_2 = compact(concat(
+    (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp || (var.atp_db_existing_vcn_id_0 != "" && var.atp_has_private_endpoints_0)) ? [
+      format(
+        "Allow dynamic-group ${local.wlsserver_group_name} to manage network-security-groups in compartment id %s where request.operation = 'AddNetworkSecurityGroupSecurityRules'",
+        var.atp_db_network_compartment_id_0
+      )
+    ] : []
+  ))
 
 
   # Block volume encryption using OCI Key Management System (KMS)
@@ -90,7 +99,8 @@ locals {
     local.migration_compartment_policy_statements,
     local.network_compartment_policy_templates,
     local.atp_db_policy_template_1,
-    local.atp_db_policy_template_2
+    local.atp_db_policy_template_2,
+    local.db_network_compartment_policy_templates
   )) : []
 }
 

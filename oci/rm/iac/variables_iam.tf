@@ -1,12 +1,12 @@
-# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
-  tenancy_id            = coalesce(var.tenancy_id, var.tenancy_ocid, "unknown")
-  compartment_id        = coalesce(var.compartment_id, var.compartment_ocid, var.tenancy_id)
+  tenancy_id               = coalesce(var.tenancy_id, var.tenancy_ocid, "unknown")
+  compartment_id           = coalesce(var.compartment_id, var.compartment_ocid, var.tenancy_id)
   wlsserver_compartment_id = coalesce(var.wlsserver_compartment_id, var.compartment_id)
-  user_id               = var.user_id != "" ? var.user_id : var.current_user_ocid
-  home_region           = coalesce(var.home_region, var.region)
+  user_id                  = var.user_id != "" ? var.user_id : var.current_user_ocid
+  home_region              = coalesce(var.home_region, var.region)
 
   api_private_key = sensitive(
     var.api_private_key != ""
@@ -23,8 +23,8 @@ locals {
   operator_freeform_tags          = merge(lookup(var.freeform_tags, "operator", {}), var.operator_freeform_tags)
   persistent_volume_freeform_tags = merge(lookup(var.freeform_tags, "persistent_volume", {}), var.persistent_volume_freeform_tags)
   service_lb_freeform_tags        = merge(lookup(var.freeform_tags, "service_lb", {}), var.service_lb_freeform_tags)
-  wlsservers_freeform_tags           = merge(lookup(var.freeform_tags, "wlsservers", {}), var.wlsservers_freeform_tags)
-  resource_manager_freeform_tags     = merge(lookup(var.freeform_tags, "resource_manager", {}), var.resource_manager_freeform_tags)
+  wlsservers_freeform_tags        = merge(lookup(var.freeform_tags, "wlsservers", {}), var.wlsservers_freeform_tags)
+  resource_manager_freeform_tags  = merge(lookup(var.freeform_tags, "resource_manager", {}), var.resource_manager_freeform_tags)
   # Merge defined tags from map & individual inputs better suited to Resource Manager
   bastion_defined_tags           = merge(lookup(var.defined_tags, "bastion", {}), var.bastion_defined_tags)
   iam_defined_tags               = merge(lookup(var.defined_tags, "iam", {}), var.iam_defined_tags)
@@ -32,8 +32,8 @@ locals {
   operator_defined_tags          = merge(lookup(var.defined_tags, "operator", {}), var.operator_defined_tags)
   persistent_volume_defined_tags = merge(lookup(var.defined_tags, "persistent_volume", {}), var.persistent_volume_defined_tags)
   service_lb_defined_tags        = merge(lookup(var.defined_tags, "service_lb", {}), var.service_lb_defined_tags)
-  wlsservers_defined_tags           = merge(lookup(var.defined_tags, "wlsservers", {}), var.wlsservers_defined_tags)
-  resource_manager_defined_tags     = merge(lookup(var.defined_tags, "resource_manager", {}), var.resource_manager_defined_tags)
+  wlsservers_defined_tags        = merge(lookup(var.defined_tags, "wlsservers", {}), var.wlsservers_defined_tags)
+  resource_manager_defined_tags  = merge(lookup(var.defined_tags, "resource_manager", {}), var.resource_manager_defined_tags)
 }
 
 # Overrides Resource Manager
@@ -234,7 +234,7 @@ variable "defined_tags" {
     operator          = {}
     persistent_volume = {}
     service_lb        = {}
-    wlsservers           = {}
+    wlsservers        = {}
     resouce_manager   = {}
   }
   description = "Defined tags to be applied to created resources. Must already exist in the tenancy."
@@ -340,15 +340,15 @@ variable "db_strategy_is_atp" {
 variable "db_strategy_is_edit_string_atp" {
   type = string
 }
-variable "atp_db_compartment_id_0"{
-    type = string
-}
-variable "atp_has_private_endpoints_0"{
+variable "atp_db_compartment_id_0" {
   type = string
 }
-variable "atp_db_existing_vcn_id_0"{
+variable "atp_has_private_endpoints_0" {
   type = string
 }
-variable "atp_db_network_compartment_id_0"{
+variable "atp_db_existing_vcn_id_0" {
+  type = string
+}
+variable "atp_db_network_compartment_id_0" {
   type = string
 }

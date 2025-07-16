@@ -46,8 +46,11 @@ variableGroups:
       - bastion_image_id
       - bastion_upgrade
       - bastion_tags
-      - listing_id
-      - listing_resource_version
+      - byol_listing_id
+      - byol_listing_resource_version
+      - suite_byol_listing_id
+      - suite_byol_listing_resource_version
+      - suite_byol_instance_image_id
       - suite_ucm_instance_image_id
       - suite_ucm_listing_id
       - suite_ucm_listing_resource_version
@@ -56,7 +59,7 @@ variableGroups:
       - ucm_listing_resource_version
       - use_bastion_marketplace_image
       - use_marketplace_image
-      - instance_image_id
+      - byol_instance_image_id
       - wlsserver_is_public
       - ssh_kms_vault_id
       - ssh_kms_secret_id
@@ -831,7 +834,7 @@ variables:
     description: The selected image is used for Weblogic instances.
     type: enum
     default: "Oracle WebLogic Server Enterprise Edition UCM Image"
-    enum: ["Oracle WebLogic Server BYOL Image", "Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Suite UCM Image"]
+    enum: ["Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Suite UCM Image", "Oracle WebLogic Server Enterprise Edition BYOL Image", "Oracle Weblogic Suite BYOL Image", "Platform Image"]
     required: true
     and:
       - ${orm_create_mode}
@@ -867,21 +870,14 @@ variables:
   wlsserver_image_platform_id:
     title: Image
     type: oci:core:image:id
-    required: false
+    required: true
     pattern: ^ocid1.image.*$
     dependsOn:
       compartmentId: ${compartment_ocid}
       operatingSystem: ${wlsserver_image_os}
       operatingSystemVersion: ${wlsserver_image_os_version}
       shape: ${wlsserver_shape}
-    visible:
-      or:
-        - eq:
-           - wlsserver_image_type
-           - "custom"
-        - eq:
-           - wlsserver_image_type
-           - "platform"
+    visible: false
 
   terms_and_conditions:
     visible:
