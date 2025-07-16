@@ -130,7 +130,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
         # Modify jspconfig if exists.
          output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
          exit_code=$?
-         echo "Executed datasource ATP update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
+         echo "Executed datasource update for custom JDBC connection string on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
          echo "$output" | log >> $log_file
          if [ $exit_code -eq 123 ]; then
              echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
