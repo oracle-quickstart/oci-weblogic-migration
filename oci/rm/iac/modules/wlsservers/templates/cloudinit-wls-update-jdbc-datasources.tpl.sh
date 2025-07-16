@@ -98,8 +98,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
         echo "$output" | log >> $log_file
         if [ $exit_code -ne 0 ]; then
             echo "Error executing datasource update for DB System database.. Exiting provisioning" | log >> $log_file
-            #clean up script
-            #/opt/scripts/tidyup.sh
             exit 1
         fi
     done
@@ -111,8 +109,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
                  echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
     elif [ $exit_code -ne 0 ]; then
         echo "Error executing datasource update for DB System database on jspconfig files.. Exiting provisioning" | log >> $log_file
-        #clean up script
-        #/opt/scripts/tidyup.sh
         exit 1
     fi
   elif [[ $is_custom_jdbc == "true" ]]; then
@@ -123,8 +119,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
         echo "$output" | log >> $log_file
         if [ $exit_code -ne 0 ]; then
             echo "Error executing datasource update with custom JDBC connection string on jdbc config files.. Exiting provisioning" | log >> $log_file
-            #clean up script
-            #/opt/scripts/tidyup.sh
             exit 1
         fi
         # Modify jspconfig if exists.
