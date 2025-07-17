@@ -283,6 +283,7 @@ def __discover_datasources(model, model_context, helper):
     unique_strings = []
     datasource_map = {}
     template_hash = dict()
+    template_hash['is_mds']="false"
     jdbc_system_resources = dictionary_utils.get_dictionary_element(resources, JDBC_SYSTEM_RESOURCE)
     for jdbc_name in jdbc_system_resources:
         named = dictionary_utils.get_dictionary_element(jdbc_system_resources, jdbc_name)
@@ -292,11 +293,12 @@ def __discover_datasources(model, model_context, helper):
         dslist_params = dictionary_utils.get_dictionary_element(resources, JDBC_DATASOURCE_PARAMS)
         dslist = dictionary_utils.get_element(dslist_params, JDBC_DATASOURCE_PARAMS_DATASOURCE_LIST)
 
+        #Identifies if database connection string refers to a Multi data Source.
+        if dslist != None:
+            template_hash['is_mds']="true"
+
         if url is not None or url != '':
             datasource_map[url]="true"
-        #Identifies if database connection string refers to a Multi data Source.
-        if dslist is not None or dslist != '':
-            template_hash['is_mds']="true"
 
     if len(datasource_map.keys()) > 0: #Hacky way to get uniques jdbc strings.. now put it back as map
         for index, url in enumerate(datasource_map.keys()):
