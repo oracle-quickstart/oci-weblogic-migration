@@ -253,9 +253,9 @@ if [[ -n "${env_vars[ssh_password_file]:-}" ]]; then
 fi
 
 
-if ! which jq 2>&1 > /dev/null; then
-    errors+=("Unable to find jq. For more information see https://jqlang.github.io/jq/download/")
-fi
+#if ! which jq 2>&1 > /dev/null; then
+#    errors+=("Unable to find jq. For more information see https://jqlang.github.io/jq/download/")
+#fi
 
 
 set -e

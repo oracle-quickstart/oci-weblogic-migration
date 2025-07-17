@@ -22,12 +22,12 @@ toolHome=$(builtin cd "$scriptPath/.."; pwd)
 readonly OWLSMIG_NAME="OCI Weblogic Migration Tool"
 DEPS_DIR=$toolHome/deps
 readonly DEPS_WDT_HOME=$DEPS_DIR/wdt
-readonly DEPS_JQ_HOME=$DEPS_DIR/jq
+#readonly DEPS_JQ_HOME=$DEPS_DIR/jq
 readonly DEPS_OCI_SDK_HOME=$DEPS_DIR/oci
 readonly LOG_DIR=$toolHome/logs
 LOG_FILE="$LOG_DIR/$LOG_FILE_NAME"
 readonly WDT_DOWNLOAD_RELEASE_URL="https://github.com/oracle/weblogic-deploy-tooling/releases/download/release-4.3.5/weblogic-deploy.tar.gz"
-readonly JQ_DOWNLOAD_RELEASE_URL="https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64"
+#readonly JQ_DOWNLOAD_RELEASE_URL="https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64"
 readonly OCI_JAVA_SDK_DOWNLOAD_RELEASE_URL="https://github.com/oracle/oci-java-sdk/releases/download/v3.49.0/oci-java-sdk-3.49.0.zip"
 readonly REPO_ARCHIVE_PATH=${3:-$toolHome/out}
 
@@ -93,7 +93,7 @@ update_migration_data_json() {
   # Check if JSON metadata file is invalid or corrupted.
   if ! python3 "$toolHome/lib/python/json_utils.py" validate_json "$MIGRATION_DATA_JSON" 2>>"$MIGRATION_SCRIPT_LOG"; then
     log "error" "The metadata file [$MIGRATION_DATA_JSON] is invalid or corrupted."
-    log "error" "Refer to the README.md for recovery steps, or manually delete the metadata file [$MIGRATION_DATA_JSON] and contents of [$toolHome/out] before re-running migration_script.sh"
+    log "error" "Check [$MIGRATION_SCRIPT_LOG] for details. Refer to the README.md for recovery steps, or manually delete the metadata file [$MIGRATION_DATA_JSON] and contents of [$toolHome/out] before re-running migration_script.sh"
     log "error" "Migration failed."
     exit 1
   fi
