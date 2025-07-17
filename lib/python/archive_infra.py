@@ -7,7 +7,6 @@ The main module for the WebLogic Deploy tool to verify the user's SSH configurat
 """
 import os
 import sys
-import json
 import traceback
 
 from oracle.weblogic.deploy.util import SSHException, WLSDeployArchive
@@ -56,7 +55,9 @@ from wlsdeploy.util.exit_code import ExitCode
 from wlsdeploy.util import env_helper
 from wlsdeploy.tool.discover import discoverer
 from wlsdeploy.json import json_translator
+from wlsdeploy.json.json_translator import JsonStreamToPython
 from wlsdeploy.aliases.wlst_modes import WlstModes
+from java.io import ByteArrayInputStream
 
 from oracle.weblogic.deploy.util import FileUtils
 from oracle.weblogic.deploy.util import PyOrderedDict as OrderedDict
@@ -97,8 +98,7 @@ from wlsdeploy.util.cla_utils import CommandLineArgUtil
 from wlsdeploy.util.exit_code import ExitCode
 
 
-tmp = __import__('wlsdeploy.util.cla_utils', fromlist=['CommandLineArgUtil'])
-CommandLineArgUtil = tmp.CommandLineArgUtil
+from wlsdeploy.util.cla_utils import CommandLineArgUtil
 CommandLineArgUtil.SPACE_MAP_SWITCH = '-space_map'      # new switch for JSON map
 CommandLineArgUtil.ADMIN_RETURN_SWITCH = '-admin_return'  # new switch for admin space flag
 
@@ -316,7 +316,8 @@ def load_env_file(file_path):
                       class_name=_class_name, method_name=_method_name)
         return env
 
-    with open(file_path) as f:
+    f = open(file_path, 'r')
+    try:
         for line in f:
             line = line.strip()
             if not line or line.startswith('#') or '=' not in line:
@@ -325,6 +326,12 @@ def load_env_file(file_path):
             key = key.strip()
             val = val.strip().strip('"').strip("'")
             env[key] = val
+    finally:
+        try:
+            f.close()
+        except:
+            pass
+
     return env
 
 
@@ -395,7 +402,7 @@ def upload_to_bucket(file_path, log_file, on_prem_values):
 
     try:
         result = os.system(cmd)
-    except Exception as e:
+    except Exception, e:
         __logger.warning('WLSDPLY-05027', 'Exception running upload command: %s' % str(e),
                          class_name=_class_name, method_name=_method_name)
         return
@@ -421,7 +428,7 @@ def delete_local(file_path):
             os.remove(file_path)
             msg = "Deleted local archive %s" % file_path
             __logger.info('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
-        except Exception as e:
+        except Exception, e:
             msg = "Failed to delete %s: %s" % (file_path, str(e))
             __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
 
@@ -467,9 +474,17 @@ def __archive_directories(model, model_context, helper):
     space_admin_rc = int(os.environ.get('SPACE_ADMIN_RETURNCODE', '0'))
 
     # Read per-node JSON map {host:0/1}
+    json_space_input = os.environ.get('SPACE_STATUS_JSON', '{}')
+
+    # turn the Python string into a Java InputStream
+    bais = ByteArrayInputStream(json_space_input.encode('utf-8'))
+
+    # parse it
     try:
-        space_status = json.loads(os.environ.get('SPACE_STATUS_JSON', '{}'))
-    except Exception:
+        space_status = JsonStreamToPython('SPACE_STATUS_JSON', bais, False).parse()
+    except Exception, je:
+        # je will already be a JsonException if parsing failed
+        __logger.warning('Failed to parse SPACE_STATUS_JSON, defaulting to empty map: %s', je)
         space_status = {}
 
     # Read skip_transfer flag from on-prem.env
@@ -500,8 +515,12 @@ def __archive_directories(model, model_context, helper):
                 listen_address = common.traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
                 init_argument_map[CommandLineArgUtil.SSH_HOST_SWITCH] = listen_address
                 is_encryption_supported = EncryptionUtils.isEncryptionSupported()
-                __logger.info('WLSDPLY-20044' if is_encryption_supported else 'WLSDPLY-20045',
-                              init_argument_map, class_name=_class_name, method_name=_method_name)
+                if is_encryption_supported:
+                    __logger.info('WLSDPLY-20044',
+                                  init_argument_map, class_name=_class_name, method_name=_method_name)
+                else:
+                    __logger.info('WLSDPLY-20045',
+                                  init_argument_map, class_name=_class_name, method_name=_method_name)
                 per_machine_model_context = __process_args(init_argument_map, is_encryption_supported)
                 host_result = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model).archive()
                 if not infra_constants.SUCCESS == host_result:
@@ -539,8 +558,12 @@ def __archive_directories(model, model_context, helper):
             listen_address = common.traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
             init_argument_map[CommandLineArgUtil.SSH_HOST_SWITCH] = listen_address
             is_encryption_supported = EncryptionUtils.isEncryptionSupported()
-            __logger.info('WLSDPLY-20044' if is_encryption_supported else 'WLSDPLY-20045',
-                          init_argument_map, class_name=_class_name, method_name=_method_name)
+            if is_encryption_supported:
+                __logger.info('WLSDPLY-20044',
+                              init_argument_map, class_name=_class_name, method_name=_method_name)
+            else:
+                __logger.info('WLSDPLY-20045',
+                              init_argument_map, class_name=_class_name, method_name=_method_name)
             per_machine_model_context = __process_args(init_argument_map, is_encryption_supported)
             result = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model).archive()
             if not infra_constants.SUCCESS == result:
