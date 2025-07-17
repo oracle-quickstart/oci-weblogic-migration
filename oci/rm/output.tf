@@ -33,6 +33,9 @@ output "load_balancer_ip" {
 output "is_vcn_peered" {
   value = local.is_vcn_peering
 }
+output "is_mds" {
+  value = local.is_mds
+}
 
 # Terraform State Id
 output "resource_identifier_value" {
