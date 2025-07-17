@@ -294,6 +294,7 @@ def __discover_datasources(model, model_context, helper):
 
         if url is not None or url != '':
             datasource_map[url]="true"
+        #Identifies if database connection string refers to a Multi data Source.
         if dslist is not None or dslist != '':
             template_hash['is_mds']="true"
 
