@@ -103,7 +103,6 @@ run_migration_step "Checking prerequisites" "bash \"$MIGRATION_SCRIPT_DIR/check_
 
 ########################################## SUB_SECTION : Discover Weblogic Domain ###########################################
 run_migration_step "Discovering WebLogic domain" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" wls" "true" "wls_discover"
-#WLS_JSON=$(python3 "$toolHome/lib/python/json_utils.py" get_optional_key "$MIGRATION_DATA_JSON" 'wls_json')
 
 if ! WLS_JSON=$(get_json_key "$MIGRATION_DATA_JSON" "wls_json"); then
   log "error" "Failed to get the json key :WLS_JSON, cannot proceed."
@@ -114,7 +113,6 @@ echo "WLS file created: $WLS_JSON" >> "$MIGRATION_SCRIPT_LOG"
 
 ########################################## SUB_SECTION : Discover Infrastructure ############################################
 run_migration_step "Discovering infrastructure" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" infra $WLS_JSON" "true" "infra_discover"
-#INFRA_JSON=$(python3 "$toolHome/lib/python/json_utils.py" get_optional_key "$MIGRATION_DATA_JSON" 'infra_json')
 
 if ! INFRA_JSON=$(get_json_key "$MIGRATION_DATA_JSON" "infra_json"); then
   log "error" "Failed to get the json key :INFRA_JSON, cannot proceed."
@@ -128,7 +126,7 @@ run_migration_step "Discovering datasources" "bash \"$MIGRATION_SCRIPT_DIR/owm.s
 
 ##################################### SUB_SECTION :  Generate OCI Resource Manager Stacks ###################################
 run_migration_step "Building OCI Resource Manager stack" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" orm $INFRA_JSON" "" "build_oci_orm"
-#STACK_FILE=$(python3 "$toolHome/lib/python/json_utils.py" get_optional_key "$MIGRATION_DATA_JSON" "stack_file")
+
 if ! STACK_FILE=$(get_json_key "$MIGRATION_DATA_JSON" "stack_file"); then
   log "error" "Failed to get the json key :STACK_FILE, cannot proceed."
   log "error" "Migration failed."

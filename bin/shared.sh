@@ -105,46 +105,6 @@ update_migration_data_json() {
     log "error" "Migration failed."
     exit 1
   fi
-
-#  # Creating file with empty JSON object if it doesn't exist or if it an empty file.
-#  if [ ! -f "$MIGRATION_DATA_JSON" ] || [ ! -s "$MIGRATION_DATA_JSON" ]; then
-#    echo '{}' > "$MIGRATION_DATA_JSON"
-#  fi
-#
-#  # Check if JSON metadata file is invalid or corrupted.
-#  if ! jq empty "$MIGRATION_DATA_JSON" >/dev/null 2>>"$MIGRATION_SCRIPT_LOG"; then
-#    log "error" "The metadata file [$MIGRATION_DATA_JSON] is invalid or corrupted."
-#    log "error" "Refer to the README.md for recovery steps, or manually delete the metadata file [$MIGRATION_DATA_JSON] and contents of [$toolHome/out] before re-running migration_script.sh"
-#    log "error" "Migration failed."
-#    exit 1
-#  fi
-#
-#  # Creating a temporary file safely in the logs directory.
-#  local tmpfile
-#  tmpfile=$(mktemp "$toolHome/logs/tmp.XXXXXX") || {
-#    log "error" "Failed to create temporary file in $toolHome/logs/  . See $MIGRATION_SCRIPT_LOG for details." >> "$MIGRATION_SCRIPT_LOG"
-#    log "error" "Run migration_script.sh again after resolving the issue."
-#    log "error" "Migration failed."
-#    exit 1
-#  }
-#
-#  # Updating the key in the JSON file, moving the output in tmpfile.
-#  if ! jq --arg k "$key" --arg v "$value" '.[$k] = $v' "$MIGRATION_DATA_JSON" > "$tmpfile" 2>>"$MIGRATION_SCRIPT_LOG"; then
-#    log "error" "jq failed while updating key [$key] in $MIGRATION_DATA_JSON. See $MIGRATION_SCRIPT_LOG for details."
-#    log "error" "Run migration_script.sh again after resolving the issue."
-#    rm -f "$tmpfile"
-#    log "error" "Migration failed."
-#    exit 1
-#  fi
-#
-#  # Moving back the out
-#  if ! mv "$tmpfile" "$MIGRATION_DATA_JSON"; then
-#    log "error" "Failed to overwrite $MIGRATION_DATA_JSON with updated data. Check write permissions."
-#    log "error" "Run migration_script.sh again after resolving the issue."
-#    rm -f "$tmpfile"
-#    log "error" "Migration failed."
-#    exit 1
-#  fi
 }
 
 is_empty_dir() {
