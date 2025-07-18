@@ -55,7 +55,6 @@ from wlsdeploy.util.exit_code import ExitCode
 from wlsdeploy.util import env_helper
 from wlsdeploy.tool.discover import discoverer
 from wlsdeploy.json import json_translator
-from wlsdeploy.json.json_translator import JsonStreamToPython
 from wlsdeploy.aliases.wlst_modes import WlstModes
 from java.io import ByteArrayInputStream
 
@@ -481,7 +480,7 @@ def __archive_directories(model, model_context, helper):
 
     # parse it
     try:
-        space_status = JsonStreamToPython('SPACE_STATUS_JSON', bais, False).parse()
+        space_status = json_translator.JsonStreamToPython('SPACE_STATUS_JSON', bais, False).parse()
     except Exception, je:
         # je will already be a JsonException if parsing failed
         __logger.warning('Failed to parse SPACE_STATUS_JSON, defaulting to empty map: %s', je)
