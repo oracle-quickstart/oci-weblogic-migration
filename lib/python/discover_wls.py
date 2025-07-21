@@ -803,6 +803,7 @@ def __get_admin_port(configPath, serverName):
     1. If admin port is enabled:
        - Check <administration-port> in admin server block
        - Then <administration-port> at domain level
+       - Return default administration port if not found.
     2. If SSL is enabled:
        - Check 'SecuredExternAdmin' NAP
        - Then <ssl><listen-port>
@@ -826,6 +827,7 @@ def __get_admin_port(configPath, serverName):
         port = __get_domain_level_admin_port(config)
         if port:
             return port
+        return infra_constants.DEFAULT_ADMINISTRATION_PORT
 
     # Step 2: If admin port is disabled or missing, check SSL
     if admin_server:
