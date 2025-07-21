@@ -29,17 +29,17 @@ function log() {
 }
 
 # Script to open ingress port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database.
-eval $(oci-metadata --get is_admin_instance --export)
-eval $(oci-metadata --get open_atp_db_port_1522 --export)
-if [ "$is_admin_instance" = "true" ] && [ "$open_atp_db_port_1522" = "true" ]; then
-    output=$(python3 /opt/scripts/open_atpdb_port.py)
-    exit_code=$?
-    echo "Executed script to open ingress port 1522 in db subnet with exit code [$exit_code]" | log >> $log_file
-    echo "$output" | log >> $log_file
-    if [ $exit_code -ne 0 ]; then
-        echo "Error executing the script to open ingress port 1522 in db subnet. " | log >> $log_file
-    fi
-fi
+#eval $(oci-metadata --get is_admin_instance --export)
+#eval $(oci-metadata --get open_atp_db_port_1522 --export)
+#if [ "$is_admin_instance" = "true" ] && [ "$open_atp_db_port_1522" = "true" ]; then
+#    output=$(python3 /opt/scripts/open_db_port.py)
+#    exit_code=$?
+#    echo "Executed script to open ingress port 1522 in db subnet with exit code [$exit_code]" | log >> $log_file
+#    echo "$output" | log >> $log_file
+#    if [ $exit_code -ne 0 ]; then
+#        echo "Error executing the script to open ingress port 1522 in db subnet. " | log >> $log_file
+#    fi
+#fi
 
 #VCN peering script to update the Weblogic and Database subnet route tables
 eval $(oci-metadata --get is_vcn_peering --export)
@@ -64,6 +64,25 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   on_prem_jdbc_string="${jdbc_string.on_prem}"
   oci_jdbc_string="${jdbc_string.oci}"
   if [ $is_atp == "true" ]; then
+
+    open_atp_db_port_1522="${jdbc_string.atp_db.open_atp_db_port_1522}"
+    atp_db_port=1522
+    atp_db_vcn_compartment_id="${jdbc_string.atp_db.network_compartment_id}"
+    atp_db_vcn_id="${jdbc_string.atp_db.existing_vcn_id}"
+    atp_db_subnet_id="${jdbc_string.atp_db.subnet_id}"
+
+    #Opening port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database, if the checkbox is checked.
+    if [ "$is_admin_instance" = "true" ] && [ "$open_atp_db_port_1522" = "true" ]; then
+        output=$(python3 /opt/scripts/open_db_port.py "$atp_db_port" "$atp_db_vcn_compartment_id" "$atp_db_vcn_id" "$atp_db_subnet_id")
+        exit_code=$?
+        echo "Executed script to open ingress port ${atp_db_port} in db subnet ${atp_db_subnet_id} with exit code [$exit_code]" | log >> $log_file
+        echo "$output" | log >> $log_file
+        if [ $exit_code -ne 0 ]; then
+            echo "Error executing the script to open ingress port ${atp_db_port} in db subnet ${atp_db_subnet_id}" | log >> $log_file
+            exit 1
+        fi
+    fi
+
     #Wallets will be placed in /u01/oracle/wallet/private/<ocid>
     wallet_location=${domain_home}/wlsdeploy/wallet/private/${jdbc_string.db_id}
     echo "<cloud-init><jdbc-datasources><init> creating wallet path $wallet_location" | log >> $log_file
@@ -103,6 +122,25 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     fi
 
   elif [[ $is_atp == "false" ]] && [[ $is_oci_db == "true" ]]; then
+
+    open_oci_db_port="${jdbc_string.oci_db.create_db_ingress_sl}"
+    oci_db_port="${jdbc_string.oci_db.oci_db_port}"
+    oci_db_vcn_compartment_id="${jdbc_string.oci_db.network_compartment_id}"
+    oci_db_vcn_id="${jdbc_string.oci_db.existing_vcn_id}"
+    oci_db_subnet_id="${jdbc_string.oci_db.subnet_id}"
+
+    #Opening port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database, if the checkbox is checked.
+    if [ "$is_admin_instance" = "true" ] && [ "$open_oci_db_port" = "true" ]; then
+        output=$(python3 /opt/scripts/open_db_port.py "$oci_db_port" "$oci_db_vcn_compartment_id" "$oci_db_vcn_id" "$oci_db_subnet_id")
+        exit_code=$?
+        echo "Executed script to open ingress port ${oci_db_port} in db subnet ${oci_db_subnet_id} with exit code [$exit_code]" | log >> $log_file
+        echo "$output" | log >> $log_file
+        if [ $exit_code -ne 0 ]; then
+            echo "Error executing the script to open ingress port ${oci_db_port} in db subnet ${oci_db_subnet_id} " | log >> $log_file
+            exit 1
+        fi
+    fi
+
     files=$(grep -il "$on_prem_jdbc_string" "${domain_home}/config/jdbc/"*.xml)
     for file in $files; do
         output=$(python3 /opt/scripts/ds_update_config_xml_w_db_system.py "$file" "$oci_jdbc_string")
