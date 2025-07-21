@@ -53,7 +53,6 @@ locals {
         protocol = local.all_protocols, port = local.all_ports, destination = local.anywhere, destination_type = local.rule_type_cidr,
       },
     } : {},
-    } : {},
     #TODO: JOI update ports with http listen ports
     local.pub_lb_nsg_enabled ? merge(
       {
