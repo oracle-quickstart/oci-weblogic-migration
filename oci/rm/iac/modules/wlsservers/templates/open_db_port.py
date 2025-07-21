@@ -18,7 +18,7 @@ def get_db_existing_vcn_id():
     return get_attribute("db_existing_vcn_id")
 
 
-def open_db_port(db_port, db_vcn_compartment_id=None, db_vcn_id=None, db_subnet_id=None,
+def open_db_port(db_port=1521, db_vcn_compartment_id=None, db_vcn_id=None, db_subnet_id=None,
                  wls_subnet_cidr=None):
     """
     This method creates a new security list with same service prefix as the instance,

@@ -66,7 +66,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   if [ $is_atp == "true" ]; then
 
     open_atp_db_port_1522="${jdbc_string.atp_db.open_atp_db_port_1522}"
-    atp_db_port=1522
     atp_db_vcn_compartment_id="${jdbc_string.atp_db.network_compartment_id}"
     atp_db_vcn_id="${jdbc_string.atp_db.existing_vcn_id}"
     atp_db_subnet_id="${jdbc_string.atp_db.subnet_id}"
@@ -75,10 +74,10 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     if [ "$is_admin_instance" = "true" ] && [ "$open_atp_db_port_1522" = "true" ]; then
         output=$(python3 /opt/scripts/open_db_port.py "$atp_db_port" "$atp_db_vcn_compartment_id" "$atp_db_vcn_id" "$atp_db_subnet_id")
         exit_code=$?
-        echo "Executed script to open ingress port ${atp_db_port} in db subnet ${atp_db_subnet_id} with exit code [$exit_code]" | log >> $log_file
+        echo "Executed script to open ingress port 1522 in db subnet ${atp_db_subnet_id} with exit code [$exit_code]" | log >> $log_file
         echo "$output" | log >> $log_file
         if [ $exit_code -ne 0 ]; then
-            echo "Error executing the script to open ingress port ${atp_db_port} in db subnet ${atp_db_subnet_id}" | log >> $log_file
+            echo "Error executing the script to open ingress port 1522 in db subnet ${atp_db_subnet_id}" | log >> $log_file
             exit 1
         fi
     fi
