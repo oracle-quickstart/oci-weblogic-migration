@@ -55,10 +55,10 @@ upload_to_oss(){
     log "debug" "Namespace: $tenancy_namespace"
     log "debug" "Bucket: $bucket_name"
     log "debug" "repo: $REPO"
-    domain_name=$(jq --raw-output -c '.topology.Name' "$INVENTORY_FILE")
+    domain_name=$(python3 "$toolHome/lib/python/json_utils.py" read_key "$INVENTORY_FILE" '.topology.Name')
     pre-reqs "$bucket_name" "$compartment_ocid"
     shopt -s nullglob  # expand globs to nothing if no match
-    for machine in $(jq --raw-output -c '.resources.Machines|keys[]' "$INVENTORY_FILE"); do
+    for machine in $(python3 "$toolHome/lib/python/json_utils.py" read_keys "$INVENTORY_FILE"  '.resources.Machines|keys[]'); do
         log "debug" "machine: $machine"
         for f in "$REPO/$machine"*;
         do

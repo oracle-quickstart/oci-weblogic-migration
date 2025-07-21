@@ -22,12 +22,12 @@ toolHome=$(builtin cd "$scriptPath/.."; pwd)
 readonly OWLSMIG_NAME="OCI Weblogic Migration Tool"
 DEPS_DIR=$toolHome/deps
 readonly DEPS_WDT_HOME=$DEPS_DIR/wdt
-readonly DEPS_JQ_HOME=$DEPS_DIR/jq
+#readonly DEPS_JQ_HOME=$DEPS_DIR/jq
 readonly DEPS_OCI_SDK_HOME=$DEPS_DIR/oci
 readonly LOG_DIR=$toolHome/logs
 LOG_FILE="$LOG_DIR/$LOG_FILE_NAME"
 readonly WDT_DOWNLOAD_RELEASE_URL="https://github.com/oracle/weblogic-deploy-tooling/releases/download/release-4.3.5/weblogic-deploy.tar.gz"
-readonly JQ_DOWNLOAD_RELEASE_URL="https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64"
+#readonly JQ_DOWNLOAD_RELEASE_URL="https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64"
 readonly OCI_JAVA_SDK_DOWNLOAD_RELEASE_URL="https://github.com/oracle/oci-java-sdk/releases/download/v3.49.0/oci-java-sdk-3.49.0.zip"
 readonly REPO_ARCHIVE_PATH=${3:-$toolHome/out}
 
@@ -80,49 +80,28 @@ function log(){
 }
 
 update_migration_data_json() {
-  #Creating & updating migration_data.json, a metadata json file using jq tool.
+  #Creating & updating  a metadata json file: migration_data.json.
 
   local key=$1
   local value=$2
   local MIGRATION_DATA_JSON="$toolHome/logs/migration_data.json"
   local MIGRATION_SCRIPT_LOG="$toolHome/logs/migration_script.log"
 
-  # Creating file with empty JSON object if it doesn't exist or if it an empty file.
-  if [ ! -f "$MIGRATION_DATA_JSON" ] || [ ! -s "$MIGRATION_DATA_JSON" ]; then
-    echo '{}' > "$MIGRATION_DATA_JSON"
-  fi
+  # Checks if the metadata, files exists. Creates one if doesn't exists
+  python3 "$toolHome/lib/python/json_utils.py" ensure_json "$MIGRATION_DATA_JSON"
 
   # Check if JSON metadata file is invalid or corrupted.
-  if ! jq empty "$MIGRATION_DATA_JSON" >/dev/null 2>>"$MIGRATION_SCRIPT_LOG"; then
+  if ! python3 "$toolHome/lib/python/json_utils.py" validate_json "$MIGRATION_DATA_JSON" 2>>"$MIGRATION_SCRIPT_LOG"; then
     log "error" "The metadata file [$MIGRATION_DATA_JSON] is invalid or corrupted."
-    log "error" "Refer to the README.md for recovery steps, or manually delete the metadata file [$MIGRATION_DATA_JSON] and contents of [$toolHome/out] before re-running migration_script.sh"
+    log "error" "Check [$MIGRATION_SCRIPT_LOG] for details. Refer to the README.md for recovery steps, or manually delete the metadata file [$MIGRATION_DATA_JSON] and contents of [$toolHome/out] before re-running migration_script.sh"
     log "error" "Migration failed."
     exit 1
   fi
 
-  # Creating a temporary file safely in the logs directory.
-  local tmpfile
-  tmpfile=$(mktemp "$toolHome/logs/tmp.XXXXXX") || {
-    log "error" "Failed to create temporary file in $toolHome/logs/  . See $MIGRATION_SCRIPT_LOG for details." >> "$MIGRATION_SCRIPT_LOG"
+  # Update the file using Python script
+  if ! python3 "$toolHome/lib/python/json_utils.py" update_json "$MIGRATION_DATA_JSON" "$key" "$value" >>"$MIGRATION_SCRIPT_LOG" 2>&1; then
+    log "error" "Python script failed to update key [$key] in $MIGRATION_DATA_JSON. See $MIGRATION_SCRIPT_LOG for details."
     log "error" "Run migration_script.sh again after resolving the issue."
-    log "error" "Migration failed."
-    exit 1
-  }
-
-  # Updating the key in the JSON file, moving the output in tmpfile.
-  if ! jq --arg k "$key" --arg v "$value" '.[$k] = $v' "$MIGRATION_DATA_JSON" > "$tmpfile" 2>>"$MIGRATION_SCRIPT_LOG"; then
-    log "error" "jq failed while updating key [$key] in $MIGRATION_DATA_JSON. See $MIGRATION_SCRIPT_LOG for details."
-    log "error" "Run migration_script.sh again after resolving the issue."
-    rm -f "$tmpfile"
-    log "error" "Migration failed."
-    exit 1
-  fi
-
-  # Moving back the out
-  if ! mv "$tmpfile" "$MIGRATION_DATA_JSON"; then
-    log "error" "Failed to overwrite $MIGRATION_DATA_JSON with updated data. Check write permissions."
-    log "error" "Run migration_script.sh again after resolving the issue."
-    rm -f "$tmpfile"
     log "error" "Migration failed."
     exit 1
   fi

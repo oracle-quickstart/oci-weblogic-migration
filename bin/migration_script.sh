@@ -25,7 +25,7 @@ run_migration_step() {
   #arg1: step name.
   #arg2: script command.
   #arg3: (Optional) Allow exit code 1 to pass (Used in the case of WDT).(default : false).
-  #arg4: (Optional) json key for the medata (migration_data.json) file. (default: $(step_name)_status).
+  #arg4: (Optional) json key for the metadata (migration_data.json) file. (default: $(step_name)_status).
   #arg5: (Optional) returns the exit code if set to true. (default : false).
 
   local step_name="$1"
@@ -36,7 +36,7 @@ run_migration_step() {
 
   # Skip if already marked as success, continues otherwise.
   local status=""
-  [ -f "$MIGRATION_DATA_JSON" ] && status=$(jq -r --arg k "$json_key" '.[$k] // empty' "$MIGRATION_DATA_JSON")
+  status=$(python3 "$toolHome/lib/python/json_utils.py" get_optional_key "$MIGRATION_DATA_JSON" "$json_key")
   if [ "$status" = "success" ]; then
     log "info" "\"$step_name\" already completed successfully. Skipping."
     return
@@ -74,6 +74,25 @@ run_migration_step() {
   echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
 }
 
+get_json_key() {
+  local file_path="$1"
+  local key="$2"
+  local value
+  local output
+
+  # Capture both stdout and stderr
+  output=$(python3 "$toolHome/lib/python/json_utils.py" read_key "$file_path" "$key" 2>&1)
+  exit_code=$?
+
+  if [ $exit_code -ne 0 ]; then
+    log "error" "Failed to extract key '$key' from JSON file '$file_path': $output. See $MIGRATION_SCRIPT_LOG for details."
+    return $exit_code
+  fi
+
+  echo "$output"
+}
+
+
 ########################################## SECTION : Install Dependencies ###################################################
 run_migration_step  "Installing dependencies" "bash \"$MIGRATION_SCRIPT_DIR/install_dependencies.sh\"" "" "install_dependencies"
 
@@ -84,18 +103,36 @@ run_migration_step "Checking prerequisites" "bash \"$MIGRATION_SCRIPT_DIR/check_
 
 ########################################## SUB_SECTION : Discover Weblogic Domain ###########################################
 run_migration_step "Discovering WebLogic domain" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" wls" "true" "wls_discover"
-WLS_JSON=$(jq -r '.wls_json' "$MIGRATION_DATA_JSON")
+
+if ! WLS_JSON=$(get_json_key "$MIGRATION_DATA_JSON" "wls_json"); then
+  log "error" "Failed to get the json key :WLS_JSON, cannot proceed."
+  log "error" "Migration failed."
+  exit 1
+fi
+echo "WLS file created: $WLS_JSON" >> "$MIGRATION_SCRIPT_LOG"
 
 ########################################## SUB_SECTION : Discover Infrastructure ############################################
 run_migration_step "Discovering infrastructure" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" infra $WLS_JSON" "true" "infra_discover"
-INFRA_JSON=$(jq -r '.infra_json' "$MIGRATION_DATA_JSON")
+
+if ! INFRA_JSON=$(get_json_key "$MIGRATION_DATA_JSON" "infra_json"); then
+  log "error" "Failed to get the json key :INFRA_JSON, cannot proceed."
+  log "error" "Migration failed."
+  exit 1
+fi
+echo "INFRA file created: $INFRA_JSON" >> "$MIGRATION_SCRIPT_LOG"
 
 ##################################### SUB_SECTION : Discovery Database Connections ##########################################
 run_migration_step "Discovering datasources" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" ds $INFRA_JSON" "true" "discover_datasources"
 
 ##################################### SUB_SECTION :  Generate OCI Resource Manager Stacks ###################################
 run_migration_step "Building OCI Resource Manager stack" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" orm $INFRA_JSON" "" "build_oci_orm"
-STACK_FILE=$(jq -r '.stack_file' "$MIGRATION_DATA_JSON")
+
+if ! STACK_FILE=$(get_json_key "$MIGRATION_DATA_JSON" "stack_file"); then
+  log "error" "Failed to get the json key :STACK_FILE, cannot proceed."
+  log "error" "Migration failed."
+  exit 1
+fi
+
 log "info" "Stack file created: $STACK_FILE"
 
 ########################################## SUB_SECTION : Archive Weblogic Domain ############################################
