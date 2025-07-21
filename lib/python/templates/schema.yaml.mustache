@@ -75,6 +75,7 @@ variableGroups:
       - use_defined_tags
       - tag_namespace
       - wlsserver_tags
+      - is_mds
 
   - title: "Stack Configuration"
     variables:
@@ -990,6 +991,12 @@ variables:
   #Datasources
     # Datasources Flags
 
+  is_mds:
+    type: boolean
+    required: false
+    visible: false
+    description: Indicates if database connection string refers to a Multi data Source.
+
   update_any_ds:
     type: boolean
     required: false
@@ -1026,6 +1033,8 @@ variables:
       and:
         - ${update_any_ds}
         - edit_ds_{{{datasourceName}}}
+        - not:
+            - ${is_mds}
     type: enum
     title: "Database Strategy"
     description: "Choose the database strategy for WebLogic Server or custom jdbc string"
