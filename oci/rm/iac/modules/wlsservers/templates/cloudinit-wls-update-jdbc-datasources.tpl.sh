@@ -57,7 +57,7 @@ fi
 cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/jdbc" | log >> $log_file ; exit 1)
 
 
-%{ for config_key, jdbc_string in datasources }
+%{ for jdbc_string in datasources }
   is_atp=${jdbc_string.is_atp}
   is_oci_db=${jdbc_string.is_oci_db}
   is_custom_jdbc=${jdbc_string.custom_jdbc}
@@ -65,10 +65,10 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   oci_jdbc_string="${jdbc_string.oci}"
   if [ $is_atp == "true" ]; then
 
-    open_atp_db_port_1522="${jdbc_string.atp_db.open_atp_db_port_1522}"
-    atp_db_vcn_compartment_id="${jdbc_string.atp_db.network_compartment_id}"
-    atp_db_vcn_id="${jdbc_string.atp_db.existing_vcn_id}"
-    atp_db_subnet_id="${jdbc_string.atp_db.subnet_id}"
+    open_atp_db_port_1522="${jdbc_string.open_atp_port}"
+    atp_db_vcn_compartment_id="${jdbc_string.atp_network_comp}"
+    atp_db_vcn_id="${jdbc_string.atp_vcn_id}"
+    atp_db_subnet_id="${jdbc_string.atp_subnet_id}"
 
     #Opening port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database, if the checkbox is checked.
     if [ "$is_admin_instance" = "true" ] && [ "$open_atp_db_port_1522" = "true" ]; then
@@ -87,7 +87,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     echo "<cloud-init><jdbc-datasources><init> creating wallet path $wallet_location" | log >> $log_file
     output=$(sudo -E -u ${user} mkdir -p "$wallet_location")
     echo $output | log >> $log_file
-    atp_wallet_password=$(python3 -c'import sys; sys.path.append("/opt/scripts"); import atp_db_util; wallet_password = atp_db_util.get_md5_hash("${jdbc_string.db_id}" + ":" + "${jdbc_string.atp_db.db_name}") + "Z%%"; print(wallet_password)')
+    atp_wallet_password=$(python3 -c'import sys; sys.path.append("/opt/scripts"); import atp_db_util; wallet_password = atp_db_util.get_md5_hash("${jdbc_string.db_id}" + ":" + "${jdbc_string.atp_name}") + "Z%%"; print(wallet_password)')
     wallet_pass_exit_code=$?
     download=$(sudo -E -u ${user} echo "$${atp_wallet_password}" | python3 /opt/scripts/atp_db_util.py ${jdbc_string.db_id} "$wallet_location" 2>&1 )
     download_exit_code=$?
@@ -108,7 +108,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
         fi
     done
     # Find if jspconfig files exist and replace jdbc string if found by this database
-    connection_url="jdbc:oracle:thin:@${jdbc_string.atp_db.db_name}_${jdbc_string.atp_db.db_level}?TNS_ADMIN=$wallet_location"
+    connection_url="jdbc:oracle:thin:@${jdbc_string.atp_name}_${jdbc_string.atp_level}?TNS_ADMIN=$wallet_location"
     output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$connection_url|g");
     exit_code=$?
     echo "Executed datasource ATP update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
@@ -122,11 +122,11 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
 
   elif [[ $is_atp == "false" ]] && [[ $is_oci_db == "true" ]]; then
 
-    open_oci_db_port="${jdbc_string.oci_db.create_db_ingress_sl}"
-    oci_db_port="${jdbc_string.oci_db.oci_db_port}"
-    oci_db_vcn_compartment_id="${jdbc_string.oci_db.network_compartment_id}"
-    oci_db_vcn_id="${jdbc_string.oci_db.existing_vcn_id}"
-    oci_db_subnet_id="${jdbc_string.oci_db.subnet_id}"
+    open_oci_db_port="${jdbc_string.oci_db_create_ingress_sl}"
+    oci_db_port="${jdbc_string.oci_port}"
+    oci_db_vcn_compartment_id="${jdbc_string.oci_network_comp}"
+    oci_db_vcn_id="${jdbc_string.oci_vcn_id}"
+    oci_db_subnet_id="${jdbc_string.oci_subnet_id}"
 
     #Opening port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database, if the checkbox is checked.
     if [ "$is_admin_instance" = "true" ] && [ "$open_oci_db_port" = "true" ]; then
