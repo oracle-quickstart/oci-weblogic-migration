@@ -345,15 +345,15 @@ module "network" {
 
 /* Create LPGs for VCN Peering */
 module "lpg" {
-  count                     = var.is_vcn_peering ? 1 : 0
+  count                     = var.datasources == null ? 0 : alltrue([for _, v in datasources : v.is_vcn_peering])
   source                    = "./modules/network/vcn-peering"
   compartment_id            = local.network_compartment_id
   vcn_id                    = local.vcn_id
-  db_network_compartment_id = var.db_network_compartment_id
-  db_existing_vcn_id        = var.db_existing_vcn_id
   wlsserver_subnet_id       = try(module.network-wls-private-subnet.subnet_id, "")
-  db_subnet_id              = var.db_subnet_id
-  lpg_name                  = format("lpg-%v", local.state_id)
+  db_network_compartment_id = var.datasources[count.index].db_network_compartment_id
+  db_existing_vcn_id        = var.datasources[count.index].db_existing_vcn_id
+  db_subnet_id              = var.datasources[count.index].db_subnet_id
+  lpg_name                  = format("lpg-%v-%v", local.state_id, count.index)
 }
 
 # VCN
