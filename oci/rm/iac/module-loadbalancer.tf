@@ -84,7 +84,7 @@ module "load-balancer-managed_server-backends" {
   backend_ports = local.wls_all_ports_application_traffic_servers
   #If WLS Servers (static or dynamic) has multiple listen ports, setting LB backend port to 0 to force health check to validate each instance ip+port availability. Else defaults to Managed Server Static listen Port
   #health_check_backend_port = try(one(local.wls_dynamic_server_app_traffic_port),0) != try(one(local.wls_managed_server_listen_ports),0) ? local.OCI_LB_HEALTH_CHECK_PORT_DEFAULT : try(one(local.wls_managed_server_listen_ports),local.OCI_LB_HEALTH_CHECK_PORT_DEFAULT)
-  health_check_backend_port = length(local.wls_all_ports_application_traffic_servers) > 0 ? try(one(local.wls_all_ports_application_traffic_servers), 0) : 0
+  health_check_backend_port = length(local.wls_all_ports_application_traffic_servers) > 0 ? local.wls_all_ports_application_traffic_servers[0] : 0
 }
 
 #module "load-balancer-dynamic_servers-backends" {

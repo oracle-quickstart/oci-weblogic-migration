@@ -2,7 +2,7 @@
 
 variable "create_demo_certificate" {default = false}
 variable "load_balancer_shape" {
-  default = "100Mbps"  #TODO: JOI : remove and set to flexible
+  default = "flexible"  #TODO: JOI : remove and set to flexible
 }
 variable "lb_max_bandwidth" {
   default = "100"
