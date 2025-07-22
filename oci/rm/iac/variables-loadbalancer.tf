@@ -18,7 +18,7 @@ variable "add_load_balancer" {
 variable "lb_max_bandwidth" {
   type        = number
   description = "Bandwidth in Mbps that determines the maximum bandwidth (ingress plus egress) that the load balancer can achieve"
-  default =  800
+  default =  100
 }
 
 variable "lb_min_bandwidth" {
