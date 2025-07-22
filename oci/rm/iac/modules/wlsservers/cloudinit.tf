@@ -278,33 +278,6 @@ data "cloudinit_config" "wlsservers" {
     }
   }
 
-  datasources = [
-    for ds_key, ds_val in var.wls_datasources_config : {
-      index             = ds_key
-      on_prem           = ds_val.on_prem
-      oci               = ds_val.oci
-      is_atp            = ds_val.is_atp
-      is_oci_db         = ds_val.is_oci_db
-      db_id             = ds_val.db_id
-      atp_type          = try(ds_val.atp_db.atp_type, "")
-      atp_compartment   = try(ds_val.atp_db.compartment_id, "")
-      atp_private       = try(ds_val.atp_db.is_atp_with_private_endpoints, false)
-      atp_vcn           = try(ds_val.atp_db.existing_vcn_id, "")
-      atp_subnet_id     = try(ds_val.atp_db.subnet_id, "")
-      atp_name          = try(ds_val.atp_db.db_name, "")
-      atp_level         = try(ds_val.atp_db.db_level, "")
-      oci_compartment   = try(ds_val.oci_db.compartment_id, "")
-      oci_network_comp  = try(ds_val.oci_db.network_compartment_id, "")
-      oci_vcn           = try(ds_val.oci_db.existing_vcn_id, "")
-      oci_subnet_id     = try(ds_val.oci_db.subnet_id, "")
-      oci_port          = try(ds_val.oci_db.oci_db_port, "")
-      custom_jdbc       = try(ds_val.custom_jdbc, false)
-      connection_string = try(ds_val.connection_string, "")
-    }
-  ]
-
-
-
   # WLS config updates. 8x-filename.sh or .yml
 
   # Update Datasources
