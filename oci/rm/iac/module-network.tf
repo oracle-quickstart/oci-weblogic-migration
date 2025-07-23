@@ -72,17 +72,24 @@ locals {
     if var.assign_dns
   }
 
-  db_lpg_ids = {
+  db_lpg_ids = jsonencode({
     for k, v in var.datasources :
-    k => module.lpg[k].db_lpg
-    if v.is_vcn_peering
-  }
+    k => (
+    v.is_vcn_peering ?
+    try(module.lpg[k].db_lpg, null) :
+    null
+    )
+  })
 
-  wls_lpg_ids = {
+
+  wls_lpg_ids = jsonencode({
     for k, v in var.datasources :
-    k => module.lpg[k].wls_lpg
-    if v.is_vcn_peering
-  }
+    k => (
+    v.is_vcn_peering ?
+    try(module.lpg[k].db_lpg, null) :
+    null
+    )
+  })
 }
 
 module "vcn" {

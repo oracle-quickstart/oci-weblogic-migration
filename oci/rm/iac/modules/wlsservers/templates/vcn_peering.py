@@ -37,8 +37,8 @@ def establish_peering_between_lpgs():
     Establishes peering connection between LPGs
     """
     try:
-        wls_lpg_id = get_wls_lpg_id()
-        db_lpg_id = get_db_lpg_id()
+        wls_lpg_id = get_wls_lpg_map()
+        db_lpg_id = get_db_lpg_map()
         connect_local_peering_gateways_response = core_client.connect_local_peering_gateways(
             local_peering_gateway_id=wls_lpg_id,
             connect_local_peering_gateways_details=oci.core.models.ConnectLocalPeeringGatewaysDetails(
@@ -93,7 +93,7 @@ def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
 
 if __name__ == '__main__':
     db_subnet_id = sys.argv[1]
-    config_key   = sys.argv[2]
+    config_key = sys.argv[2]
     wls_subnet = get_subnet_details(get_wls_subnet_id())
     wls_rt_id = wls_subnet.route_table_id
     wls_lpg_map = get_wls_lpg_map()

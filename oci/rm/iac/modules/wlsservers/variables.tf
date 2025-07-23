@@ -62,8 +62,8 @@ variable "wlsserver_subnet_id" { type = string }
 variable "wlsserver_vcn_id" { type = string }
 #variable "is_vcn_peering" { type = bool }
 #variable "db_subnet_id" { type = string }
-variable "wlsserver_lpg" { type = any }
-variable "db_lpg" { type = any }
+variable "wlsserver_lpg" { type = string }
+variable "db_lpg" { type = string }
 
 # Weblogic Server pools is a TF grouping to defined common defaults for different Weblogic Machines.
 variable "wlsserver_pools" {
