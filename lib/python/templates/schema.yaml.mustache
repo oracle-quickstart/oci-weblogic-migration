@@ -264,9 +264,9 @@ variables:
           - ${create_vcn}
   vcn_name:
     visible:
-    and:
-      - ${create_vcn}
-      - ${orm_create_mode}
+      and:
+        - ${create_vcn}
+        - ${orm_create_mode}
     type: string
     title: "Virtual Cloud Network Name"
     description: Display name of the new Virtual Cloud Network (VCN). Defaults to 'wls' suffixed with the generated Terraform 'state_id' value.
@@ -283,9 +283,9 @@ variables:
     required: false
   vcn_cidrs:
     visible:
-    and:
-      - ${create_vcn}
-      - ${orm_create_mode}
+      and:
+        - ${create_vcn}
+        - ${orm_create_mode}
     type: string
     title: "Virtual Cloud Network CIDR"
     description: "The CIDR to assign to the new Virtual Cloud Network (VCN)."
@@ -295,9 +295,9 @@ variables:
 
   lockdown_default_seclist:
     visible:
-    and:
-      - ${create_vcn}
-      - ${orm_create_mode}
+      and:
+        - ${create_vcn}
+        - ${orm_create_mode}
     type: boolean
     title: Secure default security list
     required: true
@@ -366,9 +366,9 @@ variables:
 
   bastion_subnet_cidr:
     visible:
-       and :
-            - ${orm_create_mode}
-            - ${create_bastion}
+      and :
+        - ${orm_create_mode}
+        - ${create_bastion}
     type: string
     title: "Bastion Host Subnet CIDR"
     description: "The new subnet's CIDR should not overlap with any other subnet CIDRs. In case of an existing VCN, the new subnet's CIDR should not overlap with any other subnet CIDRs."
@@ -379,9 +379,9 @@ variables:
 
   bastion_shape:
     visible:
-       and :
-            - ${orm_create_mode}
-            - ${create_bastion}
+      and :
+        - ${orm_create_mode}
+        - ${create_bastion}
     type: oci:core:instanceshapewithflex:name
     title: Bastion Host Shape
     description: The shape for Bastion host.
@@ -429,9 +429,9 @@ variables:
 
   lb_max_bandwidth:
     visible:
-    and:
-      - ${add_load_balancer}
-      - ${orm_create_mode}
+      and:
+        - ${add_load_balancer}
+        - ${orm_create_mode}
     type: enum
     title: Flexible Public Load Balancer Max Bandwidth
     description: "Choose Maximum Shape for Flex Load Balancer."
@@ -446,9 +446,9 @@ variables:
 
   lb_min_bandwidth:
     visible:
-    and:
-      - ${add_load_balancer}
-      - ${orm_create_mode}
+      and:
+        - ${add_load_balancer}
+        - ${orm_create_mode}
     type: enum
     title: Flexible Public Load Balancer Min Bandwidth
     description: "Choose Minimum Shape for Flex Load Balancer."
@@ -476,9 +476,9 @@ variables:
 
   pub_lb_subnet_cidr:
     visible:
-    and:
-      - ${add_load_balancer}
-      - ${orm_create_mode}
+      and:
+        - ${add_load_balancer}
+        - ${orm_create_mode}
     type: string
     title: Load Balancer Subnet CIDR
     description: "The CIDR of the new subnet to create for the load balancer. The new subnet CIDR should not overlap with any other subnet CIDRs."
@@ -591,21 +591,21 @@ variables:
     visible: false
 
   terms_and_conditions:
-  visible:
-    and:
-      - ${orm_create_mode}
-      - or:
+    visible:
+      and:
+        - ${orm_create_mode}
+        - or:
           - eq:
-              - wlsserver_image_type
-              - "Oracle WebLogic Server Enterprise Edition UCM Image"
+            - wlsserver_image_type
+            - "Oracle WebLogic Server Enterprise Edition UCM Image"
           - eq:
-              - wlsserver_image_type
-              - "Oracle Weblogic Suite UCM Image"
-  type: boolean
-  default: false
-  title: "I have reviewed and accept the Oracle Terms of Use"
-  description: "I have reviewed and accept the <a target=\"_blank\" href=\"https://objectstorage.us-phoenix-1.oraclecloud.com/n/axxu7cichsnt/b/terms/o/wlsoci_ee_terms_and_conditions.txt\">Oracle terms of use</a>"
-  required: true
+            - wlsserver_image_type
+            - "Oracle Weblogic Suite UCM Image"
+    type: boolean
+    default: false
+    title: "I have reviewed and accept the Oracle Terms of Use"
+    description: "I have reviewed and accept the <a target=\"_blank\" href=\"https://objectstorage.us-phoenix-1.oraclecloud.com/n/axxu7cichsnt/b/terms/o/wlsoci_ee_terms_and_conditions.txt\">Oracle terms of use</a>"
+    required: true
 
   wlsserver_block_volume_type:
     title: Block volume type
@@ -1004,6 +1004,7 @@ outputGroups:
   - title: "Terraform Metadata"
     outputs:
       - resource_identifier_value
+      
 outputs:
   dynamic_group_ids:
     title: Dynamic groups
@@ -1064,4 +1065,3 @@ outputs:
   resource_identifier_value:
     title: Terraform State Identifier
     type: string
-
