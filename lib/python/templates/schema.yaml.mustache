@@ -330,13 +330,19 @@ variables:
   #Network Other
 
   allow_wlsserver_ssh_access:
-    visible: ${orm_create_mode}
+    visible:
+      and :
+        - ${orm_create_mode}
+        - ${create_bastion}
     type: boolean
     title: Allow Weblogic Server SSH access 
     default: true
     required: true
   allow_adminserver_ssh_access:
-    visible: ${orm_create_mode}
+    visible:
+      and :
+        - ${orm_create_mode}
+        - ${create_bastion}
     type: boolean
     title: Allow Adminserver Server SSH access
     default: true
