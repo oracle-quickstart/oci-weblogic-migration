@@ -82,7 +82,7 @@ if __name__ == '__main__':
     # db_subnet = get_subnet_details(db_subnet_id)
     # db_vcn_compartment_id = db_subnet.compartment_id
 
-    db_port = sys.argv[1]
+    db_port = int(sys.argv[1])
     db_vcn_compartment_id=sys.argv[2]
     db_vcn_id=sys.argv[3]
     db_subnet_id=sys.argv[4]

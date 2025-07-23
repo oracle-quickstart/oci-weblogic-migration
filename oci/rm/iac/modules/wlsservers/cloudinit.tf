@@ -204,7 +204,7 @@ data "cloudinit_config" "wlsservers" {
            },
            {
              content  = file("${path.module}/templates/open_db_port.py")
-             path     = "/opt/scripts/open_atpdb_port.py"
+             path     = "/opt/scripts/open_db_port.py"
            },
            {
              content  = file("${path.module}/templates/atp_db_util.py")
