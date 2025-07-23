@@ -71,6 +71,18 @@ locals {
     k => coalesce(lookup(v, "dns_label", null), "${substr(k, 0, 2)}${local.state_id}")
     if var.assign_dns
   }
+
+  db_lpg_ids = {
+    for k, v in var.datasources :
+    k => module.lpg[k].db_lpg
+    if v.is_vcn_peering
+  }
+
+  wls_lpg_ids = {
+    for k, v in var.datasources :
+    k => module.lpg[k].wls_lpg
+    if v.is_vcn_peering
+  }
 }
 
 module "vcn" {
@@ -345,15 +357,15 @@ module "network" {
 
 /* Create LPGs for VCN Peering */
 module "lpg" {
-  count                     = var.datasources == null ? 0 : alltrue([for _, v in datasources : v.is_vcn_peering])
+  for_each                  = { for k, v in var.datasources : k => v if v.is_vcn_peering }
   source                    = "./modules/network/vcn-peering"
   compartment_id            = local.network_compartment_id
   vcn_id                    = local.vcn_id
   wlsserver_subnet_id       = try(module.network-wls-private-subnet.subnet_id, "")
-  db_network_compartment_id = var.datasources[count.index].db_network_compartment_id
-  db_existing_vcn_id        = var.datasources[count.index].db_existing_vcn_id
-  db_subnet_id              = var.datasources[count.index].db_subnet_id
-  lpg_name                  = format("lpg-%v-%v", local.state_id, count.index)
+  db_network_compartment_id = each.value.db_network_compartment_id
+  db_existing_vcn_id        = each.value.db_existing_vcn_id
+  db_subnet_id              = each.value.db_subnet_id
+  lpg_name                  = format("lpg-%s-%s", local.state_id, each.key)
 }
 
 # VCN

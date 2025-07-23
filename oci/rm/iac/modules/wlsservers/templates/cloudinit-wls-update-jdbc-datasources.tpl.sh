@@ -29,17 +29,8 @@ function log() {
 }
 
 #VCN peering script to update the Weblogic and Database subnet route tables
-eval $(oci-metadata --get is_vcn_peering --export)
+#eval $(oci-metadata --get is_vcn_peering --export)
 eval $(oci-metadata --get is_admin_instance --export)
-if [ "$is_admin_instance" = "true" ] && [ "$is_vcn_peering" = "true" ]; then
-    output=$(python3 /opt/scripts/vcn_peering.py)
-    exit_code=$?
-    echo "Executed VCN peering script with exit code [$exit_code]" | log >> $log_file
-    echo "$output" | log >> $log_file
-    if [ $exit_code -ne 0 ]; then
-        echo "Error executing VCN peering script. " | log >> $log_file
-    fi
-fi
 
 cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/jdbc" | log >> $log_file ; exit 1)
 
@@ -50,6 +41,20 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   is_custom_jdbc=${jdbc_string.custom_jdbc}
   on_prem_jdbc_string="${jdbc_string.on_prem}"
   oci_jdbc_string="${jdbc_string.oci}"
+  is_vcn_peering="${tostring(jdbc_string.is_vcn_peering)}"
+  echo "$is_vcn_peering"
+
+  if [ "$is_admin_instance" == "true" ] && [ "$is_vcn_peering" == "true" ]; then
+      db_subnet_id="${tostring(jdbc_string.db_subnet_id)}"
+      echo "$db_subnet_id"
+      output=$(python3 /opt/scripts/vcn_peering.py "${db_subnet_id}" "${config_key}")
+      exit_code=$?
+      echo "Executed VCN peering script with exit code [$exit_code]" for datasource $config_key| log >> $log_file
+      echo "$output" | log >> $log_file
+      if [ $exit_code -ne 0 ]; then
+          echo "Error executing VCN peering script. " | log >> $log_file
+      fi
+  fi
   if [ $is_atp == "true" ]; then
     #Wallets will be placed in /u01/oracle/wallet/private/<ocid>
     wallet_location=${domain_home}/wlsdeploy/wallet/private/${jdbc_string.db_id}
@@ -135,4 +140,3 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   fi
 
 %{ endfor ~}
-

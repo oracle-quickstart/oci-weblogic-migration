@@ -16,16 +16,16 @@ database_client = oci.database.DatabaseClient(config={}, signer=principal)
 core_client = oci.core.VirtualNetworkClient(config={}, signer=principal)
 virtual_network_composite_operations = oci.core.VirtualNetworkClientCompositeOperations(core_client)
 
-def get_db_subnet_id():
-    return get_attribute("db_subnet_id")
+# def get_db_subnet_id():
+#     return get_attribute("db_subnet_id")
 
-def get_db_lpg_id():
+def get_db_lpg_map():
     return get_attribute("db_lpg")
 
 def get_wls_subnet_id():
     return get_attribute("wlsserver_subnet_id")
 
-def get_wls_lpg_id():
+def get_wls_lpg_map():
     return get_attribute("wlsserver_lpg")
 
 def get_subnet_details(subnet_id):
@@ -92,13 +92,17 @@ def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
         sys.exit(-1)
 
 if __name__ == '__main__':
+    db_subnet_id = sys.argv[1]
+    config_key   = sys.argv[2]
     wls_subnet = get_subnet_details(get_wls_subnet_id())
     wls_rt_id = wls_subnet.route_table_id
-    wls_lpg_id = get_wls_lpg_id()
+    wls_lpg_map = get_wls_lpg_map()
+    wls_lpd_id = wls_lpg_map[config_key]
     wls_subnet_cidr_block = wls_subnet.cidr_block
-    db_subnet = get_subnet_details(get_db_subnet_id())
+    db_subnet = get_subnet_details(db_subnet_id)
     db_rt_id = db_subnet.route_table_id
-    db_lpg_id = get_db_lpg_id()
+    db_lpg_map = get_db_lpg_map()
+    db_lpg_id = db_lpg_map[config_key]
     db_subnet_cidr_block = db_subnet.cidr_block
 
     #Establish peering connection between LPGs of weblogic and database VCNs
