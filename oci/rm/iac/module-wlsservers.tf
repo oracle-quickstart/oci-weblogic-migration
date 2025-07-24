@@ -92,10 +92,11 @@ module "wlsservers" {
   adminserver_nsg_ids = coalescelist([module.network.adminserver_nsg_id])
   wlsserver_subnet_id = try(module.network-wls-private-subnet.subnet_id, "")
   wlsserver_vcn_id    = var.create_vcn ? try(one(module.vcn[*].vcn_id), var.vcn_id) : var.vcn_id
-#  db_lpg              = element(concat(module.lpg[*].db_lpg, [""]), 0)
-#  wlsserver_lpg       = element(concat(module.lpg[*].wls_lpg, [""]), 0)
-  db_lpg              = local.db_lpg_ids
-  wlsserver_lpg       = local.wls_lpg_ids
+
+  db_lpgs             = local.db_lpg_ids
+  wlsserver_lpgs      = local.wls_lpg_ids
+  db_subnet_ids       = local.db_subnet_ids
+  is_vcn_peering      = local.is_vcn_peering
   wlsserver_ports     = local.wls_domain_all_discovered_ports
   adminserver_ports   = local.wls_admin_server_ports
 

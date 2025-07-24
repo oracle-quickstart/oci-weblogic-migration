@@ -81,15 +81,23 @@ locals {
     )
   })
 
-
   wls_lpg_ids = jsonencode({
     for k, v in var.datasources :
     k => (
     v.is_vcn_peering ?
-    try(module.lpg[k].db_lpg, null) :
+    try(module.lpg[k].wls_lpg, null) :
     null
     )
   })
+
+  db_subnet_ids = jsonencode({
+    for k, v in var.datasources :
+    k => (
+    v.is_vcn_peering ? v.db_subnet_id : null
+    )
+  })
+
+  is_vcn_peering = var.datasources == null ? false : anytrue([for _, v in var.datasources : v.is_vcn_peering])
 }
 
 module "vcn" {
