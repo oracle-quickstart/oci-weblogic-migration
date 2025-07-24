@@ -72,30 +72,21 @@ locals {
     if var.assign_dns
   }
 
-  db_lpg_ids = jsonencode({
-    for k, v in var.datasources :
-    k => (
-    v.is_vcn_peering ?
-    try(module.lpg[k].db_lpg, null) :
-    null
-    )
-  })
+  dblpg_ids_map = module.lpg.dblpg_ids
+  wlslpg_ids_map = module.lpg.wlslpg_ids
 
-  wls_lpg_ids = jsonencode({
-    for k, v in var.datasources :
-    k => (
-    v.is_vcn_peering ?
-    try(module.lpg[k].wls_lpg, null) :
-    null
-    )
-  })
+  # Create JSON strings for metadata
+  db_lpg_ids  = jsonencode(local.dblpg_ids_map)
+  wls_lpg_ids = jsonencode(local.wlslpg_ids_map)
 
-  db_subnet_ids = jsonencode({
-    for k, v in var.datasources :
-    k => (
-    v.is_vcn_peering ? v.db_subnet_id : null
-    )
-  })
+  db_subnet_ids = jsonencode(
+    var.datasources != null ? {
+      for k, v in var.datasources :
+      k => (
+      v.is_vcn_peering ? v.db_subnet_id : null
+      )
+    } : {}
+  )
 
   is_vcn_peering = var.datasources == null ? false : anytrue([for _, v in var.datasources : v.is_vcn_peering])
 }
@@ -371,15 +362,13 @@ module "network" {
 
 /* Create LPGs for VCN Peering */
 module "lpg" {
-  for_each                  = { for k, v in var.datasources : k => v if v.is_vcn_peering }
+  count                     = var.datasources != null && local.is_vcn_peering ? 1 : 0
   source                    = "./modules/network/vcn-peering"
   compartment_id            = local.network_compartment_id
   vcn_id                    = local.vcn_id
   wlsserver_subnet_id       = try(module.network-wls-private-subnet.subnet_id, "")
-  db_network_compartment_id = each.value.db_network_compartment_id
-  db_existing_vcn_id        = each.value.db_existing_vcn_id
-  db_subnet_id              = each.value.db_subnet_id
-  lpg_name                  = format("lpg-%s-%s", local.state_id, each.key)
+  lpg_name                  = format("lpg-%v", local.state_id)
+  datasources               = var.datasources
 }
 
 # VCN

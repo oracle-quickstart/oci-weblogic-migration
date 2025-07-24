@@ -1,14 +1,10 @@
 # Copyright (c) 2025, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-variable "db_existing_vcn_id" {
-  type        = string
-  description = "The OCID of the VCN used by the ATP database private endpoint"
-}
-
-variable "db_network_compartment_id" {
-  type        = string
-  description = "The OCID of the compartment in which the DB System VCN is found"
+variable "datasources" {
+  type        = any
+  default     = {}
+  description = "Map with Datasource on-prem text and new oci value. "
 }
 
 variable "compartment_id" {
@@ -17,7 +13,7 @@ variable "compartment_id" {
 }
 
 variable "vcn_id" {
-  description = "Optional ID of existing VCN. Takes priority over vcn_name filter. Ignored when `create_vcn = true`."
+  description = "Weblogic Virtual Cloud Network."
   type        = string
 }
 
@@ -28,10 +24,4 @@ variable "lpg_name" {
 
 variable "wlsserver_subnet_id" {
   type    = string
-}
-
-
-variable "db_subnet_id" {
-  type        = string
-  description = "The OCID of the subnet for the OCI DB or ATP DB (when using private endpoint)"
 }

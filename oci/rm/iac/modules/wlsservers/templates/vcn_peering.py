@@ -91,8 +91,13 @@ def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
         sys.exit(-1)
 
 if __name__ == '__main__':
-    wlsserver_lpg_ids = json.loads(get_wls_lpg_map())
-    db_lpg_ids = json.loads(get_db_lpg_map())
+    wlsserver_lpg_ids_list = json.loads(get_wls_lpg_map())
+    db_lpg_ids_list = json.loads(get_db_lpg_map())
+
+    # Extract the actual maps from the single-element lists
+    wlsserver_lpg_ids = wlsserver_lpg_ids_list[0]
+    db_lpg_ids  = db_lpg_ids_list[0]
+
     db_subnet_ids = json.loads(get_db_subnet_map())
     wls_subnet = get_subnet_details(get_wls_subnet_id())
     wls_rt_id = wls_subnet.route_table_id
