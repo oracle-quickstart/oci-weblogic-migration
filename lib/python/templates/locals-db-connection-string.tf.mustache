@@ -51,17 +51,12 @@ locals {
 {{#datasources}}
     is_atp_db_{{{datasourceName}}} = trimspace(var.atp_db_id_{{{datasourceName}}}) != ""
     is_atp_dedicated_{{{datasourceName}}} = try(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).is_dedicated,"none")
-    is_atp_with_private_endpoints_{{{datasourceName}}} = local.is_atp_db_{{{datasourceName}}} && (length(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}) != 0 ? data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].subnet_id != null : false)
-    atp_db_network_compartment_id_{{{datasourceName}}} = local.is_atp_with_private_endpoints_{{{datasourceName}}} && var.atp_db_network_compartment_id_{{{datasourceName}}} == "" ? var.atp_db_compartment_id_{{{datasourceName}}} : var.atp_db_network_compartment_id_{{{datasourceName}}}
+    is_atp_with_private_endpoints_{{{datasourceName}}} = local.is_atp_db_{{{datasourceName}}} ? var.atp_db_uses_private_endpoint_{{{datasourceName}}} : false
     desired_atp_db_profile_value_{{{datasourceName}}}  = local.is_atp_db_{{{datasourceName}}} ? [for profile in data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].connection_strings[0].profiles : profile.value if upper(profile.consumer_group) == upper(var.atp_db_level_{{{datasourceName}}})][0] : ""
 
     atp_db_{{{datasourceName}}} = {
         atp_type                      = local.is_atp_dedicated_{{{datasourceName}}}
         compartment_id                = var.atp_db_compartment_id_{{{datasourceName}}}
-        is_atp_with_private_endpoints = var.atp_db_uses_private_endpoint_{{{datasourceName}}}
-        network_compartment_id        = var.atp_db_network_compartment_id_{{{datasourceName}}}
-        existing_vcn_id               = var.atp_db_existing_vcn_id_{{{datasourceName}}}
-        subnet_id                     = local.is_atp_db_{{{datasourceName}}} && local.is_atp_with_private_endpoints_{{{datasourceName}}} ? data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].subnet_id : ""
         #existing_vcn_add_seclist      = local.is_atp_with_private_endpoints_{{{datasourceName}}} ? var.db_existing_vcn_add_secrule : false
         db_name                        = try(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).db_name,"empty")
         db_level                       = var.atp_db_level_{{{datasourceName}}}
@@ -69,17 +64,10 @@ locals {
     oci_db_{{{datasourceName}}} = {
         is_oci_db                = local.is_oci_db_{{{datasourceName}}}
         compartment_id           = var.oci_db_compartment_id_{{{datasourceName}}}
-        network_compartment_id   = var.oci_db_network_compartment_id_{{{datasourceName}}}
-        existing_vcn_id          = var.oci_db_existing_vcn_id_{{{datasourceName}}}
-        subnet_id                = local.is_oci_db_{{{datasourceName}}} ? data.oci_database_db_systems.ocidb_db_systems_{{{datasourceName}}}[0].db_systems[0].subnet_id : ""
-        #    existing_vcn_add_seclist = local.is_oci_db ? var.db_existing_vcn_add_secrule : false
+        #existing_vcn_add_seclist = local.is_oci_db ? var.db_existing_vcn_add_secrule : false
     }
 
     is_oci_connection_string_{{{datasourceName}}}      = trimspace(var.oci_db_connection_string_{{{datasourceName}}}) == "" ? false : true
-    #TODO Revisit network_compartment
-    #  oci_db_compartment_id_{{{datasourceName}}}         = var.oci_db_compartment_id_{{{datasourceName}}} == "" ? local.network_compartment_id_{{{datasourceName}}} : var.oci_db_compartment_id_{{{datasourceName}}}
-    #oci_db_compartment_id_{{{datasourceName}}}         = var.oci_db_compartment_id_{{{datasourceName}}} == "" ? var.oci_db_compartment_id_{{{datasourceName}}} : var.oci_db_compartment_id_{{{datasourceName}}}
-    oci_db_network_compartment_id_{{{datasourceName}}} = local.is_oci_db_{{{datasourceName}}} && var.oci_db_network_compartment_id_{{{datasourceName}}} == "" ? var.oci_db_compartment_id_{{{datasourceName}}} : var.oci_db_network_compartment_id_{{{datasourceName}}}
 
     #OCI DB
     is_oci_db_{{{datasourceName}}}                    = (trimspace(var.oci_db_dbsystem_id_{{{datasourceName}}}) != "") ? true : false
@@ -95,9 +83,12 @@ locals {
     db_strategy_{{{datasourceName}}}_is_atp_db = local.is_atp_db_{{{datasourceName}}} ? true : false
     db_strategy_{{{datasourceName}}}_is_oci_db = local.is_oci_db_{{{datasourceName}}} ? true : false
 
+    atp_db_{{{datasourceName}}}_subnet_id = local.is_atp_db_{{{datasourceName}}} && local.is_atp_with_private_endpoints_{{{datasourceName}}} ? data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].subnet_id : ""
+    oci_db_{{{datasourceName}}}_subnet_id = local.is_oci_db_{{{datasourceName}}} ? data.oci_database_db_systems.ocidb_db_systems_{{{datasourceName}}}[0].db_systems[0].subnet_id : ""
+
     db_network_compartment_id_{{{datasourceName}}} = (local.db_strategy_{{{datasourceName}}}_is_atp_db && var.atp_db_uses_private_endpoint_{{{datasourceName}}} ? var.atp_db_network_compartment_id_{{{datasourceName}}} : (local.db_strategy_{{{datasourceName}}}_is_oci_db ? var.oci_db_network_compartment_id_{{{datasourceName}}} : ""))
     db_existing_vcn_id_{{{datasourceName}}}        = (local.db_strategy_{{{datasourceName}}}_is_atp_db && var.atp_db_uses_private_endpoint_{{{datasourceName}}} ? var.atp_db_existing_vcn_id_{{{datasourceName}}} : (local.db_strategy_{{{datasourceName}}}_is_oci_db ? var.oci_db_existing_vcn_id_{{{datasourceName}}} : ""))
-    db_subnet_id_{{{datasourceName}}}              = (local.db_strategy_{{{datasourceName}}}_is_atp_db && var.atp_db_uses_private_endpoint_{{{datasourceName}}} ? local.atp_db_{{{datasourceName}}}.subnet_id : (local.db_strategy_{{{datasourceName}}}_is_oci_db ? local.oci_db_{{{datasourceName}}}.subnet_id : ""))
+    db_subnet_id_{{{datasourceName}}}              = (local.db_strategy_{{{datasourceName}}}_is_atp_db && var.atp_db_uses_private_endpoint_{{{datasourceName}}} ? local.atp_db_{{{datasourceName}}}_subnet_id : (local.db_strategy_{{{datasourceName}}}_is_oci_db ? local.oci_db_{{{datasourceName}}}_subnet_id : ""))
 
     new_vcn_and_oci_db_{{{datasourceName}}}    = local.db_strategy_{{{datasourceName}}}_is_oci_db && var.create_vcn ? true : false
     existing_vcn_and_oci_db_different_vcn_{{{datasourceName}}} = local.db_strategy_{{{datasourceName}}}_is_oci_db && var.vcn_id != "" && var.vcn_id != var.oci_db_existing_vcn_id_{{{datasourceName}}} ? true : false
