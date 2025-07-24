@@ -91,31 +91,6 @@ def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
         sys.exit(-1)
 
 if __name__ == '__main__':
-    # db_subnet_id = sys.argv[1]
-    # config_key = sys.argv[2]
-    # wls_subnet = get_subnet_details(get_wls_subnet_id())
-    # wls_rt_id = wls_subnet.route_table_id
-    # wls_lpg_map = get_wls_lpg_map()
-    # wls_lpg_id = wls_lpg_map[config_key]
-    # wls_subnet_cidr_block = wls_subnet.cidr_block
-    # db_subnet = get_subnet_details(db_subnet_id)
-    # db_rt_id = db_subnet.route_table_id
-    # db_lpg_map = get_db_lpg_map()
-    # db_lpg_id = db_lpg_map[config_key]
-    # db_subnet_cidr_block = db_subnet.cidr_block
-    #
-    # #Establish peering connection between LPGs of weblogic and database VCNs
-    # result = establish_peering_between_lpgs()
-    #
-    # #Add a route to the current route table of the weblogic subnet to direct traffic
-    # #to the CIDR of the Database subnet to the LPG.
-    # add_route_rule_to_route_table(wls_rt_id, db_subnet_cidr_block, wls_lpg_id)
-    #
-    # #Add a route to the current route table of the database subnet to direct traffic
-    # #to the CIDR of the WebLogic subnet to the LPG.
-    # add_route_rule_to_route_table(db_rt_id, wls_subnet_cidr_block, db_lpg_id)
-
-
     wlsserver_lpg_ids = json.loads(get_wls_lpg_map())
     db_lpg_ids = json.loads(get_db_lpg_map())
     db_subnet_ids = json.loads(get_db_subnet_map())
@@ -123,12 +98,12 @@ if __name__ == '__main__':
     wls_rt_id = wls_subnet.route_table_id
     wls_subnet_cidr_block = wls_subnet.cidr_block
 
-    # Step 1: Get sets of non-null keys
+    #Get sets of non-null keys
     wls_lpg_keys = {k for k, v in wlsserver_lpg_ids.items() if v is not None}
     db_lpg_keys = {k for k, v in db_lpg_ids.items() if v is not None}
     subnet_keys = {k for k, v in db_subnet_ids.items() if v is not None}
 
-    # Step 2: Compare lengths and keys
+    #Compare lengths and keys
     if len(wls_lpg_keys) == len(db_lpg_keys) == len(subnet_keys):
         if wls_lpg_keys == db_lpg_keys == subnet_keys:
             print(f"All three maps have {len(wls_lpg_keys)} non-null entries at the same keys: {sorted(wls_lpg_keys)}")
@@ -137,7 +112,7 @@ if __name__ == '__main__':
     else:
         raise ValueError("Maps do not have equal numbers of non-null entries.")
 
-    # Step 3: Execute loop for only the matching non-null keys
+    #Execute loop for only the matching non-null keys
     for key in sorted(wls_lpg_keys):
         wls_lpg_id = wlsserver_lpg_ids[key]
         db_lpg_id = db_lpg_ids[key]
@@ -147,12 +122,15 @@ if __name__ == '__main__':
         db_subnet_cidr_block = db_subnet.cidr_block
 
         #Establish peering connection between LPGs of weblogic and database VCNs
+        print(f" Establishing peering between WLS LPG: {wls_lpg_id} and DB LPG: {db_lpg_id}")
         result = establish_peering_between_lpgs(wls_lpg_id, db_lpg_id)
 
         #Add a route to the current route table of the weblogic subnet to direct traffic
         #to the CIDR of the Database subnet to the LPG.
+        print(f"Adding a route to weblogic subnet route table {wls_rt_id} for the CIDR of the Database subnet {db_subnet_cidr_block} to the WLS LPG {wls_lpg_id}")
         add_route_rule_to_route_table(wls_rt_id, db_subnet_cidr_block, wls_lpg_id)
 
         #Add a route to the current route table of the database subnet to direct traffic
         #to the CIDR of the WebLogic subnet to the LPG.
+        print(f"Adding a route to database subnet route table {db_rt_id} for the CIDR of the Weblogic subnet {wls_subnet_cidr_block} to the WLS LPG {db_lpg_id}")
         add_route_rule_to_route_table(db_rt_id, wls_subnet_cidr_block, db_lpg_id)

@@ -158,12 +158,6 @@ module "wls" {
     wlsservers = lookup(var.wlsserver_tags, "definedTags", {})
   }
 
-  #DB
-#  is_vcn_peering            = local.is_vcn_peering
-#  db_network_compartment_id = local.db_network_compartment_id
-#  db_existing_vcn_id        = local.db_existing_vcn_id
-#  db_subnet_id              = local.db_subnet_id
-
   #Object Storage Archive Repository
   bucket_name          = var.bucket_name
   restore_wls_archives = "none" #all
@@ -180,13 +174,6 @@ module "wls" {
   lb_shape = {
     pub_lb = { shape = var.load_balancer_shape, min = var.lb_min_bandwidth, max = var.lb_max_bandwidth }
   }
-  #Autonomous Database Variables
-#  atp_db_compartment_id_0           = local.atp_db_compartment_id_0
-#  atp_has_private_endpoints_0       = local.atp_has_private_endpoints_0
-#  atp_db_existing_vcn_id_0          = local.atp_db_existing_vcn_id_0
-#  atp_db_network_compartment_id_0   = local.atp_db_network_comp_id_0
-
-
 
   #Bastion
   create_bastion              = var.create_bastion
