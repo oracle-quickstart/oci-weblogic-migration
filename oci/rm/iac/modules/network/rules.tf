@@ -11,7 +11,6 @@ locals {
   # Dynamic map of all NSG rules for enabled NSGs
   all_rules = { for x, y in merge(
     { for k, v in local.bastion_rules : k => merge(v, { "nsg_id" = local.bastion_nsg_id }) },
-    { for k, v in local.int_lb_rules : k => merge(v, { "nsg_id" = local.int_lb_nsg_id }) },
     { for k, v in local.pub_lb_rules : k => merge(v, { "nsg_id" = local.pub_lb_nsg_id }) },
     { for k, v in local.wlsservers_rules : k => merge(v, { "nsg_id" = local.wlsserver_nsg_id }) },
     { for k, v in local.adminservers_rules : k => merge(v, { "nsg_id" = local.adminserver_nsg_id }) },
@@ -30,7 +29,6 @@ locals {
   # Dynamic map of all NSG IDs for enabled NSGs
   all_nsg_ids = { for x, y in merge(
     local.bastion_nsg_enabled ? { "bastion" = local.bastion_nsg_id } : {},
-    local.int_lb_nsg_enabled ? { "int_lb" = local.int_lb_nsg_id } : {},
     local.pub_lb_nsg_enabled ? { "pub_lb" = local.pub_lb_nsg_id } : {},
     local.wlsserver_nsg_enabled ? { "wlsservers" = local.wlsserver_nsg_id } : {},
     local.adminserver_nsg_enabled ? { "adminserver" = local.adminserver_nsg_id } : {},
@@ -182,9 +180,6 @@ resource "oci_core_network_security_group_security_rule" "wls" {
 #          tonumber(lookup(each.value, "port", 0)) == local.apiserver_port,
 #          contains(var.control_plane_allowed_cidrs, local.anywhere),
 #        ]),
-
-        # TCP ingress to internal load balancer from anywhere has been configured explicitly
-        contains(keys(var.allow_rules_internal_lb), each.key),
 
         # TCP ingress to public load balancer from anywhere has been configured explicitly
         contains(keys(var.allow_rules_public_lb), each.key),
