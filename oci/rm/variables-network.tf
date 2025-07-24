@@ -96,11 +96,6 @@ variable "allow_bastion_domain_access" { default = true}
 variable "allow_adminserver_ssh_access" {default = false }
 variable "allow_bastion_adminserver_console_access" {default = true }
 
-variable "allow_rules_internal_lb" {
-  default = {}
-  type    = any
-}
-
 variable "allow_rules_public_lb" {
   default = {}
   type    = any

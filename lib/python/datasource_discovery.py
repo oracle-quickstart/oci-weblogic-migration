@@ -35,6 +35,8 @@ from wlsdeploy.tool.util.targets.additional_output_helper import DATASOURCE_NAME
 from wlsdeploy.tool.util.targets.additional_output_helper import JDBC_SYSTEM_RESOURCE
 from wlsdeploy.tool.util.targets.additional_output_helper import JDBC_RESOURCE
 from wlsdeploy.tool.util.targets.additional_output_helper import JDBC_DRIVER_PARAMS
+from wlsdeploy.aliases.model_constants import JDBC_DATASOURCE_PARAMS
+from wlsdeploy.aliases.model_constants import JDBC_DATASOURCE_PARAMS_DATASOURCE_LIST
 from wlsdeploy.tool.util.targets.additional_output_helper import URL
 
 from wlsdeploy.util.model import Model
@@ -281,14 +283,23 @@ def __discover_datasources(model, model_context, helper):
     unique_strings = []
     datasource_map = {}
     template_hash = dict()
+    template_hash['is_mds']="false"
     jdbc_system_resources = dictionary_utils.get_dictionary_element(resources, JDBC_SYSTEM_RESOURCE)
     for jdbc_name in jdbc_system_resources:
         named = dictionary_utils.get_dictionary_element(jdbc_system_resources, jdbc_name)
         resources = dictionary_utils.get_dictionary_element(named, JDBC_RESOURCE)
         driver_params = dictionary_utils.get_dictionary_element(resources, JDBC_DRIVER_PARAMS)
         url = dictionary_utils.get_element(driver_params, URL)
+        dslist_params = dictionary_utils.get_dictionary_element(resources, JDBC_DATASOURCE_PARAMS)
+        dslist = dictionary_utils.get_element(dslist_params, JDBC_DATASOURCE_PARAMS_DATASOURCE_LIST)
+
+        #Identifies if database connection string refers to a Multi data Source.
+        if dslist != None:
+            template_hash['is_mds']="true"
+
         if url is not None or url != '':
             datasource_map[url]="true"
+
     if len(datasource_map.keys()) > 0: #Hacky way to get uniques jdbc strings.. now put it back as map
         for index, url in enumerate(datasource_map.keys()):
             database_hash = dict()

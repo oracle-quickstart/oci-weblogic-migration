@@ -8,7 +8,7 @@ variable "lb_max_bandwidth" {
   default = "100"
 }
 variable "lb_min_bandwidth" {
-  default = "100"
+  default = "10"
 }
 variable "existing_load_balancer_id" {
   type= string
