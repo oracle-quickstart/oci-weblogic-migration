@@ -101,7 +101,6 @@ module "wls" {
   nsgs = {
     bastion = { create = var.create_nsgs ? "always" : "never" }
     #operator = { create = var.create_nsgs ? "always" : "never" }
-    int_lb = { create = var.create_nsgs ? "always" : "never" }
     pub_lb = { create = var.create_nsgs ? "always" : "never" } #TODO: JOI - Future release include existing Public LB NSG.
     managedserver = {
       create = var.create_nsgs ? "always" : "never",
@@ -121,10 +120,7 @@ module "wls" {
   allow_bastion_adminserver_access = var.allow_bastion_adminserver_console_access
   allow_bastion_domain_access      = var.allow_bastion_domain_access
   enable_waf                       = var.enable_waf #TODO: JOI - Future release
-
-
-  allow_rules_internal_lb = var.allow_rules_internal_lb #TODO: JOI - Future release include internal lb rules
-  allow_rules_public_lb   = var.allow_rules_public_lb
+  allow_rules_public_lb            = var.allow_rules_public_lb
 
 
   # SSH Access

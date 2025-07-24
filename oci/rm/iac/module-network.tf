@@ -337,7 +337,6 @@ module "network" {
   use_defined_tags = var.use_defined_tags
 
   #allow_node_port_access       = var.allow_node_port_access
-  allow_rules_internal_lb           = var.allow_rules_internal_lb
   allow_rules_public_lb             = var.allow_rules_public_lb
   allow_rules_wlsservers            = var.allow_rules_wlsservers
   allow_rules_adminserver           = var.allow_rules_adminserver
@@ -446,10 +445,6 @@ output "bastion_nsg_id" {
 #  value       = try(module.network.operator_nsg_id, null)
 #}
 
-output "int_lb_nsg_id" {
-  description = "Network Security Group for internal load balancers."
-  value       = try(module.network.int_lb_nsg_id, null)
-}
 output "pub_lb_nsg_id" {
   description = "Network Security Group for public load balancers."
   value       = try(module.network.pub_lb_nsg_id, null)

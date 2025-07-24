@@ -162,7 +162,6 @@ variable "subnets" {
 variable "nsgs" {
   default = {
     bastion       = {}
-    int_lb        = {}
     pub_lb        = {}
     managedserver = {}
     adminserver   = {}
@@ -189,10 +188,10 @@ variable "nsgs" {
   validation {
     condition = alltrue([
       for k, v in var.nsgs :
-      contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver", "fss"], k)
+      contains(["bastion", "pub_lb", "managedserver", "adminserver", "fss"], k)
     ])
     error_message = format("Invalid NSG keys: %s", jsonencode([for k, v in var.nsgs : k
-      if !contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver", "fss"], k)
+      if !contains(["bastion", "pub_lb", "managedserver", "adminserver", "fss"], k)
     ]))
   }
 }
@@ -256,12 +255,6 @@ variable "allow_bastion_adminserver_access" {
   default     = false
   description = "Whether to allow access to the Admin Managed Server from the bastion host."
   type        = bool
-}
-
-variable "allow_rules_internal_lb" {
-  default     = {}
-  description = "A map of additional rules to allow incoming traffic for internal load balancers."
-  type        = any
 }
 
 variable "allow_rules_public_lb" {
