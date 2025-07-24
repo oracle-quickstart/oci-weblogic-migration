@@ -93,8 +93,6 @@ module "wlsservers" {
   wlsserver_subnet_id = try(module.network-wls-private-subnet.subnet_id, "")
   wlsserver_vcn_id    = var.create_vcn ? try(one(module.vcn[*].vcn_id), var.vcn_id) : var.vcn_id
   db_subnet_id        = var.db_subnet_id
-  db_existing_vcn_id  = var.db_existing_vcn_id
-  open_atp_db_port_1522 = var.open_atp_db_port_1522
   is_vcn_peering      = var.is_vcn_peering
   db_lpg              = element(concat(module.lpg[*].db_lpg, [""]), 0)
   wlsserver_lpg       = element(concat(module.lpg[*].wls_lpg, [""]), 0)

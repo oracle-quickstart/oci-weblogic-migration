@@ -47,8 +47,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
 %{ for jdbc_string in datasources }
 
   echo "Datasource: ${jdbc_string.index}" | log >> $log_file
-  echo "  is_atp: ${jdbc_string.is_atp}" | log >> $log_file
-  echo "  is_oci_db: ${jdbc_string.is_oci_db}" | log >> $log_file
 
   is_atp=${jdbc_string.is_atp}
   is_oci_db=${jdbc_string.is_oci_db}
@@ -61,7 +59,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
 
     #Opening port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database, if the checkbox is checked.
     if [ "$is_admin_instance" = "true" ] && [ "${jdbc_string.open_atp_port}" = "true" ]; then
-        echo "jdbc_string.atp_network_comp :${jdbc_string.atp_network_comp} , is_atp ; $is_atp, {jdbc_string.atp_vcn_id} : ${jdbc_string.atp_vcn_id}, {jdbc_string.atp_subnet_id} ${jdbc_string.atp_subnet_id}" | log >> $log_file
         output=$(python3 /opt/scripts/open_db_port.py "1522" "${jdbc_string.atp_network_comp}" "${jdbc_string.atp_vcn_id}" "${jdbc_string.atp_subnet_id}" 2>&1)
         exit_code=$?
         echo "Executed script to open ingress port 1522 in db subnet with exit code [$exit_code]" | log >> $log_file
@@ -115,7 +112,6 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
 
     #Opening port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database, if the checkbox is checked.
     if [ "$is_admin_instance" = "true" ] && [ "${jdbc_string.oci_db_create_ingress_sl}" = "true" ]; then
-        echo "jdbc_string.oci_network_comp :${jdbc_string.oci_network_comp} , is_oci_db ; $is_oci_db, {jdbc_string.oci_vcn_id} : ${jdbc_string.oci_vcn_id}, {jdbc_string.oci_subnet_id} ${jdbc_string.oci_subnet_id}" | log >> $log_file
         output=$(python3 /opt/scripts/open_db_port.py "${jdbc_string.oci_port}" "${jdbc_string.oci_network_comp}" "${jdbc_string.oci_vcn_id}" "${jdbc_string.oci_subnet_id}" 2>&1)
         exit_code=$?
         echo "Executed script to open ingress port ${jdbc_string.oci_port} in db subnet ${jdbc_string.oci_subnet_id} with exit code [$exit_code]" | log >> $log_file

@@ -160,8 +160,6 @@ resource "oci_core_instance" "wlsservers" {
       user_data               = lookup(lookup(data.cloudinit_config.wlsservers, each.key, {}), "rendered", "")
       wlsserver_vcn_id        = var.wlsserver_vcn_id
       wlsserver_subnet_id     = var.wlsserver_subnet_id
-      db_existing_vcn_id      = var.db_existing_vcn_id
-      open_atp_db_port_1522   = var.open_atp_db_port_1522
       db_subnet_id            = var.db_subnet_id
       is_vcn_peering          = var.is_vcn_peering
       db_lpg                  = var.db_lpg

@@ -25,7 +25,6 @@ locals {
   oci_db_subnet_id_0       = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.subnet_id : ""
 
   atp_has_private_endpoints_0 = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.is_atp_with_private_endpoints : false
-  open_atp_db_port_1522_0     = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.open_atp_db_port_1522 : false
   atp_db_network_comp_id_0    = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.network_compartment_id : ""
   atp_db_existing_vcn_id_0    = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.existing_vcn_id : ""
   atp_db_subnet_id_0          = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.subnet_id : ""
@@ -212,7 +211,6 @@ module "wls" {
   atp_has_private_endpoints_0       = local.atp_has_private_endpoints_0
   atp_db_existing_vcn_id_0          = local.atp_db_existing_vcn_id_0
   atp_db_network_compartment_id_0   = local.atp_db_network_comp_id_0
-  open_atp_db_port_1522             = local.open_atp_db_port_1522_0
 
 
   #Bastion

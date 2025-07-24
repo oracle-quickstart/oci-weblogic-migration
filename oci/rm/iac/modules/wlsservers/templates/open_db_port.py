@@ -2,7 +2,7 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 """
-Opens DB port on DB subnet.
+Creates security list and opens DB port on DB subnet
 Enables incoming requests from WLS subnet on port DB port to the DB subnet,
 """
 
@@ -21,7 +21,7 @@ def get_db_existing_vcn_id():
 def open_db_port(db_port=1521, db_vcn_compartment_id=None, db_vcn_id=None, db_subnet_id=None,
                  wls_subnet_cidr=None):
     """
-    This method creates a new security list with same service prefix as the instance,
+    This method creates a new security list,
     it enable incoming requests from WLS subnet on port <db port> to the DB subnet, and it also allow traffic from DB
     subnet to the WLS subnet on port <db port>
     :param service_prefix: The service instance prefix
@@ -77,10 +77,6 @@ if __name__ == '__main__':
 
     wls_subnet = get_subnet_details(get_wls_subnet_id())
     wls_subnet_cidr_block = wls_subnet.cidr_block
-    # db_existing_vcn_id = get_db_existing_vcn_id()
-    # db_subnet_id = get_db_subnet_id()
-    # db_subnet = get_subnet_details(db_subnet_id)
-    # db_vcn_compartment_id = db_subnet.compartment_id
 
     db_port = int(sys.argv[1])
     db_vcn_compartment_id=sys.argv[2]
