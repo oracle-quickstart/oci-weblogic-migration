@@ -11,42 +11,16 @@ locals {
   }] : []
   db_strategy_is_atp = local.datasources == null ? false : anytrue([for _, v in local.datasources : v.is_atp])
   db_strategy_is_edit_string_atp = local.datasources == null ? false : anytrue([
-  for _, v in local.datasources : can(regex("adb", v.connection_string))])
+    for _, v in local.datasources : can(regex("adb", v.connection_string))])
   network_compartment_id = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
-
-  db_strategy_0_is_atp_db = local.datasources == null ? false : local.datasources[0].is_atp
-  db_strategy_0_is_oci_db = local.datasources == null ? false : local.datasources[0].is_oci_db
-  // Criteria for VCN peering:
-  // 1. Only when both create_vcn is true and DB VCN ID is provided (either oci_db_existing_vcn_id_0 or atp_db_existing_vcn_id_0)
-  // 2. or when both WLS VCN ID is provided and DB VCN ID is provided (either oci_db_existing_vcn_id_0 or atp_db_existing_vcn_id_0) and they are different IDs,
-
-  oci_db_network_comp_id_0 = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.network_compartment_id : ""
-  oci_db_existing_vcn_id_0 = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.existing_vcn_id : ""
-  oci_db_subnet_id_0       = local.db_strategy_0_is_oci_db ? local.datasources[0].oci_db.subnet_id : ""
-
-  atp_has_private_endpoints_0 = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.is_atp_with_private_endpoints : false
-  atp_db_network_comp_id_0    = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.network_compartment_id : ""
-  atp_db_existing_vcn_id_0    = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.existing_vcn_id : ""
-  atp_db_subnet_id_0          = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.subnet_id : ""
-  atp_db_compartment_id_0     = local.db_strategy_0_is_atp_db ? local.datasources[0].atp_db.compartment_id : ""
-
-  db_network_compartment_id = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_network_comp_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_network_comp_id_0 : ""))
-  db_existing_vcn_id        = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_existing_vcn_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_existing_vcn_id_0 : ""))
-  db_subnet_id              = local.datasources == null ? "" : (local.db_strategy_0_is_atp_db && local.atp_has_private_endpoints_0 ? local.atp_db_subnet_id_0 : (local.db_strategy_0_is_oci_db ? local.oci_db_subnet_id_0 : ""))
-
-  new_vcn_and_oci_db                    = local.db_strategy_0_is_oci_db && var.create_vcn ? true : false
-  existing_vcn_and_oci_db_different_vcn = local.db_strategy_0_is_oci_db && var.vcn_id != "" && var.vcn_id != local.oci_db_existing_vcn_id_0 ? true : false
-
-  new_vcn_and_atp_db_private_endpoint                    = local.db_strategy_0_is_atp_db && var.create_vcn && local.atp_has_private_endpoints_0 ? true : false
-  existing_vcn_and_atp_db_private_endpoint_different_vcn = local.db_strategy_0_is_atp_db && var.vcn_id != "" && local.atp_has_private_endpoints_0 && (var.vcn_id != local.atp_db_existing_vcn_id_0) ? true : false
-
-  is_vcn_peering = local.db_strategy_0_is_atp_db || local.db_strategy_0_is_oci_db ? (local.new_vcn_and_oci_db || local.new_vcn_and_atp_db_private_endpoint || local.existing_vcn_and_oci_db_different_vcn || local.existing_vcn_and_atp_db_private_endpoint_different_vcn) : false
 
   # Fetching WLS version from JSON file
   wls_version        = try(local.wls_data["topology"]["NMProperties"]["PropertiesVersion"],"")
   # If the WLS version is 14.1.2.0.0 then link to documentation is provided to connect to remote console,
   # else admin console url is provided
   admin_console_url = local.wls_version == "14.1.2.0.0" ? "Please refer this documentation to access the administrator remote console: https://docs.oracle.com/en/cloud/paas/weblogic-cloud/user/access-weblogic-remote-console.html#GUID-FE3B189C-E17C-423F-BC71-121AB80251F1" : try(format("https://%s:%s/console", module.wls.weblogic_instances_admin_private_ip, module.wls.adminserver_port),"")
+
+  is_vcn_peering = local.datasources == null ? false : anytrue([for _, v in local.datasources : v.is_vcn_peering])
 }
 
 #Code has become a single module due:
@@ -180,12 +154,6 @@ module "wls" {
     wlsservers = lookup(var.wlsserver_tags, "definedTags", {})
   }
 
-  #DB
-  is_vcn_peering            = local.is_vcn_peering
-  db_network_compartment_id = local.db_network_compartment_id
-  db_existing_vcn_id        = local.db_existing_vcn_id
-  db_subnet_id              = local.db_subnet_id
-
   #Object Storage Archive Repository
   bucket_name          = var.bucket_name
   restore_wls_archives = "none" #all
@@ -202,12 +170,6 @@ module "wls" {
   lb_shape = {
     pub_lb = { shape = var.load_balancer_shape, min = var.lb_min_bandwidth, max = var.lb_max_bandwidth }
   }
-  #Autonomous Database Variables
-  atp_db_compartment_id_0           = local.atp_db_compartment_id_0
-  atp_has_private_endpoints_0       = local.atp_has_private_endpoints_0
-  atp_db_existing_vcn_id_0          = local.atp_db_existing_vcn_id_0
-  atp_db_network_compartment_id_0   = local.atp_db_network_comp_id_0
-
 
   #Bastion
   create_bastion              = var.create_bastion
@@ -228,4 +190,5 @@ module "wls" {
 
   #datasources
   wls_configured_datasource_text = local.datasources
+  datasources = local.datasources
 }
