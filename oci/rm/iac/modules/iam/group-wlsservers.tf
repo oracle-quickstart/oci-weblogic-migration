@@ -40,6 +40,7 @@ locals {
   ])
   # This policy with "inspect virtual-network-family" verb is needed to read VCN information like CIDR, etc.
   # This policy with "manage virtual-network-family" verb is needed for vcn peering.
+  # TODO remove false JCS-14923
   network_compartment_policy_templates = false ? tolist([
     format("Allow dynamic-group ${local.wlsserver_group_name} to inspect virtual-network-family in compartment id %v", var.network_compartment_id)
   ]) : tolist([
@@ -47,6 +48,7 @@ locals {
   ])
 
   # This policy with "manage virtual-network-family" verb is needed for vcn peering.
+  # TODO remove true JCS-14923
   db_network_compartment_policy_templates = true ? [
     format(
     "Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v", var.network_compartment_id)
@@ -61,6 +63,7 @@ locals {
       )
     ] : []
   ))
+  # TODO add back JCS-14923
   # This policy is used to add the db port 1522 in case of ATP db
   # The functionality is yet to be added till (Jun 25)
 #  atp_db_policy_template_2 = compact(concat(
@@ -99,6 +102,7 @@ locals {
     local.migration_compartment_policy_statements,
     local.network_compartment_policy_templates,
     local.atp_db_policy_template_1,
+    # # TODO add back JCS-14923
 #    local.atp_db_policy_template_2,
     local.db_network_compartment_policy_templates
   )) : []
