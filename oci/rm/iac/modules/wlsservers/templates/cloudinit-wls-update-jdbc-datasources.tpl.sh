@@ -58,7 +58,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
       echo "Executed script to open ingress port ${jdbc_string.db_port} in db subnet ${jdbc_string.db_subnet_id} with exit code [$exit_code]" | log >> $log_file
       echo "$output" | log >> $log_file
       if [ $exit_code -ne 0 ]; then
-          echo "Error executing the script to open ingress port ${jdbc_string.db_port} in db subnet ${jdbc_string.oci_subnet_id}" | log >> $log_file
+          echo "Error executing the script to open ingress port ${jdbc_string.db_port} in db subnet ${jdbc_string.db_subnet_id}" | log >> $log_file
           exit 1
       fi
   fi
