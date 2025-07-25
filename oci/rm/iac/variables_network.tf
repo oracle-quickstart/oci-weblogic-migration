@@ -302,7 +302,7 @@ variable "bastion_subnet_cidr" {
 variable "datasources" {
   type = any
   default = {}
-  description = "Map with Datasource on-prem text and new oci value. "
+  description = "Map of JDBC connection strings."
 }
 
 variable "pub_lb_subnet_cidr" {

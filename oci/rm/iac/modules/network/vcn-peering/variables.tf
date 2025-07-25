@@ -4,7 +4,7 @@
 variable "datasources" {
   type        = any
   default     = {}
-  description = "Map with Datasource on-prem text and new oci value. "
+  description = "Map of JDBC connection strings."
 }
 
 variable "compartment_id" {
