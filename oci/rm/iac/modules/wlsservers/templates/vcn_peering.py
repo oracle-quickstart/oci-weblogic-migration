@@ -111,7 +111,7 @@ if __name__ == '__main__':
     #Compare lengths and keys
     if len(wls_lpg_keys) == len(db_lpg_keys) == len(subnet_keys):
         if wls_lpg_keys == db_lpg_keys == subnet_keys:
-            print(f"All three maps have {len(wls_lpg_keys)} non-null entries at the same keys: {sorted(wls_lpg_keys)}")
+            print(f"All three maps {wlsserver_lpg_ids} ,{db_lpg_ids} and {db_subnet_ids} have {len(wls_lpg_keys)} non-null entries at the same keys: {sorted(wls_lpg_keys)}")
         else:
             raise ValueError("Non-null entries are at different keys across maps.")
     else:
