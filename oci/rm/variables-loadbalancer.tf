@@ -18,3 +18,7 @@ variable "custom_backends" {
   type=list(string)
   default = []
 }
+
+variable "use_existing_loadbalancer" {
+  default = false
+}
