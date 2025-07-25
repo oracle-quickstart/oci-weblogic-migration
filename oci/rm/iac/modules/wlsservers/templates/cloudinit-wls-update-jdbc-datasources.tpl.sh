@@ -135,3 +135,4 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   fi
 
 %{ endfor ~}
+
