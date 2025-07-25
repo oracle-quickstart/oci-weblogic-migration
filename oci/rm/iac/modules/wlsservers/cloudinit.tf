@@ -316,7 +316,7 @@ data "cloudinit_config" "wlsservers" {
       #       custom_jdbc       = try(ds_val.custom_jdbc, false)
       #     }
       #   ]
-      # })
+        })
       filename     = "80-wls-update_datasources.sh"
       merge_type   = local.default_cloud_init_merge_type
     }
