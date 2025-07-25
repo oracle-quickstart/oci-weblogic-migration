@@ -75,9 +75,9 @@ variable "wlsserver_shape" {
 variable "wlsserver_ocpus" { default = 2 }
 variable "wlsserver_memory" { default = 16 }
 variable "wlsserver_boot_volume_size" { default = 50 }
-variable "wlsserver_mw_volume_size" { default = 50 }
-variable "wlsserver_jdk_volume_size" { default = 50 }
-variable "wlsserver_domain_volume_size" { default = 50 }
+variable "wlsserver_mw_volume_size" { default = 101 }
+variable "wlsserver_jdk_volume_size" { default = 52 }
+variable "wlsserver_domain_volume_size" { default = 253 }
 
 
 
