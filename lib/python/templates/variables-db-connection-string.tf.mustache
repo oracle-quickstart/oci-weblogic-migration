@@ -65,12 +65,6 @@ variable "atp_db_level_{{{datasourceName}}}" {
   }
 }
 
-variable "open_port_1522_atp_db_{{{datasourceName}}}" {
-  type        = bool
-  description = "Open ingress port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database."
-  default     = true
-}
-
 variable "db_strategy_{{{datasourceName}}}" {
   type=string
   default     = "Autonomous Transaction Processing Database"
@@ -87,11 +81,6 @@ variable "oci_db_connection_string_{{{datasourceName}}}" {
 }
 
 ##### OCI Database Service #########
-variable "create_db_ingress_sl_{{{datasourceName}}}" {
-  description = "Whether to create a security list to open DB port for OCI DB."
-  type        = bool
-  default     = true
-}
 
 variable "oci_db_port_{{{datasourceName}}}" {
   type        = number
@@ -147,6 +136,12 @@ variable "oci_db_pdb_service_name_{{{datasourceName}}}" {
   type        = string
   description = "The name of the pluggable database (PDB) in which to provision the schemas for a JRF-enabled WebLogic Server domain. This is required for Oracle Database 12c or later"
   default     = ""
+}
+
+variable "existing_vcn_add_seclist_{{{datasourceName}}}" {
+  description = "Whether to create a security list to open DB port for OCI DB."
+  type        = bool
+  default     = true
 }
 #/////////////////
 # End Section: Datasource #{{{datasourceName}}}
