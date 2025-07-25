@@ -53,15 +53,6 @@ locals {
         protocol = local.all_protocols, port = local.all_ports, destination = local.anywhere, destination_type = local.rule_type_cidr,
       },
     } : {},
-
-    local.int_lb_nsg_enabled ? {
-      "Allow TCP ingress to wlsservers from internal load balancers" : {
-        protocol = local.tcp_protocol, port_min = local.node_port_min, port_max = local.node_port_max, source = local.int_lb_nsg_id, source_type = local.rule_type_nsg,
-      },
-      "Allow TCP ingress to wlsservers for health check from internal load balancers" : {
-        protocol = local.tcp_protocol, port = local.health_check_port, source = local.int_lb_nsg_id, source_type = local.rule_type_nsg,
-      },
-    } : {},
     #TODO: JOI update ports with http listen ports
     local.pub_lb_nsg_enabled ? merge(
       {
