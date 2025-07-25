@@ -40,7 +40,7 @@ locals {
   ])
   # This policy with "inspect virtual-network-family" verb is needed to read VCN information like CIDR, etc.
   # This policy with "manage virtual-network-family" verb is needed for vcn peering.
-  # TODO remove false JCS-14923
+  # TODO remove false and adjust the compartment id : JCS-14923
   network_compartment_policy_templates = false ? tolist([
     format("Allow dynamic-group ${local.wlsserver_group_name} to inspect virtual-network-family in compartment id %v", var.network_compartment_id)
   ]) : tolist([
@@ -48,13 +48,14 @@ locals {
   ])
 
   # This policy with "manage virtual-network-family" verb is needed for vcn peering.
-  # TODO remove true JCS-14923
+  # TODO remove true and adjust the compartment id : JCS-14923
   db_network_compartment_policy_templates = true ? [
     format(
     "Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v", var.network_compartment_id)
   ] : []
 
   # This policy with "use autonomous-transaction-processing-family" verb is needed to download ATP db wallet.
+  # TODO adjust the compartment id : JCS-14923
   atp_db_policy_template_1 = compact(concat(
     (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp) ? [
       format(
