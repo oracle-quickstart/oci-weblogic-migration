@@ -72,8 +72,8 @@ locals {
     if var.assign_dns
   }
 
-  dblpg_ids_map = module.lpg.dblpg_ids
-  wlslpg_ids_map = module.lpg.wlslpg_ids
+  dblpg_ids_map = module.lpg[*].dblpg_ids
+  wlslpg_ids_map = module.lpg[*].wlslpg_ids
 
   # Create JSON strings for metadata
   db_lpg_ids  = jsonencode(local.dblpg_ids_map)
