@@ -460,7 +460,6 @@ variables:
     title: Flexible Public Load Balancer Min Bandwidth
     description: "Choose Minimum Shape for Flex Load Balancer."
     required: false
-    type: enum
     default: "10"
     enum:
       - "10"
@@ -759,7 +758,7 @@ variables:
             - "Autonomous Transaction Processing Database"
     type: oci:database:autonomousdatabase:id
     title: "Autonomous Database"
-    description: "The Autonomous Transaction Processing (ATP) database in which to provision the schemas for a JRF-enabled WebLogic Server domain
+    description: "The Autonomous Transaction Processing (ATP) database in which to provision the schemas for a JRF-enabled WebLogic Server domain."
     dependsOn:
       compartmentId: ${atp_db_compartment_id_{{{datasourceName}}}}
     required: true   
