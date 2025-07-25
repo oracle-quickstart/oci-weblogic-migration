@@ -94,7 +94,7 @@ variable "allow_wlsserver_internet_access" { default = true }
 variable "allow_wlsserver_ssh_access" { default = false }
 variable "allow_bastion_domain_access" { default = true}
 variable "allow_adminserver_ssh_access" {default = false }
-variable "allow_bastion_adminserver_console_access" {default = false }
+variable "allow_bastion_adminserver_console_access" {default = true }
 
 variable "allow_rules_public_lb" {
   default = {}
