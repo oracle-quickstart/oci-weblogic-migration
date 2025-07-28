@@ -18,7 +18,7 @@ def get_db_existing_vcn_id():
     return get_attribute("db_existing_vcn_id")
 
 
-def open_db_port(db_port=1521, db_vcn_compartment_id=None, db_vcn_id=None, db_subnet_id=None,
+def open_db_port(db_index, db_port=1521, db_vcn_compartment_id=None, db_vcn_id=None, db_subnet_id=None,
                  wls_subnet_cidr=None):
     """
     This method creates a new security list,
@@ -35,7 +35,7 @@ def open_db_port(db_port=1521, db_vcn_compartment_id=None, db_vcn_id=None, db_su
     principal = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
     network_client = oci.core.VirtualNetworkClient(config={}, signer=principal)
 
-    display_name = "wls-to-db-seclist"
+    display_name = "wls-to-db-seclist-" + db_index
     db_port_range = port_range.PortRange(max=db_port, min=db_port)
     tcp = tcp_options.TcpOptions(destination_port_range=db_port_range)
     ingres_rules = []
@@ -72,19 +72,21 @@ def open_db_port(db_port=1521, db_vcn_compartment_id=None, db_vcn_id=None, db_su
 if __name__ == '__main__':
 
     if len(sys.argv) < 5:
-        print(f"usage: {sys.argv[0]} <db_port> <db_vcn_compartment_id> <db_vcn_id> <db_subnet_id>", file=sys.stderr)
+        print(f"usage: {sys.argv[0]} <db_index> <db_port> <db_vcn_compartment_id> <db_vcn_id> <db_subnet_id>", file=sys.stderr)
         sys.exit(1)
 
     wls_subnet = get_subnet_details(get_wls_subnet_id())
     wls_subnet_cidr_block = wls_subnet.cidr_block
 
-    db_port = int(sys.argv[1])
-    db_vcn_compartment_id=sys.argv[2]
-    db_vcn_id=sys.argv[3]
-    db_subnet_id=sys.argv[4]
+    db_index = sys.argv[1]
+    db_port = int(sys.argv[2])
+    db_vcn_compartment_id=sys.argv[3]
+    db_vcn_id=sys.argv[4]
+    db_subnet_id=sys.argv[5]
 
 
     open_db_port(
+        db_index=db_index,
         db_port=db_port,
         db_vcn_compartment_id=db_vcn_compartment_id,
         db_vcn_id=db_vcn_id,
