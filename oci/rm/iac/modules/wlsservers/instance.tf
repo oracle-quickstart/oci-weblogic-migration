@@ -160,10 +160,10 @@ resource "oci_core_instance" "wlsservers" {
       user_data               = lookup(lookup(data.cloudinit_config.wlsservers, each.key, {}), "rendered", "")
       wlsserver_vcn_id        = var.wlsserver_vcn_id
       wlsserver_subnet_id     = var.wlsserver_subnet_id
-      db_subnet_id            = var.db_subnet_id
+      db_subnet_ids           = var.db_subnet_ids
+      db_lpg_ids              = var.db_lpgs
+      wlsserver_lpg_ids       = var.wlsserver_lpgs
       is_vcn_peering          = var.is_vcn_peering
-      db_lpg                  = var.db_lpg
-      wlsserver_lpg           = var.wlsserver_lpg
     },
 
     # Extra user-defined fields merged last
