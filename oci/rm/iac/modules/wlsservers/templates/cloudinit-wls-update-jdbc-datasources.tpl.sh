@@ -73,7 +73,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     wallet_pass_exit_code=$?
     download=$(sudo -E -u ${user} echo "$${atp_wallet_password}" | python3 /opt/scripts/atp_db_util.py ${jdbc_string.db_id} "$wallet_location" 2>&1 )
     download_exit_code=$?
-    echo "Executed ATP wallet download and unzip with exit code [$download_exit_code] and [$unzip_oper_exit_code]" | log >> $log_file
+    echo "Executed ATP wallet download and unzip with exit code [$wallet_pass_exit_code] and [$download_exit_code]" | log >> $log_file
     if [[ $wallet_pass_exit_code -ne 0 ]] || [[ $download_exit_code -ne 0 ]]; then
         echo "Error downloading ATP wallet.. Exiting provisioning" | log >> $log_file
         exit 1

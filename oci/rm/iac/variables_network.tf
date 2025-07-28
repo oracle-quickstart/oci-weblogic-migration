@@ -299,28 +299,10 @@ variable "bastion_subnet_cidr" {
   default     = ""
 }
 
-variable "db_network_compartment_id" {
-  type        = string
-  description = "The OCID of the compartment in which the DB System VCN is found"
-  default     = ""
-}
-
-variable "db_existing_vcn_id" {
-  type        = string
-  description = "The OCID of the VCN used by the ATP database private endpoint"
-  default     = ""
-}
-
-variable "is_vcn_peering" {
-  type        = bool
-  description = "Indicates whether VCN peering will be set up"
-  default     = false
-}
-
-variable "db_subnet_id" {
-  type        = string
-  description = "The OCID of the subnet for the OCI DB or ATP DB (when using private endpoint)"
-  default     = ""
+variable "datasources" {
+  type = any
+  default = {}
+  description = "Map of JDBC connection strings."
 }
 
 variable "pub_lb_subnet_cidr" {
