@@ -71,6 +71,24 @@ locals {
     k => coalesce(lookup(v, "dns_label", null), "${substr(k, 0, 2)}${local.state_id}")
     if var.assign_dns
   }
+
+  dblpg_ids_map = module.lpg[*].dblpg_ids
+  wlslpg_ids_map = module.lpg[*].wlslpg_ids
+
+  # Create JSON strings for metadata
+  db_lpg_ids  = jsonencode(local.dblpg_ids_map)
+  wls_lpg_ids = jsonencode(local.wlslpg_ids_map)
+
+  db_subnet_ids = jsonencode(
+    var.datasources != null ? {
+      for k, v in var.datasources :
+      k => (
+      v.is_vcn_peering ? v.db_subnet_id : null
+      )
+    } : {}
+  )
+
+  is_vcn_peering = var.datasources == null ? false : anytrue([for _, v in var.datasources : v.is_vcn_peering])
 }
 
 module "vcn" {
@@ -310,7 +328,6 @@ module "network" {
   use_defined_tags = var.use_defined_tags
 
   #allow_node_port_access       = var.allow_node_port_access
-  allow_rules_internal_lb           = var.allow_rules_internal_lb
   allow_rules_public_lb             = var.allow_rules_public_lb
   allow_rules_wlsservers            = var.allow_rules_wlsservers
   allow_rules_adminserver           = var.allow_rules_adminserver
@@ -346,15 +363,13 @@ module "network" {
 
 /* Create LPGs for VCN Peering */
 module "lpg" {
-  count                     = var.is_vcn_peering ? 1 : 0
+  count                     = var.datasources != null && local.is_vcn_peering ? 1 : 0
   source                    = "./modules/network/vcn-peering"
   compartment_id            = local.network_compartment_id
   vcn_id                    = local.vcn_id
-  db_network_compartment_id = var.db_network_compartment_id
-  db_existing_vcn_id        = var.db_existing_vcn_id
   wlsserver_subnet_id       = try(module.network-wls-private-subnet.subnet_id, "")
-  db_subnet_id              = var.db_subnet_id
   lpg_name                  = format("lpg-%v", local.state_id)
+  datasources               = var.datasources
 }
 
 # VCN
@@ -420,10 +435,6 @@ output "bastion_nsg_id" {
 #  value       = try(module.network.operator_nsg_id, null)
 #}
 
-output "int_lb_nsg_id" {
-  description = "Network Security Group for internal load balancers."
-  value       = try(module.network.int_lb_nsg_id, null)
-}
 output "pub_lb_nsg_id" {
   description = "Network Security Group for public load balancers."
   value       = try(module.network.pub_lb_nsg_id, null)

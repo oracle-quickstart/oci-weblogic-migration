@@ -16,7 +16,6 @@ variable "tag_namespace" { type = string }
 variable "use_defined_tags" { type = bool }
 
 # Network
-variable "allow_rules_internal_lb" { type = any }
 variable "allow_rules_public_lb" { type = any }
 variable "allow_rules_wlsservers" { type = any }
 variable "allow_rules_adminserver" { type = any }

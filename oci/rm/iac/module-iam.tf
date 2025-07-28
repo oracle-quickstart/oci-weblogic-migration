@@ -67,12 +67,6 @@ module "iam" {
   add_load_balancer               = var.add_load_balancer
   db_strategy_is_atp              = var.db_strategy_is_atp
   db_strategy_is_edit_string_atp  = var.db_strategy_is_edit_string_atp
-  atp_db_compartment_id_0         = var.atp_db_compartment_id_0
-  atp_has_private_endpoints_0     = var.atp_has_private_endpoints_0
-  atp_db_existing_vcn_id_0        = var.atp_db_existing_vcn_id_0
-  atp_db_network_compartment_id_0 = var.atp_db_network_compartment_id_0
-  is_vcn_peering                  = var.is_vcn_peering
-  db_network_compartment_id       = var.db_network_compartment_id
 
   wlsserver_volume_kms_key_id = var.wlsserver_volume_kms_key_id
 
