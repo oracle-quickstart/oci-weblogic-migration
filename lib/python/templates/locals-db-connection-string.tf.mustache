@@ -95,7 +95,6 @@ locals {
     db_port_{{{datasourceName}}}                   = (local.db_strategy_{{{datasourceName}}}_is_atp_db ? "1522" : (local.db_strategy_{{{datasourceName}}}_is_oci_db ? var.oci_db_port_{{{datasourceName}}} : ""))
     new_vcn_and_oci_db_{{{datasourceName}}}        = local.db_strategy_{{{datasourceName}}}_is_oci_db && var.create_vcn ? true : false
 
-    new_vcn_and_oci_db_{{{datasourceName}}}    = local.db_strategy_{{{datasourceName}}}_is_oci_db && var.create_vcn ? true : false
     existing_vcn_and_oci_db_different_vcn_{{{datasourceName}}} = local.db_strategy_{{{datasourceName}}}_is_oci_db && var.vcn_id != "" && var.vcn_id != var.oci_db_existing_vcn_id_{{{datasourceName}}} ? true : false
 
     new_vcn_and_atp_db_private_endpoint_{{{datasourceName}}}                    = local.db_strategy_{{{datasourceName}}}_is_atp_db && var.create_vcn && var.atp_db_uses_private_endpoint_{{{datasourceName}}} ? true : false

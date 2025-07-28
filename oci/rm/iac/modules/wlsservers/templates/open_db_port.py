@@ -12,7 +12,7 @@ import oci.core.models.tcp_options as tcp_options
 from oci.core.models import port_range, update_subnet_details, egress_security_rule, ingress_security_rule, create_security_list_details
 
 from restore_archives import get_attribute
-from vcn_peering import get_subnet_details, get_wls_subnet_id, get_db_subnet_id
+from vcn_peering import get_subnet_details, get_wls_subnet_id
 
 def get_db_existing_vcn_id():
     return get_attribute("db_existing_vcn_id")
