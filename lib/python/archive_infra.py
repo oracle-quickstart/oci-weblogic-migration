@@ -544,15 +544,6 @@ def __archive_directories(model, model_context, helper):
     # Case 3: Admin has NO space and skip_transfer = false (Selective remote archive + upload + delete)
     else:
         for machine in nodes:
-            listen_address = common.traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
-            if space_status.get(listen_address, 1) == 1:
-                # Todo implement to get commands to be run by the customers to create the archives specific to each node rather than this generic message
-                __logger.warning('WLSDPLY-05027',
-                                 'Not enough space on %s to create the archives. Please run the commands manually to create the archive, '
-                                 'scp to the admin host and upload to bucket.' % machine,
-                                 class_name=_class_name, method_name=_method_name)
-                continue
-
             node_details = OrderedDict()
             listen_address = common.traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
             init_argument_map[CommandLineArgUtil.SSH_HOST_SWITCH] = listen_address
@@ -564,6 +555,17 @@ def __archive_directories(model, model_context, helper):
                 __logger.info('WLSDPLY-20045',
                               init_argument_map, class_name=_class_name, method_name=_method_name)
             per_machine_model_context = __process_args(init_argument_map, is_encryption_supported)
+
+            # checking per node space
+            if space_status.get(listen_address, 1) == 1:
+                archiver = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model)
+                archiver.print_per_host_todo_commands()
+                __logger.warning('WLSDPLY-05027',
+                                 'Not enough space on %s to create the archives. Please run the commands manually mentioned in the TODO to create the archive, '
+                                 'scp to the admin host and upload to bucket.' % machine,
+                                 class_name=_class_name, method_name=_method_name)
+                continue
+
             result = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model).archive()
             if not infra_constants.SUCCESS == result:
                 ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902', "Node archive failed")

@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-Copyright (c) 2023, 2024, Oracle Corporation and/or its affiliates.
+Copyright (c) 2023, 2024, 2025 Oracle Corporation and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 The main module for the WebLogic Deploy tool to verify the user's SSH configuration is compatible with WDT.
@@ -322,3 +323,73 @@ class WLSMigrationArchiver(object):
             _logger.todo('WLSDPLY-06042', file_type, archive_name)
         else:
             _logger.todo('WLSDPLY-06041', file_type, local_name, archive_name)
+
+    def print_per_host_todo_commands(self):
+        """
+        Print the tar commands for particular host (self._machine) only.
+        """
+        topology = self._model.get_model_topology()
+        domain_name = topology[model_constants.DOMAIN_NAME]
+        domain_path = topology[infra_constants.DOMAIN_HOME_DIR]
+
+        # Oracle Home lookup as the key values are different for 12.2.1.4 and 14.1.2.0
+        try:
+            weblogic_home = topology[infra_constants.ORACLE_HOME_DIR]
+        except KeyError:
+            try:
+                weblogic_home = topology['OraclePath']
+            except KeyError:
+                weblogic_home = self._model_context.get_oracle_home()
+
+        file_path = self._model_context.get_local_output_dir()
+        if self._model_context.is_ssh():
+            file_path = self._model_context.get_remote_output_dir()
+
+        # Build extra_directories and java_home when skip-archive is active:
+        java_home = None
+        extra_dirs = []
+        try:
+            machines = self._model.get_model_resources()["Machines"]
+            if machines is not None and self._machine in machines:
+                md = machines[self._machine]
+                if md is not None:
+                    try:
+                        java_home = md["CanonicalJavaPath"]
+                    except Exception:
+                        pass
+                    try:
+                        extra_dirs = md["ExtraOSPaths"]
+                    except Exception:
+                        extra_dirs = []
+        except Exception:
+            # Machines section missing/null or host not present: skip per-host java_home TODOs
+            pass
+
+        file_type = "FILE_STORE"
+        skip_archive_dry_run = True
+
+        # --- Print tar commands for java_home for this host ---
+        if java_home:
+            suffix = "java_home"
+            archive_file_name = '%s/%s-%s-%s.tar.gz' % (file_path, self._machine, domain_name, suffix)
+            tar_cmd = self._cmd_helper.compress_archive(archive_file_name, java_home, skip_archive_dry_run)
+            _logger.todo('WLSDPLY-06042', file_type, tar_cmd)
+
+        # --- Print domain_home tar commands  for this host ---
+        suffix = "domain_home"
+        archive_file_name = '%s/%s-%s-%s.tar.gz' % (file_path, self._machine, domain_name, suffix)
+        tar_cmd = self._cmd_helper.compress_archive(archive_file_name, domain_path, skip_archive_dry_run)
+        _logger.todo('WLSDPLY-06042', file_type, tar_cmd)
+
+        # --- Print weblogic_home tar commands for this host ---
+        suffix = "weblogic_home"
+        archive_file_name = '%s/%s-%s-%s.tar.gz' % (file_path, self._machine, domain_name, suffix)
+        tar_cmd = self._cmd_helper.compress_archive(archive_file_name, weblogic_home, skip_archive_dry_run)
+        _logger.todo('WLSDPLY-06042', file_type, tar_cmd)
+
+        # --- Print custom_dirs tar commands for this host if present and not just root ---
+        if extra_dirs and (len(extra_dirs) != 1 or extra_dirs[0] != "/"):
+            suffix = "custom_dirs"
+            archive_file_name = '%s/%s-%s-%s.tar.gz' % (file_path, self._machine, domain_name, suffix)
+            tar_cmd = self._cmd_helper.compress_archive(archive_file_name, extra_dirs, skip_archive_dry_run)
+            _logger.todo('WLSDPLY-06042', file_type, tar_cmd)
