@@ -136,3 +136,9 @@ variable "wlsserver_pools" {
   description = "Tuple of Weblogic Server definitions grouped as pools. where each key maps to the OCID of an OCI resource, and value contains its definition."
   type        = any
 }
+
+variable "is_mds" {
+  default     = false
+  description = "Indicates if database connection string refers to a Multi data Source."
+  type        = bool
+}
