@@ -51,7 +51,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   on_prem_jdbc_string="${jdbc_string.on_prem}"
   oci_jdbc_string="${jdbc_string.oci}"
 
-     #Opening port 1522 in the subnet of the selected Autonomous Transaction Processing (ATP) Database, if the checkbox is checked.
+     #Opening port in the subnet of the selected ATP or OCI Database, if the checkbox is checked.
   if [ "$is_admin_instance" = "true" ] && [ "${jdbc_string.existing_vcn_add_seclist}" = "true" ]; then
       output=$(python3 /opt/scripts/open_db_port.py "${jdbc_string.datasource_index}" "${jdbc_string.db_port}" "${jdbc_string.db_network_compartment_id}" "${jdbc_string.db_existing_vcn_id}" "${jdbc_string.db_subnet_id}" 2>&1)
       exit_code=$?
