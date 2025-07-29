@@ -324,6 +324,26 @@ class WLSMigrationArchiver(object):
         else:
             _logger.todo('WLSDPLY-06041', file_type, local_name, archive_name)
 
+    def log_message(self, suffix, path, domain_name):
+        """
+        Print the log message
+        :param suffix: used for file name
+        :param path: path for which the archives have to be created
+        :param domain_name: name of the domain
+        :return: none, prints the log message with the tar commands to create archives
+        """
+        file_path = self._model_context.get_local_output_dir()
+        if self._model_context.is_ssh():
+            file_path = self._model_context.get_remote_output_dir()
+
+        file_type = "FILE_STORE"
+        skip_archive_dry_run = True
+
+        archive_file_name = '%s/%s-%s-%s.tar.gz' % (file_path, self._machine, domain_name, suffix)
+        tar_cmd = self._cmd_helper.compress_archive(archive_file_name, path, skip_archive_dry_run)
+        _logger.todo('WLSDPLY-06042', file_type, tar_cmd)
+
+
     def print_per_host_todo_commands(self):
         """
         Print the tar commands for particular host (self._machine) only.
@@ -340,10 +360,6 @@ class WLSMigrationArchiver(object):
                 weblogic_home = topology['OraclePath']
             except KeyError:
                 weblogic_home = self._model_context.get_oracle_home()
-
-        file_path = self._model_context.get_local_output_dir()
-        if self._model_context.is_ssh():
-            file_path = self._model_context.get_remote_output_dir()
 
         # Build extra_directories and java_home when skip-archive is active:
         java_home = None
@@ -365,31 +381,20 @@ class WLSMigrationArchiver(object):
             # Machines section missing/null or host not present: skip per-host java_home TODOs
             pass
 
-        file_type = "FILE_STORE"
-        skip_archive_dry_run = True
-
         # --- Print tar commands for java_home for this host ---
         if java_home:
             suffix = "java_home"
-            archive_file_name = '%s/%s-%s-%s.tar.gz' % (file_path, self._machine, domain_name, suffix)
-            tar_cmd = self._cmd_helper.compress_archive(archive_file_name, java_home, skip_archive_dry_run)
-            _logger.todo('WLSDPLY-06042', file_type, tar_cmd)
+            self.log_message(suffix, java_home, domain_name)
 
         # --- Print domain_home tar commands  for this host ---
         suffix = "domain_home"
-        archive_file_name = '%s/%s-%s-%s.tar.gz' % (file_path, self._machine, domain_name, suffix)
-        tar_cmd = self._cmd_helper.compress_archive(archive_file_name, domain_path, skip_archive_dry_run)
-        _logger.todo('WLSDPLY-06042', file_type, tar_cmd)
+        self.log_message(suffix, domain_path, domain_name)
 
         # --- Print weblogic_home tar commands for this host ---
         suffix = "weblogic_home"
-        archive_file_name = '%s/%s-%s-%s.tar.gz' % (file_path, self._machine, domain_name, suffix)
-        tar_cmd = self._cmd_helper.compress_archive(archive_file_name, weblogic_home, skip_archive_dry_run)
-        _logger.todo('WLSDPLY-06042', file_type, tar_cmd)
+        self.log_message(suffix, weblogic_home, domain_name)
 
         # --- Print custom_dirs tar commands for this host if present and not just root ---
         if extra_dirs and (len(extra_dirs) != 1 or extra_dirs[0] != "/"):
             suffix = "custom_dirs"
-            archive_file_name = '%s/%s-%s-%s.tar.gz' % (file_path, self._machine, domain_name, suffix)
-            tar_cmd = self._cmd_helper.compress_archive(archive_file_name, extra_dirs, skip_archive_dry_run)
-            _logger.todo('WLSDPLY-06042', file_type, tar_cmd)
+            self.log_message(suffix, extra_dirs, domain_name)
