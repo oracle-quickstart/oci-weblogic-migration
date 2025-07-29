@@ -24,12 +24,13 @@ def open_db_port(db_index, db_port=1521, db_vcn_compartment_id=None, db_vcn_id=N
     This method creates a new security list,
     it enable incoming requests from WLS subnet on port <db port> to the DB subnet, and it also allow traffic from DB
     subnet to the WLS subnet on port <db port>
-    :param service_prefix: The service instance prefix
+    :param db_index: The index of the DB
     :param db_port: The db port, defaulted to 1521
     :param db_vcn_compartment_id: The DB vcn compartment ocid
     :param db_vcn_id: The DB vcn ocid
     :param db_subnet_id: The DB subnet ocid
     :param wls_subnet_cidr: The WLS subnet CIDR
+    :param seclist_suffix: The security list suffix
     """
 
     principal = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
