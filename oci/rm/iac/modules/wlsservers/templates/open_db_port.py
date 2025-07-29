@@ -19,7 +19,7 @@ def get_db_existing_vcn_id():
 
 
 def open_db_port(db_index, db_port=1521, db_vcn_compartment_id=None, db_vcn_id=None, db_subnet_id=None,
-                 wls_subnet_cidr=None):
+                 wls_subnet_cidr=None, seclist_suffix=""):
     """
     This method creates a new security list,
     it enable incoming requests from WLS subnet on port <db port> to the DB subnet, and it also allow traffic from DB
@@ -35,7 +35,7 @@ def open_db_port(db_index, db_port=1521, db_vcn_compartment_id=None, db_vcn_id=N
     principal = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
     network_client = oci.core.VirtualNetworkClient(config={}, signer=principal)
 
-    display_name = "wls-to-db-seclist-" + db_index
+    display_name = "wls-to-db-seclist-" + seclist_suffix + "-" + db_index
     db_port_range = port_range.PortRange(max=db_port, min=db_port)
     tcp = tcp_options.TcpOptions(destination_port_range=db_port_range)
     ingres_rules = []
@@ -77,6 +77,7 @@ if __name__ == '__main__':
 
     wls_subnet = get_subnet_details(get_wls_subnet_id())
     wls_subnet_cidr_block = wls_subnet.cidr_block
+    wls_display_name = wls_subnet.display_name
 
     db_index = sys.argv[1]
     db_port = int(sys.argv[2])
@@ -91,7 +92,8 @@ if __name__ == '__main__':
         db_vcn_compartment_id=db_vcn_compartment_id,
         db_vcn_id=db_vcn_id,
         db_subnet_id=db_subnet_id,
-        wls_subnet_cidr=wls_subnet_cidr_block
+        wls_subnet_cidr=wls_subnet_cidr_block,
+        seclist_suffix=(wls_display_name.split('-')[1] if '-' in wls_display_name else "")
     )
 
 
