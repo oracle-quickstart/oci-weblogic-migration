@@ -135,6 +135,12 @@ function process_archives() {
   SPACE_RETURNCODE=$?
   log "info" "<process_archives><space_precheck_output> $SPACE_PRECHECK"
 
+  # checking if the admin returncode value is other than 0/1 then log an error and exit
+  if [ $SPACE_RETURNCODE -ne 0 ] && [ $SPACE_RETURNCODE -ne 1 ]; then
+      log "error" "<discoverDomain><process_archives><error> Space precheck failed with some error. exiting."
+      exit 1
+  fi
+
   SPACE_JSON=$(echo "$SPACE_PRECHECK" | grep -o '{.*}')
   export SPACE_STATUS_JSON="$SPACE_JSON"
   export SPACE_ADMIN_RETURNCODE=$SPACE_RETURNCODE

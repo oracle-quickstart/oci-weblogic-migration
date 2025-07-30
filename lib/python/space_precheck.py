@@ -62,8 +62,10 @@ class SpacePrecheck:
         cmd = f'''VAR_VALUE=${{{env_var_name}}}; [ -z "$VAR_VALUE" ] && VAR_VALUE=$(grep -h "^{env_var_name}=" ~/.bash_profile ~/.bashrc 2>/dev/null | awk -F "=" '{{print $2}}' | tr -d '"' | tail -n1); readlink -f "$VAR_VALUE" || echo "$VAR_VALUE"'''
         result = self.ssh.execute_ssh_command(hostname, cmd)
         result_out = result.stdout.strip()
+        result_err = result.stderr.strip()
         # If the SSH command failed or produced no output, skip
         if result.returncode != 0 or not result_out:
+            print(f"Error: {result_err}")
             return ""
         return result_out
 
@@ -115,7 +117,8 @@ class SpacePrecheck:
                 path = self.retrieve_remote_env_var_path(host, env_var)
                 if not path or "not found" in path.lower():
                     print(f"{env_var}: Not found.")
-                    continue
+                    # returning blank space json and admin returncode as 2 in case of any error
+                    return "", 2
 
                 # Get directory size in bytes and convert to MB
                 size_bytes = self.get_remote_directory_size_bytes(host, path)
