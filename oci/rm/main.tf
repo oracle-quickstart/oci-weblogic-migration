@@ -11,7 +11,7 @@ locals {
   }] : []
   db_strategy_is_atp = local.datasources == null ? false : anytrue([for _, v in local.datasources : v.is_atp])
   db_strategy_is_edit_string_atp = local.datasources == null ? false : anytrue([
-    for _, v in local.datasources : can(regex("adb", v.connection_string))])
+  for _, v in local.datasources : can(regex("adb", v.connection_string))])
   network_compartment_id = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
 
   # Fetching WLS version from JSON file

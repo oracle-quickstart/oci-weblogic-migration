@@ -135,7 +135,7 @@ variable "oci_db_pdb_service_name_{{{datasourceName}}}" {
 }
 
 variable "existing_vcn_add_seclist_{{{datasourceName}}}" {
-  description = "Whether to create a security list to open DB port for OCI DB or ATP DB."
+  description = "Whether to create a security list to open DB port for OCI DB or ATP DB with private endpoint."
   type        = bool
   default     = true
 }
