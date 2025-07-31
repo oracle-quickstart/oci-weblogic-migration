@@ -28,7 +28,6 @@ locals {
     datasources = var.update_any_ds? {
 {{#datasources}}
     {{{datasourceName}}} = {
-            datasource_index = {{{datasourceName}}}
             on_prem = var.ds_{{{datasourceName}}}
             oci = format("%s%s",local.jdbc_driver_thin_string,try(trimspace(local.db_options_{{{datasourceName}}}[var.db_strategy_{{{datasourceName}}}]),"empty"))
             is_atp = trimspace(var.atp_db_id_{{{datasourceName}}}) != ""
@@ -42,7 +41,7 @@ locals {
             db_network_compartment_id = local.db_network_compartment_id_{{{datasourceName}}}
             db_existing_vcn_id = local.db_existing_vcn_id_{{{datasourceName}}}
             db_subnet_id = local.db_subnet_id_{{{datasourceName}}}
-            existing_vcn_add_seclist =  var.existing_vcn_add_seclist_{{{datasourceName}}}
+            existing_vcn_add_seclist =  local.create_seclist_{{{datasourceName}}}
             db_port  = local.db_port_{{{datasourceName}}}
         }
 {{/datasources}}
@@ -102,6 +101,7 @@ locals {
 
     is_vcn_peering_{{{datasourceName}}} = local.db_strategy_{{{datasourceName}}}_is_atp_db || local.db_strategy_{{{datasourceName}}}_is_oci_db ? (local.new_vcn_and_oci_db_{{{datasourceName}}} || local.new_vcn_and_atp_db_private_endpoint_{{{datasourceName}}}  || local.existing_vcn_and_oci_db_different_vcn_{{{datasourceName}}} || local.existing_vcn_and_atp_db_private_endpoint_different_vcn_{{{datasourceName}}}) : false
 
+    create_seclist_{{{datasourceName}}} = ((local.db_strategy_{{{datasourceName}}}_is_atp_db && var.atp_db_uses_private_endpoint_{{{datasourceName}}} && var.existing_vcn_add_seclist_{{{datasourceName}}}) || (local.db_strategy_{{{datasourceName}}}_is_oci_db && var.existing_vcn_add_seclist_{{{datasourceName}}})) ? true : false
 
 {{/datasources}}
 }

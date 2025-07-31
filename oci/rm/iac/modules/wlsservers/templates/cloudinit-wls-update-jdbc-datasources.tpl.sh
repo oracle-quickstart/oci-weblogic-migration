@@ -52,11 +52,9 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   oci_jdbc_string="${jdbc_string.oci}"
 
      #Opening port in the subnet of the selected ATP with private endpoint or OCI Database, if the checkbox is checked.
-  if [[ "$is_admin_instance" == "true" ]] && \
-     { [[ "$is_oci_db" == "true" ]] || { [[ "$is_atp" == "true" ]] && [[ -n "${jdbc_string.db_subnet_id}" ]]; }; } && \
-     [[ "${jdbc_string.existing_vcn_add_seclist}" == "true" ]]; then
+  if [[ "$is_admin_instance" == "true" ]] && [[ "${jdbc_string.existing_vcn_add_seclist}" == "true" ]]; then
 
-      output=$(python3 /opt/scripts/open_db_port.py "${jdbc_string.datasource_index}" "${jdbc_string.db_port}" "${jdbc_string.db_network_compartment_id}" "${jdbc_string.db_existing_vcn_id}" "${jdbc_string.db_subnet_id}" 2>&1)
+      output=$(python3 /opt/scripts/open_db_port.py "${config_key}" "${jdbc_string.db_port}" "${jdbc_string.db_network_compartment_id}" "${jdbc_string.db_existing_vcn_id}" "${jdbc_string.db_subnet_id}" 2>&1)
       exit_code=$?
       echo "Executed script to open ingress port ${jdbc_string.db_port} in db subnet ${jdbc_string.db_subnet_id} with exit code [$exit_code]" | log >> $log_file
       echo "$output" | log >> $log_file
