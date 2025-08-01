@@ -200,9 +200,10 @@ variableGroups:
         - oci_db_dbhome_major_version_{{{datasourceName}}}
         - oci_db_database_id_{{{datasourceName}}}
         - oci_db_pdb_service_name_{{{datasourceName}}}
-        - oci_db_port_{{{datasourceName}}}
         - oci_db_network_compartment_id_{{{datasourceName}}}
         - oci_db_existing_vcn_id_{{{datasourceName}}}
+        - existing_vcn_add_seclist_{{{datasourceName}}}
+        - oci_db_port_{{{datasourceName}}}
 {{/datasources}}
   
     
@@ -978,6 +979,29 @@ variables:
     description: "The Listener Port for the Database"
     default: 1521
     required: false
+
+  existing_vcn_add_seclist_{{{datasourceName}}}:
+    visible:
+      and:
+        - ${orm_create_mode}
+        - ${update_any_ds}
+        - edit_ds_{{{datasourceName}}}
+        - or:
+          - and:
+            - eq:
+              - ${db_strategy_{{{datasourceName}}}}
+              - "Autonomous Transaction Processing Database"
+            - ${atp_db_uses_private_endpoint_{{{datasourceName}}}}
+          - and:
+            - eq:
+              - ${db_strategy_{{{datasourceName}}}}
+              - "Database System"
+            - ${use_oci_db}
+    type: boolean
+    title: "Enable Ingress Rule for WebLogic to Access DB."
+    description: "Add a security list to the DB subnet or a security rule to the Network Security Group for Database that allows connections from the WebLogic Server subnet."
+    default: true
+
   ########
   # End section: Database Service
   ########
