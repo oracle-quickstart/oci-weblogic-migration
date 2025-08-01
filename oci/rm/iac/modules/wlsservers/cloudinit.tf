@@ -203,6 +203,10 @@ data "cloudinit_config" "wlsservers" {
              path     = "/opt/scripts/vcn_peering.py"
            },
            {
+             content  = file("${path.module}/templates/open_db_port.py")
+             path     = "/opt/scripts/open_db_port.py"
+           },
+           {
              content  = file("${path.module}/templates/atp_db_util.py")
              path     = "/opt/scripts/atp_db_util.py"
            },
@@ -273,8 +277,6 @@ data "cloudinit_config" "wlsservers" {
       merge_type   = local.default_cloud_init_merge_type
     }
   }
-
-
 
   # WLS config updates. 8x-filename.sh or .yml
 
