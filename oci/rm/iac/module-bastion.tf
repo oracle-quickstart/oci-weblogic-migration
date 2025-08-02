@@ -51,12 +51,13 @@ module "bastion" {
   is_public           = var.bastion_is_public
   shape               = var.bastion_shape
   boot_volume_size    = var.boot_volume_size
-  ssh_private_key     = sensitive(local.ssh_private_key) # to await cloud-init completion
+  ssh_private_key     = try(module.compute-keygen.bastion_private_key,"") # to await cloud-init completion
   ssh_public_key      = local.ssh_public_key
   subnet_id           = try(module.network_bastion_subnet[0].subnet_id, "")
   timezone            = var.timezone
   upgrade             = var.bastion_upgrade
   user                = var.bastion_user
+  bastion_public_ssh_key = try(module.compute-keygen.bastion_public_key,"")
 
   # Standard tags as defined if enabled for use, or freeform
   # User-provided tags are merged last and take precedence

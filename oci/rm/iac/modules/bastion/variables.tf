@@ -17,6 +17,7 @@ variable "ssh_private_key" {
   type      = string
   sensitive = true
 }
+variable "bastion_public_ssh_key" {type = string}
 variable "ssh_public_key" { type = string }
 variable "subnet_id" { type = string }
 variable "timezone" { type = string }

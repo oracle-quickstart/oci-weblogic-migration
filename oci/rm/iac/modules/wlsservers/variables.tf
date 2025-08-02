@@ -320,3 +320,31 @@ variable "text_to_replace_in_config" {
   type = any
   default= {}
 }
+
+#
+# wlsservers: instance
+#
+
+variable "create_bastion" {
+  description = "Whether to create a bastion host."
+  type        = bool
+}
+
+variable "rms_private_endpoint_id" {
+  type        = string
+  description = "The OCID of the resource manager private endpoint"
+}
+
+variable "bastion_host_ip" {
+  description = "The IP address of the bastion host."
+  type        = string
+}
+
+variable "bastion_host_private_key" {
+  type        = string
+  description = "The ssh private key that will be used to allow the opc user to ssh to the compute instance"
+}
+
+variable "opc_key" {
+  description = "A map with the public and private key (in pem format) generated for the opc user"
+}
