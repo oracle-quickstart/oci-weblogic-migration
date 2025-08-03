@@ -7,9 +7,9 @@ output "opc_keys" {
 }
 
 output "bastion_private_key" {
-  value = tls_private_key.bastion_opc_key.private_key_pem
+  value = var.create_bastion ? try(tls_private_key.bastion_opc_key[0].private_key_pem, "") : null
 }
 
 output "bastion_public_key" {
-  value = tls_private_key.bastion_opc_key.public_key_openssh
+  value = var.create_bastion ? try(tls_private_key.bastion_opc_key[0].public_key_openssh, "") : null
 }

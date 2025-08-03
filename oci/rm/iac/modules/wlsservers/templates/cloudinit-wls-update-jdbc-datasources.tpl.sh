@@ -20,6 +20,7 @@ logs_dir=`get_logs_dir`
 #no need to recreate again. logs should be created by wls-restore script.
 #mkdir -p $${logs_dir}
 log_file="$${logs_dir}/datasource_update.log"
+error_log_file="$${logs_dir}/cloud-init-errors.log"
 
 function log() {
     while IFS= read -r line; do
@@ -32,13 +33,14 @@ function log() {
 eval $(oci-metadata --get is_vcn_peering --export)
 eval $(oci-metadata --get is_admin_instance --export)
 if [ "$is_admin_instance" = "true" ] && [ "$is_vcn_peering" = "true" ]; then
-    output=$(python3 /opt/scripts/vcn_peering.py)
-    exit_code=$?
-    echo "Executed VCN peering script with exit code [$exit_code]" | log >> $log_file
-    echo "$output" | log >> $log_file
-    if [ $exit_code -ne 0 ]; then
-        echo "Error executing VCN peering script. " | log >> $log_file
-    fi
+  output=$(python3 /opt/scripts/vcn_peering.py)
+  exit_code=$?
+  echo "Executed VCN peering script with exit code [$exit_code]" | log >> $log_file
+  echo "$output" | log >> $log_file
+  if [ $exit_code -ne 0 ]; then
+    echo "Error executing VCN peering script. " | log | tee -a $log_file >> $error_log_file
+    echo "$output" | log >> $error_log_file
+  fi
 fi
 
 cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/jdbc" | log >> $log_file ; exit 1)
@@ -62,19 +64,26 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     download_exit_code=$?
     echo "Executed ATP wallet download and unzip with exit code [$download_exit_code] and [$unzip_oper_exit_code]" | log >> $log_file
     if [[ $wallet_pass_exit_code -ne 0 ]] || [[ $download_exit_code -ne 0 ]]; then
-        echo "Error downloading ATP wallet.. Exiting provisioning" | log >> $log_file
-        exit 1
+      echo "Error downloading ATP wallet.. Exiting provisioning" | log | tee -a $log_file >> $error_log_file
+      if [[ $wallet_pass_exit_code -ne 0 ]]; then
+        echo "$atp_wallet_password" | log >> $error_log_file
+      fi
+      if [[ $download_exit_code -ne 0 ]]; then
+        echo "$download" | log >> $error_log_file
+      fi
+      exit 1
     fi
     files=$(grep -il "$on_prem_jdbc_string" "${domain_home}/config/jdbc/"*.xml)
     for file in $files; do
-        output=$(python3 /opt/scripts/ds_update_config_xml_w_atp.py "$file" "$wallet_location" "$oci_jdbc_string")
-        exit_code=$?
-        echo "Executed datasource ATP update on $file with exit code [$exit_code]" | log >> $log_file
-        echo "$output" | log >> $log_file
-        if [ $exit_code -ne 0 ]; then
-            echo "Error executing datasource update for ATP database.. Exiting provisioning" | log >> $log_file
-            exit 1
-        fi
+      output=$(python3 /opt/scripts/ds_update_config_xml_w_atp.py "$file" "$wallet_location" "$oci_jdbc_string")
+      exit_code=$?
+      echo "Executed datasource ATP update on $file with exit code [$exit_code]" | log >> $log_file
+      echo "$output" | log >> $log_file
+      if [ $exit_code -ne 0 ]; then
+        echo "Error executing datasource update for ATP database.. Exiting provisioning" | log | tee -a $log_file >> $error_log_file
+        echo "$output" | log >> $error_log_file
+        exit 1
+      fi
     done
     # Find if jspconfig files exist and replace jdbc string if found by this database
     connection_url="jdbc:oracle:thin:@${jdbc_string.atp_db.db_name}_${jdbc_string.atp_db.db_level}?TNS_ADMIN=$wallet_location"
@@ -83,55 +92,59 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     echo "Executed datasource ATP update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
     echo "$output" | log >> $log_file
     if [ $exit_code -eq 123 ]; then
-                     echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
+      echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
     elif [ $exit_code -ne 0 ]; then
-        echo "Executed datasource ATP update on jps-config*.xml with ATP database.. Exiting provisioning" | log >> $log_file
-        exit 1
+      echo "Executed datasource ATP update on jps-config*.xml with ATP database.. Exiting provisioning" | log | tee -a $log_file >> $error_log_file
+      echo "$output" | log >> $error_log_file
+      exit 1
     fi
 
   elif [[ $is_atp == "false" ]] && [[ $is_oci_db == "true" ]]; then
     files=$(grep -il "$on_prem_jdbc_string" "${domain_home}/config/jdbc/"*.xml)
     for file in $files; do
-        output=$(python3 /opt/scripts/ds_update_config_xml_w_db_system.py "$file" "$oci_jdbc_string")
-        exit_code=$?
-        echo "Executed datasource update $file with exit code [$exit_code]" | log >> $log_file
-        echo "$output" | log >> $log_file
-        if [ $exit_code -ne 0 ]; then
-            echo "Error executing datasource update for DB System database.. Exiting provisioning" | log >> $log_file
-            exit 1
-        fi
+      output=$(python3 /opt/scripts/ds_update_config_xml_w_db_system.py "$file" "$oci_jdbc_string")
+      exit_code=$?
+      echo "Executed datasource update $file with exit code [$exit_code]" | log >> $log_file
+      echo "$output" | log >> $log_file
+      if [ $exit_code -ne 0 ]; then
+        echo "Error executing datasource update for DB System database.. Exiting provisioning" | log | tee -a $log_file >> $error_log_file
+        echo "$output" | log >> $error_log_file
+        exit 1
+      fi
     done
     output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
     exit_code=$?
     echo "Executed datasource update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
     echo "$output" | log >> $log_file
     if [ $exit_code -eq 123 ]; then
-                 echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
+      echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
     elif [ $exit_code -ne 0 ]; then
-        echo "Error executing datasource update for DB System database on jspconfig files.. Exiting provisioning" | log >> $log_file
-        exit 1
+      echo "Error executing datasource update for DB System database on jspconfig files.. Exiting provisioning" | log | tee -a $log_file >> $error_log_file
+      echo "$output" | log >> $error_log_file
+      exit 1
     fi
   elif [[ $is_custom_jdbc == "true" ]]; then
-
-        output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/jdbc/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
-        exit_code=$?
-        echo "Executed datasource update on $file with exit code [$exit_code]" | log >> $log_file
-        echo "$output" | log >> $log_file
-        if [ $exit_code -ne 0 ]; then
-            echo "Error executing datasource update with custom JDBC connection string on jdbc config files.. Exiting provisioning" | log >> $log_file
-            exit 1
-        fi
-        # Modify jspconfig if exists.
-         output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
-         exit_code=$?
-         echo "Executed datasource update for custom JDBC connection string on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
-         echo "$output" | log >> $log_file
-         if [ $exit_code -eq 123 ]; then
-             echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
-         elif [ $exit_code -ne 0 ]; then
-             echo "Error executing datasource update for custom JDBC connection string on jspconfig files.. Exiting provisioning" | log >> $log_file
-             exit 1
-         fi
+    output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/jdbc/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
+    exit_code=$?
+    echo "Executed datasource update on $file with exit code [$exit_code]" | log >> $log_file
+    echo "$output" | log >> $log_file
+    if [ $exit_code -ne 0 ]; then
+      echo "Error executing datasource update with custom JDBC connection string on jdbc config files.. Exiting provisioning" | log | tee -a $log_file >> $error_log_file
+      echo "$output" | log >> $error_log_file
+      exit 1
+      fi
+    # Modify jspconfig if exists.
+    output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
+    exit_code=$?
+    echo "Executed datasource update for custom JDBC connection string on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
+    echo "$output" | log >> $log_file
+    if [ $exit_code -eq 123 ]; then
+      echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
+    elif [ $exit_code -ne 0 ]; then
+      echo "Error executing datasource update for custom JDBC connection string on jspconfig files.. Exiting provisioning" | log | tee -a $log_file >> $error_log_file
+      echo "$output" | log >> $error_log_file
+      exit 1
+    fi
   fi
 
 %{ endfor ~}

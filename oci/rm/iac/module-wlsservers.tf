@@ -125,9 +125,9 @@ module "wlsservers" {
   wls_datasources_config = var.wls_configured_datasource_text
 
   #cloud-init-status-check
-  rms_private_endpoint_id  = var.create_bastion ? "" : module.rms-private-endpoint[0].rms_private_endpoint_id
+  rms_private_endpoint_id  = var.create_bastion ? "" : try(module.rms-private-endpoint[0].rms_private_endpoint_id,"")
   create_bastion           = var.create_bastion
-  opc_key                  = module.compute-keygen.opc_keys
+  opc_key                  = try(module.compute-keygen.opc_keys,{})
   bastion_host_ip          = var.create_bastion && length(module.bastion) > 0 ? module.bastion[0].public_ip : null
   bastion_host_private_key = var.create_bastion && length(module.bastion) > 0 ? try(module.compute-keygen.bastion_private_key,"") : null
 
@@ -177,6 +177,6 @@ output "weblogic_instances_admin_private_ip" {
 }
 
 output "ssh_private_key_opc" {
-  value       = module.compute-keygen.opc_keys["private_key_pem"]
+  value       = try(module.compute-keygen.opc_keys["private_key_pem"],"")
   description = "The ssh private key in PEM format generated for the opc user"
 }
