@@ -322,7 +322,7 @@ variable "text_to_replace_in_config" {
 }
 
 #
-# wlsservers: instance
+# wlsservers: cloud_init_status
 #
 
 variable "create_bastion" {

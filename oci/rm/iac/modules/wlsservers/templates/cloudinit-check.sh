@@ -15,7 +15,7 @@ if cloud-init status --wait; then
   echo "Cloud-init Completed Successfully on the host: $(hostname)"
 else
   echo "======= Cloud-init Error Summary of the host: $(hostname) ======="
-  awk '/<ERROR>|Traceback|Exception/ { print_line = 1 } print_line { print } /^$|^.*INFO.*$|^.*DEBUG.*$/ { print_line = 0 }' /var/log/cloud-init-output.log | tail -n 150 || echo "No errors found."
+  awk '/<ERROR>|Traceback|Exception/ { print_line = 1 } print_line { print } /^$|^.*INFO.*$|^.*DEBUG.*$/ { print_line = 0 }' /var/log/cloud-init-output.log
   dump_cloud_init_error_logs
   echo -e "\nRefer to /var/log/cloud-init-output.log and /var/log/owm/*.log for more details."
   echo "======= End of Error Summary of the host: $(hostname) ======="
