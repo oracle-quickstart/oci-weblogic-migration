@@ -103,7 +103,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
             exit 1
         fi
     else
-        echo "No matching config files found for datasource update. Skipping replacement." | log >> $log_file
+        echo "No matching jps-config*.xml file found for datasource update. Skipping replacement." | log >> $log_file
     fi
 
   elif [[ $is_atp == "false" ]] && [[ $is_oci_db == "true" ]]; then
@@ -125,11 +125,11 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
         echo "Executed datasource update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
         echo "$output" | log >> $log_file
         if [ $exit_code -ne 0 ]; then
-            echo "Error executing datasource update for DB System database on jspconfig files.. Exiting provisioning" | log >> $log_file
+            echo "Error executing datasource update for DB System database on jps-config*.xml files.. Exiting provisioning" | log >> $log_file
             exit 1
         fi
     else
-        echo "No matching config files found for datasource update. Skipping replacement." | log >> $log_file
+        echo "No matching jps-config*.xml file found for datasource update. Skipping replacement." | log >> $log_file
     fi
   elif [[ $is_custom_jdbc == "true" ]]; then
 
@@ -149,11 +149,11 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
             echo "Executed datasource update for custom JDBC connection string on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
             echo "$output" | log >> $log_file
             if [ $exit_code -ne 0 ]; then
-                echo "Error executing datasource update for custom JDBC connection string on jspconfig files.. Exiting provisioning" | log >> $log_file
+                echo "Error executing datasource update for custom JDBC connection string on jps-config*.xml files.. Exiting provisioning" | log >> $log_file
                 exit 1
             fi
         else
-            echo "No matching config files found for datasource update. Skipping replacement." | log >> $log_file
+            echo "No matching jps-config*.xml file found for datasource update. Skipping replacement." | log >> $log_file
         fi
   fi
 

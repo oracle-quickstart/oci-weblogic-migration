@@ -18,22 +18,14 @@ resource "oci_core_local_peering_gateway" "wlslpg" {
 }
 
 # Add to the DNS resolver of the WebLogic VCN the default view of the DNS resolver of the DB VCN
-#resource "oci_dns_resolver" "wls_oci_dns_resolver" {
-#  resolver_id = data.oci_core_vcn_dns_resolver_association.wls_vcn_resolver_association.dns_resolver_id
-#  scope       = "PRIVATE"
-#
-#  dynamic "attached_views" {
-#    for_each = local.db_resolver_views
-#    content {
-#      view_id = attached_views.value
-#    }
-#  }
-#}
-
-resource "oci_dns_resolver_attachment" "attach_db_views_to_wls" {
-  for_each = local.db_resolver_views
-
+resource "oci_dns_resolver" "wls_oci_dns_resolver" {
   resolver_id = data.oci_core_vcn_dns_resolver_association.wls_vcn_resolver_association.dns_resolver_id
-  view_id     = each.value
   scope       = "PRIVATE"
+
+  dynamic "attached_views" {
+    for_each = local.db_resolver_views
+    content {
+      view_id = attached_views.value
+    }
+  }
 }
