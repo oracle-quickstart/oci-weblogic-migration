@@ -16,7 +16,7 @@ def create_wallet_props(doc, properties, wallet_prop):
         properties.appendChild(new_property(doc,name,value))
 
 
-def enable_wallet_ds_config(xmlfile, jdbc_string, wallet_path,output_xml_file=None):
+def enable_wallet_ds_config(xmlfile, jdbc_string, wallet_path, output_xml_file=None):
     """Adds a sub-element to an existing element in an XML file."""
 
     wallet_prop ={
@@ -50,10 +50,26 @@ def enable_wallet_ds_config(xmlfile, jdbc_string, wallet_path,output_xml_file=No
         found = False
         for prop in property_list:
             name = prop.getElementsByTagName("name")[0]
-            value = prop.getElementsByTagName("value")[0]
-            if name.firstChild.data == wallet_prop_key :
+            if name.firstChild and name.firstChild.data == wallet_prop_key:
                 print("found entry "+ wallet_prop_key)
-                value.firstChild.data = wallet_prop_value
+
+                value_nodes = prop.getElementsByTagName("value")
+                encrypted_nodes = prop.getElementsByTagName("encrypted-value-encrypted")
+
+                if value_nodes:
+                    value_node = value_nodes[0]
+                    if value_node.firstChild:
+                        value_node.firstChild.data = wallet_prop_value
+                    else:
+                        value_node.appendChild(document.createTextNode(wallet_prop_value))
+                elif encrypted_nodes:
+                    enc_node = encrypted_nodes[0]
+                    if enc_node.firstChild:
+                        enc_node.firstChild.data = wallet_prop_value
+                    else:
+                        enc_node.appendChild(document.createTextNode(wallet_prop_value))
+                else:
+                    print(f"Warning: No <value> or <encrypted-value-encrypted> found for {wallet_prop_key}")
                 found=True
         if not found:
             properties[0].appendChild(new_property(document,wallet_prop_key,wallet_prop_value))
@@ -76,8 +92,6 @@ def enable_wallet_ds_config(xmlfile, jdbc_string, wallet_path,output_xml_file=No
     out_byte = document.toprettyxml(encoding="utf-8")
     xml_to_write = out_byte.decode("utf-8")
     with open(fileName, mode='w', encoding="utf-8") as outfile:
-        #outfile.write(document.toprettyxml().replace(u'<?xml version="1.0" ?>',
-        #                                             u'<?xml version="1.0" encoding="UTF-8"?>' ))
         outfile.write(xml_to_write)
         outfile.close()
 
@@ -89,5 +103,4 @@ if __name__ == "__main__":
     xml_file = sys.argv[1]
     wallet_path = sys.argv[2]
     jdbc_string = sys.argv[3]
-    # test_file =  sys.argv[4]
-    enable_wallet_ds_config(xml_file, jdbc_string,wallet_path)
+    enable_wallet_ds_config(xml_file, jdbc_string, wallet_path)
