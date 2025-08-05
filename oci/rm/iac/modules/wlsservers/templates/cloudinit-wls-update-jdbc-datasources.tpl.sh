@@ -92,15 +92,18 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     done
     # Find if jspconfig files exist and replace jdbc string if found by this database
     connection_url="jdbc:oracle:thin:@${jdbc_string.atp_db.db_name}_${jdbc_string.atp_db.db_level}?TNS_ADMIN=$wallet_location"
-    output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$connection_url|g");
-    exit_code=$?
-    echo "Executed datasource ATP update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
-    echo "$output" | log >> $log_file
-    if [ $exit_code -eq 123 ]; then
-                     echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
-    elif [ $exit_code -ne 0 ]; then
-        echo "Executed datasource ATP update on jps-config*.xml with ATP database.. Exiting provisioning" | log >> $log_file
-        exit 1
+    matching_files=$(sudo -E -u "${user}" grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string")
+    if [ -n "$matching_files" ]; then
+        output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$connection_url|g");
+        exit_code=$?
+        echo "Executed datasource ATP update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
+        echo "$output" | log >> $log_file
+        if [ $exit_code -ne 0 ]; then
+            echo "Executed datasource ATP update on jps-config*.xml with ATP database.. Exiting provisioning" | log >> $log_file
+            exit 1
+        fi
+    else
+        echo "No matching config files found for datasource update. Skipping replacement." | log >> $log_file
     fi
 
   elif [[ $is_atp == "false" ]] && [[ $is_oci_db == "true" ]]; then
@@ -115,15 +118,18 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
             exit 1
         fi
     done
-    output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
-    exit_code=$?
-    echo "Executed datasource update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
-    echo "$output" | log >> $log_file
-    if [ $exit_code -eq 123 ]; then
-                 echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
-    elif [ $exit_code -ne 0 ]; then
-        echo "Error executing datasource update for DB System database on jspconfig files.. Exiting provisioning" | log >> $log_file
-        exit 1
+    matching_files=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string")
+    if [ -n "$matching_files" ]; then
+        output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
+        exit_code=$?
+        echo "Executed datasource update on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
+        echo "$output" | log >> $log_file
+        if [ $exit_code -ne 0 ]; then
+            echo "Error executing datasource update for DB System database on jspconfig files.. Exiting provisioning" | log >> $log_file
+            exit 1
+        fi
+    else
+        echo "No matching config files found for datasource update. Skipping replacement." | log >> $log_file
     fi
   elif [[ $is_custom_jdbc == "true" ]]; then
 
@@ -136,16 +142,19 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
             exit 1
         fi
         # Modify jspconfig if exists.
-         output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
-         exit_code=$?
-         echo "Executed datasource update for custom JDBC connection string on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
-         echo "$output" | log >> $log_file
-         if [ $exit_code -eq 123 ]; then
-             echo "Non-JRF migration. continuing executing scripts" | log >> $log_file
-         elif [ $exit_code -ne 0 ]; then
-             echo "Error executing datasource update for custom JDBC connection string on jspconfig files.. Exiting provisioning" | log >> $log_file
-             exit 1
-         fi
+        matching_files=$(sudo -E -u "${user}" grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string")
+        if [ -n "$matching_files" ]; then
+            output=$(sudo -E -u ${user} grep --include=\*.{xml,properties} -rwl "${domain_home}/config/fmwconfig/" -e "$on_prem_jdbc_string" | xargs sed -i "s|$on_prem_jdbc_string|$oci_jdbc_string|g");
+            exit_code=$?
+            echo "Executed datasource update for custom JDBC connection string on jps-config*.xml with exit code [$exit_code]" | log >> $log_file
+            echo "$output" | log >> $log_file
+            if [ $exit_code -ne 0 ]; then
+                echo "Error executing datasource update for custom JDBC connection string on jspconfig files.. Exiting provisioning" | log >> $log_file
+                exit 1
+            fi
+        else
+            echo "No matching config files found for datasource update. Skipping replacement." | log >> $log_file
+        fi
   fi
 
 %{ endfor ~}
