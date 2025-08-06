@@ -46,7 +46,15 @@ variable "db_strategy_is_edit_string_atp" {
 variable "network_compartment_id" {
   type = string
 }
-
 variable "bucket_compartment" {
   type = string
+}
+variable "wls_datasources_config" {
+  type = map(object({
+    db_network_compartment_id  = string
+    existing_vcn_add_seclist   = bool
+    is_atp                     = bool
+    connection_string          = string
+    is_vcn_peering             = bool
+  }))
 }

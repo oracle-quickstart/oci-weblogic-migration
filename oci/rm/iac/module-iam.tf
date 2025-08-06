@@ -72,6 +72,8 @@ module "iam" {
 
   wlsserver_compartments = local.wlsserver_compartments
 
+  wls_datasources_config = var.wls_configured_datasource_text
+
   providers = {
     oci.home = oci.home
   }
