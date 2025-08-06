@@ -326,6 +326,7 @@ variable "text_to_replace_in_config" {
 #
 
 variable "create_bastion" {
+  default = false
   description = "Whether to create a bastion host."
   type        = bool
 }

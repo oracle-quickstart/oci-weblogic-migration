@@ -12,7 +12,7 @@ dump_cloud_init_error_logs() {
 
 if cloud-init status --wait; then
   dump_cloud_init_error_logs
-  echo "Cloud-init Completed Successfully on the host: $(hostname)"
+  echo "$(hostname): Cloud-init Completed Successfully"
 else
   echo "======= Cloud-init Error Summary of the host: $(hostname) ======="
   awk '/<ERROR>|Traceback|Exception/ { print_line = 1 } print_line { print } /^$|^.*INFO.*$|^.*DEBUG.*$/ { print_line = 0 }' /var/log/cloud-init-output.log

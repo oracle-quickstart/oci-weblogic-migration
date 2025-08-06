@@ -33,12 +33,12 @@ function log() {
 eval $(oci-metadata --get is_vcn_peering --export)
 eval $(oci-metadata --get is_admin_instance --export)
 if [ "$is_admin_instance" = "true" ] && [ "$is_vcn_peering" = "true" ]; then
-  output=$(python3 /opt/scripts/vcn_peering.py)
+  output=$(python3 /opt/scripts/vcn_peering.py 2>&1)
   exit_code=$?
   echo "Executed VCN peering script with exit code [$exit_code]" | log >> $log_file
   echo "$output" | log >> $log_file
   if [ $exit_code -ne 0 ]; then
-    echo "Error executing VCN peering script. " | log | tee -a $log_file >> $error_log_file
+    echo "[WARNING] Executed VCN peering script with exit code [$exit_code]" | log | tee -a $log_file >> $error_log_file
     echo "$output" | log >> $error_log_file
   fi
 fi
