@@ -77,6 +77,7 @@ variable "oci_db_connection_string_{{{datasourceName}}}" {
 }
 
 ##### OCI Database Service #########
+
 variable "oci_db_port_{{{datasourceName}}}" {
   type        = number
   description = "The listener port for the OCI database"
@@ -131,6 +132,12 @@ variable "oci_db_pdb_service_name_{{{datasourceName}}}" {
   type        = string
   description = "The name of the pluggable database (PDB) in which to provision the schemas for a JRF-enabled WebLogic Server domain. This is required for Oracle Database 12c or later"
   default     = ""
+}
+
+variable "existing_vcn_add_seclist_{{{datasourceName}}}" {
+  description = "Whether to create a security list to open DB port for OCI DB or ATP DB with private endpoint."
+  type        = bool
+  default     = true
 }
 #/////////////////
 # End Section: Datasource #{{{datasourceName}}}

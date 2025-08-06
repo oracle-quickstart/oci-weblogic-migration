@@ -46,24 +46,7 @@ variable "db_strategy_is_edit_string_atp" {
 variable "network_compartment_id" {
   type = string
 }
-variable "atp_db_compartment_id_0" {
-  type = string
-}
-variable "atp_has_private_endpoints_0" {
-  type = string
-}
-variable "atp_db_existing_vcn_id_0" {
-  type = string
-}
-variable "atp_db_network_compartment_id_0" {
-  type = string
-}
+
 variable "bucket_compartment" {
-  type = string
-}
-variable "is_vcn_peering" {
-  type = string
-}
-variable "db_network_compartment_id" {
   type = string
 }

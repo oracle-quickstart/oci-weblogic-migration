@@ -52,6 +52,21 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   is_custom_jdbc=${jdbc_string.custom_jdbc}
   on_prem_jdbc_string="${jdbc_string.on_prem}"
   oci_jdbc_string="${jdbc_string.oci}"
+
+     #Opening port in the subnet of the selected ATP with private endpoint or OCI Database, if the checkbox is checked.
+  if [[ "$is_admin_instance" == "true" ]] && [[ "${jdbc_string.existing_vcn_add_seclist}" == "true" ]]; then
+
+      output=$(python3 /opt/scripts/open_db_port.py "${config_key}" "${jdbc_string.db_port}" "${jdbc_string.db_network_compartment_id}" "${jdbc_string.db_existing_vcn_id}" "${jdbc_string.db_subnet_id}" 2>&1)
+      exit_code=$?
+      echo "Executed script to open ingress port ${jdbc_string.db_port} in db subnet ${jdbc_string.db_subnet_id} with exit code [$exit_code]" | log >> $log_file
+      echo "$output" | log >> $log_file
+      if [ $exit_code -ne 0 ]; then
+          echo "Error executing the script to open ingress port ${jdbc_string.db_port} in db subnet ${jdbc_string.db_subnet_id}" | log | tee -a $log_file >> $error_log_file
+          echo "$output" | log >> $error_log_file
+          exit 1
+      fi
+  fi
+
   if [ $is_atp == "true" ]; then
     #Wallets will be placed in /u01/oracle/wallet/private/<ocid>
     wallet_location=${domain_home}/wlsdeploy/wallet/private/${jdbc_string.db_id}
@@ -62,7 +77,7 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
     wallet_pass_exit_code=$?
     download=$(sudo -E -u ${user} echo "$${atp_wallet_password}" | python3 /opt/scripts/atp_db_util.py ${jdbc_string.db_id} "$wallet_location" 2>&1 )
     download_exit_code=$?
-    echo "Executed ATP wallet download and unzip with exit code [$download_exit_code] and [$unzip_oper_exit_code]" | log >> $log_file
+    echo "Executed ATP wallet download and unzip with exit code [$wallet_pass_exit_code] and [$download_exit_code]" | log >> $log_file
     if [[ $wallet_pass_exit_code -ne 0 ]] || [[ $download_exit_code -ne 0 ]]; then
       echo "Error downloading ATP wallet.. Exiting provisioning" | log | tee -a $log_file >> $error_log_file
       if [[ $wallet_pass_exit_code -ne 0 ]]; then
@@ -148,4 +163,3 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   fi
 
 %{ endfor ~}
-

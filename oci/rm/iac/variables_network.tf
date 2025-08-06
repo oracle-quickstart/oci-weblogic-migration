@@ -162,7 +162,6 @@ variable "subnets" {
 variable "nsgs" {
   default = {
     bastion       = {}
-    int_lb        = {}
     pub_lb        = {}
     managedserver = {}
     adminserver   = {}
@@ -189,10 +188,10 @@ variable "nsgs" {
   validation {
     condition = alltrue([
       for k, v in var.nsgs :
-      contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver", "fss"], k)
+      contains(["bastion", "pub_lb", "managedserver", "adminserver", "fss"], k)
     ])
     error_message = format("Invalid NSG keys: %s", jsonencode([for k, v in var.nsgs : k
-      if !contains(["bastion", "int_lb", "pub_lb", "managedserver", "adminserver", "fss"], k)
+      if !contains(["bastion", "pub_lb", "managedserver", "adminserver", "fss"], k)
     ]))
   }
 }
@@ -258,12 +257,6 @@ variable "allow_bastion_adminserver_access" {
   type        = bool
 }
 
-variable "allow_rules_internal_lb" {
-  default     = {}
-  description = "A map of additional rules to allow incoming traffic for internal load balancers."
-  type        = any
-}
-
 variable "allow_rules_public_lb" {
   default     = {}
   description = "A map of additional rules to allow incoming traffic for public load balancers."
@@ -306,28 +299,10 @@ variable "bastion_subnet_cidr" {
   default     = ""
 }
 
-variable "db_network_compartment_id" {
-  type        = string
-  description = "The OCID of the compartment in which the DB System VCN is found"
-  default     = ""
-}
-
-variable "db_existing_vcn_id" {
-  type        = string
-  description = "The OCID of the VCN used by the ATP database private endpoint"
-  default     = ""
-}
-
-variable "is_vcn_peering" {
-  type        = bool
-  description = "Indicates whether VCN peering will be set up"
-  default     = false
-}
-
-variable "db_subnet_id" {
-  type        = string
-  description = "The OCID of the subnet for the OCI DB or ATP DB (when using private endpoint)"
-  default     = ""
+variable "datasources" {
+  type = any
+  default = {}
+  description = "Map of JDBC connection strings."
 }
 
 variable "pub_lb_subnet_cidr" {
