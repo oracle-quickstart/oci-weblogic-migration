@@ -9,6 +9,7 @@ Updates the Weblogic and Database subnet route tables for VCN peering.
 import oci
 import sys
 import json
+from oci.exceptions import ServiceError
 from restore_archives import get_attribute
 
 # Initialize service clients
@@ -30,8 +31,22 @@ def get_wls_lpg_map():
     return get_attribute("wlsserver_lpg_ids")
 
 def get_subnet_details(subnet_id):
-    get_subnet_response = core_client.get_subnet(subnet_id=subnet_id)
-    return(get_subnet_response.data)
+    try:
+        get_subnet_response = core_client.get_subnet(subnet_id=subnet_id)
+        return(get_subnet_response.data)
+
+    except ServiceError as e:
+        if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print(f"{str(e)}")
+            sys.exit(1)
+        else:
+            print(f"{str(e)}")
+            sys.exit(1)
+
+    except Exception as e:
+        print(f"{str(e)}")
+        sys.exit(1)
 
 def establish_peering_between_lpgs(wls_lpg_id, db_lpg_id):
     """
@@ -43,13 +58,22 @@ def establish_peering_between_lpgs(wls_lpg_id, db_lpg_id):
             connect_local_peering_gateways_details=oci.core.models.ConnectLocalPeeringGatewaysDetails(
                 peer_id=db_lpg_id))
         print(f"Peering established between LPGs : {wls_lpg_id} and {db_lpg_id}")
-    except Exception as e:
+
+    except ServiceError as e:
         if e.status == 400 and e.target_service == 'virtual_network' and e.operation_name == 'connect_local_peering_gateways' and "has already been established" in str(e):
             print(f"{e.message}")
             pass
+        elif e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print(f"{str(e)}")
+            sys.exit(1)
         else:
-            print(f"Error: {e}")
-            sys.exit(-1)
+            print(f"{str(e)}")
+            sys.exit(1)
+
+    except Exception as e:
+        print(f"{str(e)}")
+        sys.exit(1)
 
 def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
     """
@@ -86,9 +110,19 @@ def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
         )
         route_table = update_route_table_response.data
         print(f"Route rule added to route table {route_table_id}")
+
+    except ServiceError as e:
+        if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print(f"{str(e)}")
+            sys.exit(1)
+        else:
+            print(f"{str(e)}")
+            sys.exit(1)
+
     except Exception as e:
-        print(f"Error: {e.message}")
-        sys.exit(-1)
+        print(f"{str(e)}")
+        sys.exit(1)
 
 if __name__ == '__main__':
     wlsserver_lpg_ids_list = json.loads(get_wls_lpg_map())
