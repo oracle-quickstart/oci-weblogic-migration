@@ -41,9 +41,11 @@ def get_subnet_details(subnet_id):
             sys.exit(1)
         else:
             print(f"{str(e)}")
+            sys.exit(1)
 
     except Exception as e:
         print(f"{str(e)}")
+        sys.exit(1)
 
 
 def establish_peering_between_lpgs():
