@@ -7,6 +7,12 @@ data "cloudinit_config" "bastion" {
   base64_encode = true
 
   part {
+    filename     = "init.sh"
+    content_type = "text/x-shellscript"
+    content      = data.template_file.bastion_key_script.rendered
+  }
+
+  part {
     content_type = "text/cloud-config"
     # https://cloudinit.readthedocs.io/en/latest/reference/modules.html#package-update-upgrade-install
     content  = jsonencode({ package_upgrade = var.upgrade })
@@ -25,6 +31,14 @@ data "cloudinit_config" "bastion" {
     # https://cloudinit.readthedocs.io/en/latest/reference/modules.html#package-update-upgrade-install
     content  = jsonencode({ users = ["default", var.user] })
     filename = "10-user.yml"
+  }
+}
+
+data "template_file" "bastion_key_script" {
+  template = file("${path.module}/templates/keys.tpl")
+
+  vars = {
+    pubKey = var.bastion_public_ssh_key
   }
 }
 

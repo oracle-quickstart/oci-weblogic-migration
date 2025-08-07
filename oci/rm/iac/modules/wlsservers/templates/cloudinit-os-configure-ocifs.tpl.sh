@@ -24,7 +24,7 @@ function get_logs_dir {
 logs_dir=`get_logs_dir`
 mkdir -p $${logs_dir}
 log_file="$${logs_dir}/configure_ocifs.log"
-
+error_log_file="$${logs_dir}/cloud-init-errors.log"
 
 function log(){
     while IFS= read -r line; do
@@ -65,7 +65,8 @@ function configure_ocifs(){
       if [ $exit_code -eq 0 ]; then
         echo "<cloud-init><configure_ocifs> created mount point ${temp_oss_mount_point}" | log >> $log_file
       else
-        echo "Failed to create mount point [${temp_oss_mount_point}]. Exiting with [$exit_code]" | log >> $log_file
+        echo "Failed to create mount point [${temp_oss_mount_point}]. Exiting with [$exit_code]" | log | tee -a $log_file >> $error_log_file
+        echo "$output" | log >> $error_log_file
         #clean up script
         #/opt/scripts/tidyup.sh
         exit 1
@@ -76,8 +77,9 @@ function configure_ocifs(){
       output=$(su -c 'ls ${temp_oss_mount_point} 2>&1' - ${user})
       echo $output | log >> $log_file
       if [ $exit_code -ne 0 ]; then
-          echo  "Failed to mount OCI OSS bucket with [$exit_code] exiting..." | log >> $log_file
-          exit 1
+        echo  "Failed to mount OCI OSS bucket with [$exit_code] exiting..." | log | tee -a $log_file >> $error_log_file
+        echo "$output" | log >> $error_log_file
+        exit 1
       fi
   fi
 }
@@ -93,8 +95,9 @@ function set_fs_ownership() {
     output=$(chown -R ${user}:${group} ${block_volume_jdk_mountpath} 2>&1)
     echo $output | log >> $log_file
     if [ $exit_code -ne 0 ]; then
-        echo "<cloud-init><set_fs_ownership><error> Failed to change ownership. Exiting with [$exit_code] " | log >> $log_file
-        exit 1
+      echo "<cloud-init><set_fs_ownership><error> Failed to change ownership. Exiting with [$exit_code] " | log | tee -a $log_file >> $error_log_file
+      echo "$output" | log >> $error_log_file
+      exit 1
     fi
     echo "<cloud-init><set_fs_ownership> change ownership completed" | log >> $log_file
 }
