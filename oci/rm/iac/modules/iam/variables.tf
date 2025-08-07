@@ -52,4 +52,5 @@ variable "wls_datasources_config" {
       compartment_id = string
     })
   }))
+  default = {}
 }

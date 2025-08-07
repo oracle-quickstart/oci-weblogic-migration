@@ -66,7 +66,7 @@ locals {
 
 
   # This policy with "use autonomous-transaction-processing-family" verb is needed to download ATP db wallet.
-  mds_atp_wallet_compartment_ids = distinct([
+  mds_atp_wallet_compartment_ids = can(var.wls_datasources_config) ? distinct([
     for config_key, jdbc_string in var.wls_datasources_config :
     jdbc_string.atp_db.compartment_id
     if (
@@ -75,7 +75,7 @@ locals {
     ) || (
     can(regex("adb", try(jdbc_string.connection_string, "")))
     )
-  ])
+  ]) : []
   mds_atp_wallet_policy_statements = flatten([
     for comp_id in local.mds_atp_wallet_compartment_ids : [
       "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id ${comp_id}"
