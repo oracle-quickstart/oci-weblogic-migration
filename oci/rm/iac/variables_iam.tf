@@ -333,10 +333,3 @@ variable "resource_manager_freeform_tags" {
   description = "Freeform tags applied to created resources."
   default     = {}
 }
-#ATPDB
-variable "db_strategy_is_atp" {
-  type = string
-}
-variable "db_strategy_is_edit_string_atp" {
-  type = string
-}

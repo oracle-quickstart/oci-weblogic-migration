@@ -65,8 +65,6 @@ module "iam" {
   use_defined_tags         = var.use_defined_tags
 
   add_load_balancer               = var.add_load_balancer
-  db_strategy_is_atp              = var.db_strategy_is_atp
-  db_strategy_is_edit_string_atp  = var.db_strategy_is_edit_string_atp
 
   wlsserver_volume_kms_key_id = var.wlsserver_volume_kms_key_id
 

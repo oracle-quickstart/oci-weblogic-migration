@@ -47,23 +47,29 @@ locals {
   # === IAM policy for multi data sources ===
 
   # Common: SL + subnet policies if security list addition is requested (ATP or OCI DB)
-  mds_common_compartment_ids = distinct([
+  # This policy with "manage virtual-network-family" verb is needed for vcn peering.
+  mds_network_access_compartment_ids = distinct([
     for config_key, jdbc_string in var.wls_datasources_config :
     jdbc_string.db_network_compartment_id
-    if try(jdbc_string.existing_vcn_add_seclist, false) && !try(jdbc_string.is_vcn_peering, false)
+    if (
+    (try(jdbc_string.existing_vcn_add_seclist, false) || try(jdbc_string.is_vcn_peering, false))
+    && try(trimspace(jdbc_string.db_network_compartment_id), "") != ""
+    )
   ])
-  mds_ingress_port_policy_statements = flatten([
-    for comp_id in local.mds_common_compartment_ids : [
+  mds_network_access_policy_statements = flatten([
+    for comp_id in local.mds_network_access_compartment_ids : [
       "Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id ${comp_id}"
     ]
   ])
 
+
   # This policy with "use autonomous-transaction-processing-family" verb is needed to download ATP db wallet.
   mds_atp_wallet_compartment_ids = distinct([
     for config_key, jdbc_string in var.wls_datasources_config :
-    jdbc_string.is_atp.compartment_id
+    jdbc_string.atp_db.compartment_id
     if (
-    try(jdbc_string.is_atp, false) && try(trimspace(jdbc_string.is_atp.compartment_id), "") != ""
+    try(jdbc_string.is_atp, false)
+    && try(trimspace(jdbc_string.atp_db.compartment_id), "") != ""
     ) || (
     can(regex("adb", try(jdbc_string.connection_string, "")))
     )
@@ -71,18 +77,6 @@ locals {
   mds_atp_wallet_policy_statements = flatten([
     for comp_id in local.mds_atp_wallet_compartment_ids : [
       "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id ${comp_id}"
-    ]
-  ])
-
-  # This policy with "manage virtual-network-family" verb is needed for vcn peering.
-  mds_vcn_peering_compartment_ids = distinct([
-    for config_key, jdbc_string in var.wls_datasources_config :
-    jdbc_string.db_network_compartment_id
-    if try(jdbc_string.is_vcn_peering, false) && try(trimspace(jdbc_string.db_network_compartment_id), "") != ""
-  ])
-  mds_vcn_peering_policy_statements = flatten([
-    for comp_id in local.mds_vcn_peering_compartment_ids : [
-      "Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id ${comp_id}"
     ]
   ])
 
@@ -111,8 +105,7 @@ locals {
     local.wlsserver_kms_volume_statements,
     local.migration_compartment_policy_statements,
     local.network_compartment_policy_statements,
-    local.mds_vcn_peering_policy_statements,
-    local.mds_ingress_port_policy_statements,
+    local.mds_network_access_policy_statements,
     local.mds_atp_wallet_policy_statements
   )) : []
 }
