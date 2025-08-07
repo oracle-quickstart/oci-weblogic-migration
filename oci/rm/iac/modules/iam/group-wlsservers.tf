@@ -50,9 +50,7 @@ locals {
   # - `existing_vcn_add_seclist` is true (for ATP or OCI DB with private endpoint), or
   # - `is_vcn_peering` is true (VCN peering required for DB access)
   # This policy with "manage virtual-network-family" verb enables required access for both cases.
-  mds_network_access_compartment_ids = (
-  var.wls_datasources_config != null && length(var.wls_datasources_config) > 0
-  ) ? distinct([
+  mds_network_access_compartment_ids = try(length(var.wls_datasources_config), 0) > 0 ? distinct([
     for config_key, jdbc_string in var.wls_datasources_config :
     jdbc_string.db_network_compartment_id
     if (
@@ -68,9 +66,7 @@ locals {
 
 
   # This policy with "use autonomous-transaction-processing-family" verb is needed to download ATP db wallet.
-  mds_atp_wallet_compartment_ids = (
-  var.wls_datasources_config != null && length(var.wls_datasources_config) > 0
-  ) ? distinct([
+  mds_atp_wallet_compartment_ids = try(length(var.wls_datasources_config), 0) > 0 ? distinct([
     for config_key, jdbc_string in var.wls_datasources_config :
     jdbc_string.atp_db.compartment_id
     if (
@@ -80,6 +76,7 @@ locals {
     can(regex("adb", try(jdbc_string.connection_string, "")))
     )
   ]) : []
+
   mds_atp_wallet_policy_statements = flatten([
     for comp_id in local.mds_atp_wallet_compartment_ids : [
       "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id ${comp_id}"
