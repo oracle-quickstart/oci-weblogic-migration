@@ -19,6 +19,6 @@ resource "null_resource" "await_cloudinit" {
   }
 
   provisioner "remote-exec" {
-    script = "${path.module}/templates/cloudinit_check.sh"
+    script = "${path.module}/templates/cloudinit-check.sh"
   }
 }
