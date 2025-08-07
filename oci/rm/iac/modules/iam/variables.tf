@@ -35,18 +35,22 @@ variable "add_load_balancer" {
   type    = bool
   default = false
 }
-
-#ATPDB
-variable "db_strategy_is_atp" {
-  type = string
-}
-variable "db_strategy_is_edit_string_atp" {
-  type = string
-}
 variable "network_compartment_id" {
   type = string
 }
-
 variable "bucket_compartment" {
   type = string
+}
+variable "wls_datasources_config" {
+  type = map(object({
+    db_network_compartment_id  = string
+    existing_vcn_add_seclist   = bool
+    is_atp                     = bool
+    connection_string          = string
+    is_vcn_peering             = bool
+    atp_db = object({
+      compartment_id = string
+    })
+  }))
+  default = {}
 }

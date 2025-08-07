@@ -17,7 +17,7 @@ locals {
   ])) : local.wlsserver_compartment_rule
 
 
-  #TODO: JOI Future version narrow access to specific bucket  target.bucket.name
+  #TODO: JOI Future version narrow access to specific bucket target.bucket.name
   wlsservers_object_storage_templates = tolist([
     "Allow dynamic-group ${local.wlsserver_group_name} to read buckets in compartment id %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to read objects in compartment id %v"
@@ -38,44 +38,50 @@ locals {
     "Allow dynamic-group ${local.wlsserver_group_name} to manage tag-namespaces in compartment id %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to use app-catalog-listing in compartment id %v",
   ])
+
   # This policy with "inspect virtual-network-family" verb is needed to read VCN information like CIDR, etc.
-  # This policy with "manage virtual-network-family" verb is needed for vcn peering.
-  # TODO remove false and adjust the compartment id : JCS-14923
-  network_compartment_policy_templates = false ? tolist([
+  network_compartment_policy_statements = [
     format("Allow dynamic-group ${local.wlsserver_group_name} to inspect virtual-network-family in compartment id %v", var.network_compartment_id)
-  ]) : tolist([
-    format("Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v", var.network_compartment_id)
+  ]
+
+  # === IAM policy for multi data sources ===
+
+  # Common: Security List or Subnet policies — required when either
+  # - `existing_vcn_add_seclist` is true (for ATP or OCI DB with private endpoint), or
+  # - `is_vcn_peering` is true (VCN peering required for DB access)
+  # This policy with "manage virtual-network-family" verb enables required access for both cases.
+  mds_network_access_compartment_ids = try(length(var.wls_datasources_config), 0) > 0 ? distinct([
+    for config_key, jdbc_string in var.wls_datasources_config :
+    jdbc_string.db_network_compartment_id
+    if (
+    (try(jdbc_string.existing_vcn_add_seclist, false) || try(jdbc_string.is_vcn_peering, false))
+    && try(trimspace(jdbc_string.db_network_compartment_id), "") != ""
+    )
+  ]) : []
+  mds_network_access_policy_statements = flatten([
+    for comp_id in local.mds_network_access_compartment_ids : [
+      "Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id ${comp_id}"
+    ]
   ])
 
-  # This policy with "manage virtual-network-family" verb is needed for vcn peering.
-  # TODO remove true and adjust the compartment id : JCS-14923
-  db_network_compartment_policy_templates = true ? [
-    format(
-    "Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v", var.network_compartment_id)
-  ] : []
 
   # This policy with "use autonomous-transaction-processing-family" verb is needed to download ATP db wallet.
-  # TODO adjust the compartment id : JCS-14923
-  atp_db_policy_template_1 = compact(concat(
-    (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp) ? [
-      format(
-        "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id %s",
-        var.network_compartment_id
-      )
-    ] : []
-  ))
-  # TODO add back JCS-14923
-  # This policy is used to add the db port 1522 in case of ATP db
-  # The functionality is yet to be added till (Jun 25)
-#  atp_db_policy_template_2 = compact(concat(
-#    (var.db_strategy_is_atp || var.db_strategy_is_edit_string_atp || (var.atp_db_existing_vcn_id_0 != "" && var.atp_has_private_endpoints_0)) ? [
-#      format(
-#        "Allow dynamic-group ${local.wlsserver_group_name} to manage network-security-groups in compartment id %s where request.operation = 'AddNetworkSecurityGroupSecurityRules'",
-#        var.atp_db_network_compartment_id_0
-#      )
-#    ] : []
-#  ))
+  mds_atp_wallet_compartment_ids = try(length(var.wls_datasources_config), 0) > 0 ? distinct([
+    for config_key, jdbc_string in var.wls_datasources_config :
+    jdbc_string.atp_db.compartment_id
+    if (
+    try(jdbc_string.is_atp, false)
+    && try(trimspace(jdbc_string.atp_db.compartment_id), "") != ""
+    ) || (
+    can(regex("adb", try(jdbc_string.connection_string, "")))
+    )
+  ]) : []
 
+  mds_atp_wallet_policy_statements = flatten([
+    for comp_id in local.mds_atp_wallet_compartment_ids : [
+      "Allow dynamic-group ${local.wlsserver_group_name} to use autonomous-transaction-processing-family in compartment id ${comp_id}"
+    ]
+  ])
 
   # Block volume encryption using OCI Key Management System (KMS)
   wlsserver_kms_volume_statements = coalesce(var.wlsserver_volume_kms_key_id, "none") != "none" ? flatten(tolist([
@@ -101,11 +107,9 @@ locals {
     local.wlsservers_object_storage_statements,
     local.wlsserver_kms_volume_statements,
     local.migration_compartment_policy_statements,
-    local.network_compartment_policy_templates,
-    local.atp_db_policy_template_1,
-    # # TODO add back JCS-14923
-#    local.atp_db_policy_template_2,
-    local.db_network_compartment_policy_templates
+    local.network_compartment_policy_statements,
+    local.mds_network_access_policy_statements,
+    local.mds_atp_wallet_policy_statements
   )) : []
 }
 
