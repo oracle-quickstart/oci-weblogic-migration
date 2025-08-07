@@ -46,8 +46,10 @@ locals {
 
   # === IAM policy for multi data sources ===
 
-  # Common: SL + subnet policies if security list addition is requested (ATP or OCI DB)
-  # This policy with "manage virtual-network-family" verb is needed for vcn peering.
+  # Common: Security List or Subnet policies — required when either
+  # - `existing_vcn_add_seclist` is true (for ATP or OCI DB with private endpoint), or
+  # - `is_vcn_peering` is true (VCN peering required for DB access)
+  # This policy with "manage virtual-network-family" verb enables required access for both cases.
   mds_network_access_compartment_ids = distinct([
     for config_key, jdbc_string in var.wls_datasources_config :
     jdbc_string.db_network_compartment_id
