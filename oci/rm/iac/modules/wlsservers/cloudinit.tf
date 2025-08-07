@@ -16,6 +16,12 @@ data "cloudinit_config" "wlsservers" {
   gzip          = true
   base64_encode = true
 
+  part {
+    filename     = "init.sh"
+    content_type = "text/x-shellscript"
+    content      = data.template_file.key_script.rendered
+  }
+
   # Include global and pool-specific custom cloud init MIME parts
   dynamic "part" {
     for_each = each.value.cloud_init

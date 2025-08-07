@@ -1,7 +1,7 @@
 # Copyright (c) 2025, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-resource "oci_core_local_peering_gateway" "dblpg_0" {
+resource "oci_core_local_peering_gateway" "dblpg" {
   for_each = { for k, v in var.datasources : k => v if v.is_vcn_peering }
   #Required
   compartment_id = each.value.db_network_compartment_id
@@ -9,7 +9,7 @@ resource "oci_core_local_peering_gateway" "dblpg_0" {
   vcn_id         = each.value.db_existing_vcn_id
 }
 
-resource "oci_core_local_peering_gateway" "wlslpg_0" {
+resource "oci_core_local_peering_gateway" "wlslpg" {
   for_each = { for k, v in var.datasources : k => v if v.is_vcn_peering }
   #Required
   compartment_id = var.compartment_id

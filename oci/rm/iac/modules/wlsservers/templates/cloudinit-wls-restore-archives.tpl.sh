@@ -21,6 +21,7 @@ function get_logs_dir {
 logs_dir=`get_logs_dir`
 mkdir -p $${logs_dir}
 log_file="$${logs_dir}/wls-restore.log"
+error_log_file="$${logs_dir}/cloud-init-errors.log"
 
 
 function log(){
@@ -155,7 +156,7 @@ function set_fs_ownership() {
     exit_code=$?
     echo "<cloud-init><set_fs_ownership> change ownership on mount point ${block_volume_jdk_mountpath} returned with exit code $[exit_code] " | log >> $log_file
     if [ $exit_code -ne 0 ]; then
-        echo "<cloud-init><set_fs_ownership><error> Failed to change ownership. Exiting with [$exit_code] " | log >> $log_file
+        echo "<cloud-init><set_fs_ownership><error> Failed to change ownership. Exiting with [$exit_code] " | log | tee -a $log_file >> $error_log_file
         exit 1
     fi
     echo "<cloud-init><set_fs_ownership> change ownership completed" | log >> $log_file
@@ -208,7 +209,8 @@ python /opt/scripts/restore_archives.py
 exit_code=$?
 echo $output | log >> $log_file
 if [[ $exit_code -ne 0 ]]; then
-  echo "<cloud-init><restore><ERROR> Failed to restore WebLogic Archives " | log >> $log_file
+  echo "<cloud-init><restore><ERROR> Failed to restore WebLogic Archives " | log | tee -a $log_file >> $error_log_file
+  echo "$output" | log >> $error_log_file
   exit 1
 fi
 echo "Executed restore_archives via ${user} with exit code [$exit_code]" | log >> $log_file
