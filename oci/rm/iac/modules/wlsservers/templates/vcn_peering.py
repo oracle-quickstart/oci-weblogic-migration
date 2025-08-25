@@ -37,7 +37,7 @@ def get_subnet_details(subnet_id):
 
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print("Policy missing for VCN Peering. Please check the IAM Network policies required for VCN Peering. Add the missing policy. Destroy the stack and apply the stack again.") 
             print(f"{str(e)}")
             sys.exit(1)
         else:
