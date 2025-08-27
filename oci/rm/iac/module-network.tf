@@ -143,6 +143,25 @@ module "vcn" {
 
 locals {
   vcn_name = coalesce(var.vcn_name, "wls-${local.state_id}")
+
+  # Grab the map from the compute module
+  instance_ips = module.wlsservers.wlsserver_pool_host_ip_map
+
+  # Optional filtering (remove nulls)
+  forward_dns_records = {
+    for fqdn, ip in local.instance_ips :
+    fqdn => ip
+    if ip != null
+  }
+
+  # Filter valid reverse PTR candidates
+  reverse_ptr_records = {
+    for fqdn, ip in local.forward_dns_records :
+    fqdn => ip
+    if can(split(".", ip)) &&
+    length(split(".", ip)) == 4 &&
+    !contains(["0", "255"], element(split(".", ip), 3))
+  }
 }
 
 # Creates the gateways and route tables in case of existing VCN
@@ -369,6 +388,15 @@ module "lpg" {
   wlsserver_subnet_id       = try(module.network-wls-private-subnet.subnet_id, "")
   lpg_name                  = format("lpg-%v", local.state_id)
   datasources               = var.datasources
+}
+
+module "dns" {
+  source                     = "./modules/network/dns"
+  depends_on                 = [module.wlsservers]
+  forward_dns_records        = local.forward_dns_records
+  reverse_ptr_records        = local.reverse_ptr_records
+  wlsserver_vcn_id           = local.vcn_id
+  compartment_id             = local.network_compartment_id
 }
 
 # VCN

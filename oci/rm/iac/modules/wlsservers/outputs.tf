@@ -30,3 +30,10 @@ output "wlsserver_instance_ips" {
 output "wlsserver_private_ips" {
   value = local.wlsserver_private_ips_list
 }
+
+output "wlsserver_pool_host_ip_map" {
+  value = {
+    for instance in oci_core_instance.wlsservers :
+    instance.display_name => instance.private_ip
+  }
+}
