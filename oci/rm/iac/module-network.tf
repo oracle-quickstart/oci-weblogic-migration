@@ -1,5 +1,5 @@
-# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
-# Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+# Copyright (c) 2025 Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 data "oci_core_vcn" "oke" {
   count  = var.create_vcn ? 0 : 1
@@ -143,25 +143,6 @@ module "vcn" {
 
 locals {
   vcn_name = coalesce(var.vcn_name, "wls-${local.state_id}")
-
-  # Grab the map from the compute module
-  instance_ips = module.wlsservers.wlsserver_pool_host_ip_map
-
-  # Optional filtering (remove nulls)
-  forward_dns_records = {
-    for fqdn, ip in local.instance_ips :
-    fqdn => ip
-    if ip != null
-  }
-
-  # Filter valid reverse PTR candidates
-  reverse_ptr_records = {
-    for fqdn, ip in local.forward_dns_records :
-    fqdn => ip
-    if can(split(".", ip)) &&
-    length(split(".", ip)) == 4 &&
-    !contains(["0", "255"], element(split(".", ip), 3))
-  }
 }
 
 # Creates the gateways and route tables in case of existing VCN
@@ -393,10 +374,12 @@ module "lpg" {
 module "dns" {
   source                     = "./modules/network/dns"
   depends_on                 = [module.wlsservers]
-  forward_dns_records        = local.forward_dns_records
-  reverse_ptr_records        = local.reverse_ptr_records
+  secondary_nodes_IPs        = one(module.wlsservers[*].wlsserver_private_ips)
   wlsserver_vcn_id           = local.vcn_id
   compartment_id             = local.network_compartment_id
+  wls_data                   = var.wls_inventory_data
+  wlsserver_count_expected   = coalesce(one(module.wlsservers[*].wlsserver_count_expected), 0)
+  primary_nodes_fqdns        = one(module.wlsservers[*].wlsserver_fqdns)
 }
 
 # VCN

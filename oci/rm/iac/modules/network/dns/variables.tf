@@ -11,10 +11,22 @@ variable "wlsserver_vcn_id" {
   type        = string
 }
 
-variable "forward_dns_records" {
-  type = map(string)
+variable "wlsserver_count_expected" {
+  description = "# of nodes expected from created wlsserver pools"
+  type        = number
 }
 
-variable "reverse_ptr_records" {
-  type = map(string)
+variable "wls_data" {
+  description = "Weblogic Domain Inventory Data.JSON formatted"
+  type        = any
+}
+
+variable "secondary_nodes_IPs" {
+  description = "Private IPs of the (secondary)migrated domain instances"
+  type        = list(string)
+}
+
+variable "primary_nodes_fqdns" {
+  description = "List of hostnames (without zone suffix) for source nodes"
+  type        = list(string)
 }

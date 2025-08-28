@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2025 Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 output "wlsserver_instances" {
@@ -31,9 +31,9 @@ output "wlsserver_private_ips" {
   value = local.wlsserver_private_ips_list
 }
 
-output "wlsserver_pool_host_ip_map" {
-  value = {
-    for instance in oci_core_instance.wlsservers :
-    instance.display_name => instance.private_ip
-  }
+output "wlsserver_fqdns" {
+  description = "List of all wlsserver hostnames (FQDNs)"
+  value = [
+    for _, instance in local.enabled_instances : instance.hostname
+  ]
 }

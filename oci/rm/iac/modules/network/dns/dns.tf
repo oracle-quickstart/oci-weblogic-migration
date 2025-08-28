@@ -1,115 +1,96 @@
-# Copyright (c) 2025, Oracle Corporation and/or affiliates.
-# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl/
-
-##################################################
-# Locals - Auto map hostnames to private IPs
-##################################################
+# Copyright (c) 2025 Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 locals {
-  # Reverse zones - one per /24 subnet in host IP map
-  reverse_zones = {
-    for ip in values(var.forward_dns_records) :
-    join(".", slice(split(".", ip), 0, 3)) => "${join(".", reverse(slice(split(".", ip), 0, 3)))}.in-addr.arpa"
-  }
+  # Extract first ListenAddress from Server section
+  first_listen_address = values(var.wls_data.topology.Server)[0].ListenAddress
 
-  # Map each PTR record to its appropriate reverse zone prefix
-  ptr_record_zone_prefix = {
-    for fqdn, ip in var.reverse_ptr_records :
-    fqdn => join(".", slice(split(".", ip), 0, 3))
-  }
+  # Get domain name (everything after the first dot)
+  source_domain_name = join(".", slice(split(".", local.first_listen_address), 1, length(split(".", local.first_listen_address))))
 }
 
-##################################################
-# Private DNS View
-##################################################
-resource "oci_dns_view" "private_view" {
-  compartment_id = var.compartment_id
-  scope          = "PRIVATE"
-}
-
-##################################################
-# Forward DNS Zone
-##################################################
-resource "oci_dns_zone" "private_zone" {
-  name            = "mycompany.internal"
-  zone_type       = "PRIMARY"
-  compartment_id  = var.compartment_id
-  scope           = "PRIVATE"
-  view_id         = oci_dns_view.private_view.id
-}
-
-##################################################
-# Reverse DNS Zones
-##################################################
-resource "oci_dns_zone" "reverse_zone" {
-  for_each        = local.reverse_zones
-  name            = each.value
-  zone_type       = "PRIMARY"
-  compartment_id  = var.compartment_id
-  scope           = "PRIVATE"
-  view_id         = oci_dns_view.private_view.id
-}
-
-##################################################
-# Link View to VCN Resolver
-##################################################
-data "oci_core_vcn_dns_resolver_association" "wls_vcn_resolver_association" {
+data "oci_core_vcn" "secondary_vcn" {
+  #Required
   vcn_id = var.wlsserver_vcn_id
 }
 
-resource "oci_dns_resolver" "wls_oci_dns_resolver" {
-  resolver_id = data.oci_core_vcn_dns_resolver_association.wls_vcn_resolver_association.dns_resolver_id
-  scope       = "PRIVATE"
-
-  attached_views {
-    view_id = oci_dns_view.private_view.id
-  }
+data "oci_core_vcn_dns_resolver_association" "secondary_dns_resolver_association" {
+  #Required
+  vcn_id = var.wlsserver_vcn_id
 }
 
-##################################################
-# Forward A Records
-##################################################
-resource "oci_dns_rrset" "forward_records" {
-  for_each = var.forward_dns_records
-
-  zone_name_or_id = oci_dns_zone.private_zone.id
-  domain          = each.key
-  rtype           = "A"
-  compartment_id  = var.compartment_id
-
-  items {
-    domain = each.key
-    rdata  = each.value
-    rtype  = "A"
-    ttl    = 60
-  }
-
-  lifecycle {
-    ignore_changes = [items]
-  }
+data "oci_dns_resolver" "secondary_dns_resolver" {
+  #Required
+  resolver_id = data.oci_core_vcn_dns_resolver_association.secondary_dns_resolver_association.dns_resolver_id
+  scope = "PRIVATE"
 }
 
-##################################################
-# Reverse PTR Records
-##################################################
-resource "oci_dns_rrset" "reverse_ptr_records" {
-  for_each = var.reverse_ptr_records
-
-  # Get reverse zone prefix dynamically for each IP
-  zone_name_or_id = oci_dns_zone.reverse_zone[local.ptr_record_zone_prefix[each.key]].id
-
-  domain = "${element(split(".", each.value), 3)}.${oci_dns_zone.reverse_zone[local.ptr_record_zone_prefix[each.key]].name}"
-  rtype  = "PTR"
+# Create the private view and zone in Secondary(OCI)
+########################################################################################################
+resource "oci_dns_view" "private_view_in_secondary" {
+  #Required
   compartment_id = var.compartment_id
+  scope = "PRIVATE"
 
+  #Optional
+  display_name = local.source_domain_name
+}
+
+resource "oci_dns_zone" "zone_in_secondary" {
+  #Required
+  compartment_id = var.compartment_id
+  name = local.source_domain_name
+  zone_type = "PRIMARY"
+
+  #Optional
+  scope = "PRIVATE"
+  # This zone must be added to the private view
+  view_id = oci_dns_view.private_view_in_secondary.id
+}
+
+# Add the entries to zone_in_secondary (source names with secondary IPs)
+########################################################################################################
+resource "oci_dns_rrset" "new_rrset_in_secondary" {
+  count =  var.wlsserver_count_expected
+
+  #Required
+  domain = "${var.primary_nodes_fqdns[count.index]}.${oci_dns_zone.zone_in_secondary.name}"
+  rtype = "A"
+  zone_name_or_id = oci_dns_zone.zone_in_secondary.id
+
+  #Optional
+  compartment_id = var.compartment_id
   items {
-    domain = "${element(split(".", each.value), 3)}.${oci_dns_zone.reverse_zone[local.ptr_record_zone_prefix[each.key]].name}"
-    rdata  = each.key
-    rtype  = "PTR"
-    ttl    = 60
+    #Required
+    domain = "${var.primary_nodes_fqdns[count.index]}.${oci_dns_zone.zone_in_secondary.name}"
+    rdata = var.secondary_nodes_IPs[count.index]
+    rtype = "A"
+    ttl = "120"
   }
+  scope = "PRIVATE"
+  view_id = oci_dns_view.private_view_in_secondary.id
+}
 
-  lifecycle {
-    ignore_changes = [items]
+
+# Add the secondary private view to secondary VCN resolver
+########################################################################################################
+
+# CAUTION!!!! NOT PROVIDING THE LIST OF THE EXISTING VIEWS REPLACES THE ATTACHED VIEWS WITH THE NEW ONE ONLY (does not add it)
+resource "oci_dns_resolver" "secondary_resolver" {
+
+  #Required
+  resolver_id = data.oci_dns_resolver.secondary_dns_resolver.id
+  scope = "PRIVATE"
+
+  #With this we list the existing views, if not, they get removed
+  dynamic attached_views {
+    for_each = data.oci_dns_resolver.secondary_dns_resolver.attached_views[*].view_id
+    content {
+      view_id = attached_views.value
+    }
+  }
+  #Then add the new one
+  attached_views {
+    view_id= oci_dns_view.private_view_in_secondary.id
   }
 }
