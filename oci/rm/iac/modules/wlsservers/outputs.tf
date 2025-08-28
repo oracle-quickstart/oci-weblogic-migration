@@ -31,7 +31,7 @@ output "wlsserver_private_ips" {
   value = local.wlsserver_private_ips_list
 }
 
-output "wlsserver_fqdns" {
+output "wlsserver_hostnames" {
   description = "List of all wlsserver hostnames (FQDNs)"
   value = [
     for _, instance in local.enabled_instances : instance.hostname

@@ -379,7 +379,7 @@ module "dns" {
   compartment_id             = local.network_compartment_id
   wls_data                   = var.wls_inventory_data
   wlsserver_count_expected   = coalesce(one(module.wlsservers[*].wlsserver_count_expected), 0)
-  primary_nodes_fqdns        = one(module.wlsservers[*].wlsserver_fqdns)
+  source_nodes               = one(module.wlsservers[*].wlsserver_hostnames)
 }
 
 # VCN
