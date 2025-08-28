@@ -54,7 +54,7 @@ resource "oci_dns_rrset" "new_rrset_in_secondary" {
   count =  var.wlsserver_count_expected
 
   #Required
-  domain = "${var.primary_nodes_fqdns[count.index]}.${oci_dns_zone.zone_in_secondary.name}"
+  domain = "${var.source_nodes[count.index]}.${oci_dns_zone.zone_in_secondary.name}"
   rtype = "A"
   zone_name_or_id = oci_dns_zone.zone_in_secondary.id
 
@@ -62,7 +62,7 @@ resource "oci_dns_rrset" "new_rrset_in_secondary" {
   compartment_id = var.compartment_id
   items {
     #Required
-    domain = "${var.primary_nodes_fqdns[count.index]}.${oci_dns_zone.zone_in_secondary.name}"
+    domain = "${var.source_nodes[count.index]}.${oci_dns_zone.zone_in_secondary.name}"
     rdata = var.secondary_nodes_IPs[count.index]
     rtype = "A"
     ttl = "120"

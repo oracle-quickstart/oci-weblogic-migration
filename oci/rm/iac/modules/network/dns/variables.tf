@@ -26,7 +26,7 @@ variable "secondary_nodes_IPs" {
   type        = list(string)
 }
 
-variable "primary_nodes_fqdns" {
+variable "source_nodes" {
   description = "List of hostnames (without zone suffix) for source nodes"
   type        = list(string)
 }
