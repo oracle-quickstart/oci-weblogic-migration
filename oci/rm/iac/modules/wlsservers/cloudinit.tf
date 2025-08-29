@@ -301,20 +301,21 @@ data "cloudinit_config" "wlsservers" {
     }
   }
 
-  # Update Weblogic config to replace new hosts.
-  dynamic "part" {
-    for_each = each.value.disable_default_cloud_init ? [] : [1]
-    content {
-      content_type = "text/x-shellscript"
-      content      = templatefile("${path.module}/templates/update_wls_config.tftpl", {
-        oci_host_listen_address = var.text_to_replace_in_config
-        domain_path = var.wls_domain_home
-        user = var.user
-      })
-      filename     = "81-wls-update_config_w_new_env.sh"
-      merge_type   = local.default_cloud_init_merge_type
-    }
-  }
+# Currently this part of the code is not being used but is retained in case we need this in future.
+#  # Update Weblogic config to replace new hosts.
+#  dynamic "part" {
+#    for_each = each.value.disable_default_cloud_init ? [] : [1]
+#    content {
+#      content_type = "text/x-shellscript"
+#      content      = templatefile("${path.module}/templates/update_wls_config.tftpl", {
+#        oci_host_listen_address = var.text_to_replace_in_config
+#        domain_path = var.wls_domain_home
+#        user = var.user
+#      })
+#      filename     = "81-wls-update_config_w_new_env.sh"
+#      merge_type   = local.default_cloud_init_merge_type
+#    }
+#  }
 
 
 
