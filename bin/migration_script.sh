@@ -9,6 +9,7 @@
 
 MIGRATION_SCRIPT_DIR="$(dirname "$0")"
 toolHome=$(builtin cd "$MIGRATION_SCRIPT_DIR/.." ||exit; pwd)
+skip_archive="false"
 mkdir -p "$toolHome/logs/"
 LOG_FILE_NAME="migration_script.log"
 MIGRATION_SCRIPT_LOG="$toolHome/logs/$LOG_FILE_NAME"
@@ -92,6 +93,59 @@ get_json_key() {
   echo "$output"
 }
 
+upload_unzipped_stack_to_oci() {
+  local stack_zip="$1"
+  local bucket_name="$2"
+  local namespace="$3"
+  local compartment_id="$4"
+
+  if [[ ! -f "$stack_zip" ]]; then
+    log "error" "Stack zip file not found: $stack_zip"
+    exit 1
+  fi
+
+  # Check if bucket exists
+  log "info" "Checking if bucket $bucket_name exists in namespace $namespace..."
+  bucket_exists=$(oci os bucket list \
+      --namespace-name "$namespace" \
+      --query "data[?name=='$bucket_name'] | length(@)" \
+      --raw-output)
+
+  if [[ "$bucket_exists" -eq 0 ]]; then
+      log "info" "Bucket $bucket_name not found. Creating..."
+      oci os bucket create \
+          --namespace-name "$namespace" \
+          --name "$bucket_name" \
+          --compartment-id "$compartment_id"
+      log "info" "Bucket $bucket_name created."
+  else
+      log "info" "Bucket $bucket_name already exists."
+  fi
+
+  # Prepare temp dir & unzip
+  local timestamp
+  timestamp=$(date +"%Y%m%d_%H%M%S")
+  local temp_dir
+  temp_dir=$(mktemp -d)
+
+  log "info" "Unzipping stack: $stack_zip to $temp_dir"
+  unzip -q "$stack_zip" -d "$temp_dir"
+
+  # Upload to OCI
+  log "info" "Uploading unzipped stack to OCI bucket: $bucket_name in folder: $timestamp"
+  oci os object bulk-upload \
+      --bucket-name "$bucket_name" \
+      --namespace "$namespace" \
+      --src-dir "$temp_dir" \
+      --prefix "$timestamp/" \
+      --overwrite
+
+  log "info" "Upload complete. Stack files are in $bucket_name/$timestamp/"
+
+  # Cleanup temp dir
+  rm -rf "$temp_dir"
+  log "info" "Temporary directory $temp_dir removed."
+}
 
 ########################################## SECTION : Install Dependencies ###################################################
 run_migration_step  "Installing dependencies" "bash \"$MIGRATION_SCRIPT_DIR/install_dependencies.sh\"" "" "install_dependencies"
@@ -134,6 +188,14 @@ if ! STACK_FILE=$(get_json_key "$MIGRATION_DATA_JSON" "stack_file"); then
 fi
 
 log "info" "Stack file created: $STACK_FILE"
+# Upload the stack to OCI bucket
+if [ "$skip_transfer" = "false" ]; then
+	if [[ -n "$bucket_name" && -n "$tenancy_namespace" && -n "$compartment_ocid" ]]; then
+  	upload_unzipped_stack_to_oci "$STACK_FILE" "$bucket_name" "$tenancy_namespaceE" "$compartment_ocid"
+	else
+  	log "warning" "bucket_name, tenancy_namespace, or compartment_ocid not set in $ON_PREM_ENV_FILE. Skipping stack upload to OCI bucket."
+	fi
+fi
 
 ########################################## SUB_SECTION : Archive Weblogic Domain ############################################
 
