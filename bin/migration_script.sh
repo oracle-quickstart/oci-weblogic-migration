@@ -108,6 +108,7 @@ upload_unzipped_stack_to_oci() {
   log "info" "Checking if bucket $bucket_name exists in namespace $namespace..."
   bucket_exists=$(oci os bucket list \
       --namespace-name "$namespace" \
+      --compartment-id "$compartment_id" \
       --query "data[?name=='$bucket_name'] | length(@)" \
       --raw-output)
 
@@ -135,7 +136,7 @@ upload_unzipped_stack_to_oci() {
   log "info" "Uploading unzipped stack to OCI bucket: $bucket_name in folder: $timestamp"
   oci os object bulk-upload \
       --bucket-name "$bucket_name" \
-      --namespace "$namespace" \
+      --namespace-name "$namespace" \
       --src-dir "$temp_dir" \
       --prefix "$timestamp/" \
       --overwrite
@@ -191,7 +192,7 @@ log "info" "Stack file created: $STACK_FILE"
 # Upload the stack to OCI bucket
 if [ "$skip_transfer" = "false" ]; then
 	if [[ -n "$bucket_name" && -n "$tenancy_namespace" && -n "$compartment_ocid" ]]; then
-  	upload_unzipped_stack_to_oci "$STACK_FILE" "$bucket_name" "$tenancy_namespaceE" "$compartment_ocid"
+  	upload_unzipped_stack_to_oci "$STACK_FILE" "$bucket_name" "$tenancy_namespace" "$compartment_ocid"
 	else
   	log "warning" "bucket_name, tenancy_namespace, or compartment_ocid not set in $ON_PREM_ENV_FILE. Skipping stack upload to OCI bucket."
 	fi
