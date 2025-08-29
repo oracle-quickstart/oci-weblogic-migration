@@ -98,14 +98,18 @@ upload_unzipped_stack_to_oci() {
   local bucket_name="$2"
   local namespace="$3"
   local compartment_id="$4"
+  local timestamp
+  timestamp=$(date +"%Y%m%d_%H%M%S")
+  local upload_log_file="$toolHome/logs/upload_unzipped_stack_to_oci_${timestamp}.log"
+  #mkdir -p "$upload_log_file"
 
   if [[ ! -f "$stack_zip" ]]; then
-    log "error" "Stack zip file not found: $stack_zip"
+    log "error" "Stack zip file not found: $stack_zip" | tee -a "$upload_log_file" >&2
     exit 1
   fi
 
-  # Check if bucket exists
-  log "info" "Checking if bucket $bucket_name exists in namespace $namespace..."
+  # Check if bucket exists (log only to file)
+  log "info" "Checking if bucket $bucket_name exists in namespace $namespace..." >> "$upload_log_file"
   bucket_exists=$(oci os bucket list \
       --namespace-name "$namespace" \
       --compartment-id "$compartment_id" \
@@ -113,39 +117,36 @@ upload_unzipped_stack_to_oci() {
       --raw-output)
 
   if [[ "$bucket_exists" -eq 0 ]]; then
-      log "info" "Bucket $bucket_name not found. Creating..."
+      log "info" "Bucket $bucket_name not found. Creating..." >> "$upload_log_file"
       oci os bucket create \
           --namespace-name "$namespace" \
           --name "$bucket_name" \
-          --compartment-id "$compartment_id"
-      log "info" "Bucket $bucket_name created."
+          --compartment-id "$compartment_id" >> "$upload_log_file" 2>&1
+      log "info" "Bucket $bucket_name created." >> "$upload_log_file"
   else
-      log "info" "Bucket $bucket_name already exists."
+      log "info" "Bucket $bucket_name already exists." >> "$upload_log_file"
   fi
 
-  # Prepare temp dir & unzip
-  local timestamp
-  timestamp=$(date +"%Y%m%d_%H%M%S")
+  # Prepare temp dir & unzip (log only to file)
   local temp_dir
   temp_dir=$(mktemp -d)
+  log "info" "Unzipping stack: $stack_zip to $temp_dir" >> "$upload_log_file"
+  unzip -q "$stack_zip" -d "$temp_dir" >> "$upload_log_file" 2>&1
 
-  log "info" "Unzipping stack: $stack_zip to $temp_dir"
-  unzip -q "$stack_zip" -d "$temp_dir"
-
-  # Upload to OCI
-  log "info" "Uploading unzipped stack to OCI bucket: $bucket_name in folder: $timestamp"
+  # Upload to OCI — show only key messages to terminal
+  log "info" "Uploading unzipped stack to OCI bucket... " | tee -a "$upload_log_file"
   oci os object bulk-upload \
       --bucket-name "$bucket_name" \
       --namespace-name "$namespace" \
       --src-dir "$temp_dir" \
       --prefix "$timestamp/" \
-      --overwrite
+      --overwrite >> "$upload_log_file" 2>&1
+  log "info" "Stack files are in bucket $bucket_name in folder: $timestamp" | tee -a "$upload_log_file"
 
-  log "info" "Upload complete. Stack files are in $bucket_name/$timestamp/"
-
-  # Cleanup temp dir
+  # Cleanup temp dir (log only to file)
   rm -rf "$temp_dir"
-  log "info" "Temporary directory $temp_dir removed."
+  log "info" "Temporary directory $temp_dir removed." >> "$upload_log_file"
+  echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
 }
 
 ########################################## SECTION : Install Dependencies ###################################################
