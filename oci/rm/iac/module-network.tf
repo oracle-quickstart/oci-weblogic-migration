@@ -1,5 +1,5 @@
-# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
-# Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+# Copyright (c) 2025 Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 data "oci_core_vcn" "oke" {
   count  = var.create_vcn ? 0 : 1
@@ -370,6 +370,17 @@ module "lpg" {
   wlsserver_subnet_id       = try(module.network-wls-private-subnet.subnet_id, "")
   lpg_name                  = format("lpg-%v", local.state_id)
   datasources               = var.datasources
+}
+
+module "dns" {
+  source                     = "./modules/network/dns"
+  depends_on                 = [module.wlsservers]
+  secondary_nodes_IPs        = one(module.wlsservers[*].wlsserver_private_ips)
+  wlsserver_vcn_id           = local.vcn_id
+  compartment_id             = local.network_compartment_id
+  wls_data                   = var.wls_inventory_data
+  wlsserver_count_expected   = coalesce(one(module.wlsservers[*].wlsserver_count_expected), 0)
+  source_nodes               = one(module.wlsservers[*].wlsserver_hostnames)
 }
 
 # VCN
