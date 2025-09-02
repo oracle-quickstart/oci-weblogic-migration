@@ -9,8 +9,9 @@
 
 MIGRATION_SCRIPT_DIR="$(dirname "$0")"
 toolHome=$(builtin cd "$MIGRATION_SCRIPT_DIR/.." ||exit; pwd)
-skip_archive="false"
 mkdir -p "$toolHome/logs/"
+file_timestamp="$(date +"%Y%m%d")_$(head /dev/urandom | tr -dc a-z0-9 | head -c 6)"
+upload_log_file="$toolHome/logs/upload_unzipped_stack_to_oci_${file_timestamp}.log"
 LOG_FILE_NAME="migration_script.log"
 MIGRATION_SCRIPT_LOG="$toolHome/logs/$LOG_FILE_NAME"
 MIGRATION_DATA_JSON="$toolHome/logs/migration_data.json"
@@ -98,24 +99,21 @@ upload_unzipped_stack_to_oci() {
   local bucket_name="$2"
   local namespace="$3"
   local compartment_id="$4"
-  local timestamp
-  timestamp=$(date +"%Y%m%d_%H%M%S")
-  local upload_log_file="$toolHome/logs/upload_unzipped_stack_to_oci_${timestamp}.log"
-  #mkdir -p "$upload_log_file"
+  local temp_dir="/tmp/stack_upload_$file_timestamp"
 
   if [[ ! -f "$stack_zip" ]]; then
     log "error" "Stack zip file not found: $stack_zip" | tee -a "$upload_log_file" >&2
     exit 1
   fi
 
-  # Check if bucket exists (log only to file)
+  # Check if bucket exists
   log "info" "Checking if bucket $bucket_name exists in namespace $namespace..." >> "$upload_log_file"
   bucket_exists=$(oci os bucket list \
       --namespace-name "$namespace" \
       --compartment-id "$compartment_id" \
       --query "data[?name=='$bucket_name'] | length(@)" \
       --raw-output)
-
+  # If bucket does not exists, create it
   if [[ "$bucket_exists" -eq 0 ]]; then
       log "info" "Bucket $bucket_name not found. Creating..." >> "$upload_log_file"
       oci os bucket create \
@@ -127,23 +125,23 @@ upload_unzipped_stack_to_oci() {
       log "info" "Bucket $bucket_name already exists." >> "$upload_log_file"
   fi
 
-  # Prepare temp dir & unzip (log only to file)
-  local temp_dir
-  temp_dir=$(mktemp -d)
+  # Prepare temp dir & unzip
+  mkdir $temp_dir
   log "info" "Unzipping stack: $stack_zip to $temp_dir" >> "$upload_log_file"
   unzip -q "$stack_zip" -d "$temp_dir" >> "$upload_log_file" 2>&1
 
-  # Upload to OCI — show only key messages to terminal
+  # Upload to OCI
   log "info" "Uploading unzipped stack to OCI bucket... " | tee -a "$upload_log_file"
   oci os object bulk-upload \
       --bucket-name "$bucket_name" \
       --namespace-name "$namespace" \
       --src-dir "$temp_dir" \
-      --prefix "$timestamp/" \
+      --prefix "$file_timestamp/" \
       --overwrite >> "$upload_log_file" 2>&1
-  log "info" "Stack files are in bucket $bucket_name in folder: $timestamp" | tee -a "$upload_log_file"
+  exit_code=$?
+  return $exit_code
 
-  # Cleanup temp dir (log only to file)
+  # Cleanup temp dir
   rm -rf "$temp_dir"
   log "info" "Temporary directory $temp_dir removed." >> "$upload_log_file"
   echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
@@ -190,13 +188,19 @@ if ! STACK_FILE=$(get_json_key "$MIGRATION_DATA_JSON" "stack_file"); then
 fi
 
 log "info" "Stack file created: $STACK_FILE"
-# Upload the stack to OCI bucket
-if [ "$skip_transfer" = "false" ]; then
-	if [[ -n "$bucket_name" && -n "$tenancy_namespace" && -n "$compartment_ocid" ]]; then
-  	upload_unzipped_stack_to_oci "$STACK_FILE" "$bucket_name" "$tenancy_namespace" "$compartment_ocid"
-	else
-  	log "warning" "bucket_name, tenancy_namespace, or compartment_ocid not set in $ON_PREM_ENV_FILE. Skipping stack upload to OCI bucket."
-	fi
+
+##################################### SUB_SECTION : Upload OCI Resource Manager Stack to OCI ################################
+if [ "$skip_transfer" = "false" ] && [ -n "$STACK_FILE" ] ; then
+    if [[ -n "$bucket_name" && -n "$tenancy_namespace" && -n "$compartment_ocid" ]]; then
+       upload_unzipped_stack_to_oci "$STACK_FILE" "$bucket_name" "$tenancy_namespace" "$compartment_ocid"
+       if [ "$exit_code" == 0 ]; then
+          log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $file_timestamp" | tee -a "$upload_log_file"
+       else
+          log "warning" "Stack upload to bucket failed. Check for errors in file: $upload_log_file" | tee -a "$upload_log_file"
+       fi
+    else
+       log "warning" "bucket_name, tenancy_namespace, or compartment_ocid not set in $ON_PREM_ENV_FILE. Skipping stack upload to OCI bucket." | tee -a "$upload_log_file"
+    fi
 fi
 
 ########################################## SUB_SECTION : Archive Weblogic Domain ############################################
