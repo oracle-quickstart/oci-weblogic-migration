@@ -113,7 +113,7 @@ upload_unzipped_stack_to_oci() {
       --compartment-id "$compartment_id" \
       --query "data[?name=='$bucket_name'] | length(@)" \
       --raw-output)
-  # If bucket does not exists, create it
+  # If bucket does not exist, create it
   if [[ "$bucket_exists" -eq 0 ]]; then
       log "info" "Bucket $bucket_name not found. Creating..." >> "$upload_log_file"
       oci os bucket create \
