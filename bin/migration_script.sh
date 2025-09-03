@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
+# Copyright (c) 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #############################################################################################################################
@@ -22,25 +22,28 @@ ON_PREM_ENV_FILE="$toolHome/config/on-prem.env"
 load_config "$ON_PREM_ENV_FILE" > /dev/null 2>&1
 
 run_migration_step() {
-
-  #Executes the specified migration step
-  #arg1: step name.
-  #arg2: script command.
-  #arg3: (Optional) Allow exit code 1 to pass (Used in the case of WDT).(default : false).
-  #arg4: (Optional) json key for the metadata (migration_data.json) file. (default: $(step_name)_status).
-  #arg5: (Optional) returns the exit code if set to true. (default : false).
+  # Executes the specified migration step
+  # arg1: step name.
+  # arg2: script command.
+  # arg3: (Optional) Allow exit code 1 to pass (Used in the case of WDT).(default: false).
+  # arg4: (Optional) json key for the metadata (migration_data.json) file. (default: ${step_name}_status).
+  # arg5: (Optional) returns the exit code if set to true. (default: false).
+  # arg6: (Optional) soft fail - do not stop script on failure. (default: false).
 
   local step_name="$1"
   local script_cmd="$2"
   local allow_exit_code_1="${3:-false}"
   local json_key="${4:-${step_name}_status}"
   local return_exit_code="${5:-false}"
+  local soft_fail="${6:-false}"
 
-  # Skip if already marked as success, continues otherwise.
   local status=""
   status=$(python3 "$toolHome/lib/python/json_utils.py" get_optional_key "$MIGRATION_DATA_JSON" "$json_key")
   if [ "$status" = "success" ]; then
     log "info" "\"$step_name\" already completed successfully. Skipping."
+    if [ "$return_exit_code" = "true" ]; then
+        RETURN_STATUS=0
+    fi
     return
   fi
 
@@ -62,7 +65,17 @@ run_migration_step() {
 
   else
     update_migration_data_json "$json_key" "failed"
-    log "error" " \"$step_name\" failed. Check $MIGRATION_SCRIPT_LOG for details. Run migration_script.sh again after resolving the issue."
+
+    if [ "$soft_fail" = "true" ]; then
+      log "warning" "\"$step_name\" failed (non-blocking). Check $MIGRATION_SCRIPT_LOG for details."
+      if [ "$return_exit_code" = "true" ]; then
+        RETURN_STATUS=$exit_code
+        return 0
+      fi
+      return 0
+    fi
+
+    log "error" "\"$step_name\" failed. Check $MIGRATION_SCRIPT_LOG for details. Run migration_script.sh again after resolving the issue."
 
     if [ "$return_exit_code" = "true" ]; then
       RETURN_STATUS=$exit_code
@@ -94,57 +107,34 @@ get_json_key() {
   echo "$output"
 }
 
-upload_unzipped_stack_to_oci() {
-  local stack_zip="$1"
-  local bucket_name="$2"
-  local namespace="$3"
-  local compartment_id="$4"
-  local temp_dir="/tmp/stack_upload_$file_timestamp"
+upload_stack_to_oci_func() {
+  if [[ "$skip_transfer" = "false" && -n "$STACK_FILE" ]]; then
+    if [[ -n "$bucket_name" && -n "$tenancy_namespace" && -n "$compartment_ocid" ]]; then
+      python3 -c "import sys; sys.path.insert(0, '../lib/python'); \
+			from upload_stack_to_oci import upload_unzipped_stack_to_oci; \
+			sys.exit(upload_unzipped_stack_to_oci('$STACK_FILE', '$bucket_name', '$tenancy_namespace', '$compartment_ocid', '$upload_log_file', '$file_timestamp'))"
+      exit_code=$?
 
-  if [[ ! -f "$stack_zip" ]]; then
-    log "error" "Stack zip file not found: $stack_zip" | tee -a "$upload_log_file" >&2
-    exit 1
-  fi
-
-  # Check if bucket exists
-  log "info" "Checking if bucket $bucket_name exists in namespace $namespace..." >> "$upload_log_file"
-  bucket_exists=$(oci os bucket list \
-      --namespace-name "$namespace" \
-      --compartment-id "$compartment_id" \
-      --query "data[?name=='$bucket_name'] | length(@)" \
-      --raw-output)
-  # If bucket does not exist, create it
-  if [[ "$bucket_exists" -eq 0 ]]; then
-      log "info" "Bucket $bucket_name not found. Creating..." >> "$upload_log_file"
-      oci os bucket create \
-          --namespace-name "$namespace" \
-          --name "$bucket_name" \
-          --compartment-id "$compartment_id" >> "$upload_log_file" 2>&1
-      log "info" "Bucket $bucket_name created." >> "$upload_log_file"
+      if [ "$exit_code" -eq 0 ]; then
+        return 0
+      elif [ "$exit_code" -eq 2 ]; then
+        log "warning" "Bucket check failed. Skipping upload. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
+        return 2
+      elif [ "$exit_code" -eq 3 ]; then
+        log "warning" "Failed to create bucket or upload. Check OCI credentials. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
+        return 3
+      else
+        log "error" "Stack upload failed. Check $upload_log_file for details." | tee -a "$upload_log_file"
+        return 4
+      fi
+    else
+      log "warning" "bucket_name, tenancy_namespace, or compartment_ocid not set. Skipping stack upload." | tee -a "$upload_log_file"
+      return 5
+    fi
   else
-      log "info" "Bucket $bucket_name already exists." >> "$upload_log_file"
+    log "info" "Skipping stack upload: skip_transfer=$skip_transfer or STACK_FILE is missing." | tee -a "$upload_log_file"
+    return 6
   fi
-
-  # Prepare temp dir & unzip
-  mkdir $temp_dir
-  log "info" "Unzipping stack: $stack_zip to $temp_dir" >> "$upload_log_file"
-  unzip -q "$stack_zip" -d "$temp_dir" >> "$upload_log_file" 2>&1
-
-  # Upload to OCI
-  log "info" "Uploading unzipped stack to OCI bucket... " | tee -a "$upload_log_file"
-  oci os object bulk-upload \
-      --bucket-name "$bucket_name" \
-      --namespace-name "$namespace" \
-      --src-dir "$temp_dir" \
-      --prefix "$file_timestamp/" \
-      --overwrite >> "$upload_log_file" 2>&1
-  exit_code=$?
-  return $exit_code
-
-  # Cleanup temp dir
-  rm -rf "$temp_dir"
-  log "info" "Temporary directory $temp_dir removed." >> "$upload_log_file"
-  echo "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> "$MIGRATION_SCRIPT_LOG"
 }
 
 ########################################## SECTION : Install Dependencies ###################################################
@@ -190,17 +180,11 @@ fi
 log "info" "Stack file created: $STACK_FILE"
 
 ##################################### SUB_SECTION : Upload OCI Resource Manager Stack to OCI ################################
-if [ "$skip_transfer" = "false" ] && [ -n "$STACK_FILE" ] ; then
-    if [[ -n "$bucket_name" && -n "$tenancy_namespace" && -n "$compartment_ocid" ]]; then
-       upload_unzipped_stack_to_oci "$STACK_FILE" "$bucket_name" "$tenancy_namespace" "$compartment_ocid"
-       if [ "$exit_code" == 0 ]; then
-          log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $file_timestamp" | tee -a "$upload_log_file"
-       else
-          log "warning" "Stack upload to bucket failed. Check for errors in file: $upload_log_file" | tee -a "$upload_log_file"
-       fi
-    else
-       log "warning" "bucket_name, tenancy_namespace, or compartment_ocid not set in $ON_PREM_ENV_FILE. Skipping stack upload to OCI bucket." | tee -a "$upload_log_file"
-    fi
+run_migration_step "Uploading OCI Resource Manager stack to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_to_oci" "true" "true"
+
+upload_exit_code=$RETURN_STATUS
+if [ "$upload_exit_code" -eq 0 ]; then
+  log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $file_timestamp. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
 fi
 
 ########################################## SUB_SECTION : Archive Weblogic Domain ############################################
