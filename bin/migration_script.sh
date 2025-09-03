@@ -37,6 +37,7 @@ run_migration_step() {
   local return_exit_code="${5:-false}"
   local soft_fail="${6:-false}"
 
+  # Skip if already marked as success, continues otherwise.
   local status=""
   status=$(python3 "$toolHome/lib/python/json_utils.py" get_optional_key "$MIGRATION_DATA_JSON" "$json_key")
   if [ "$status" = "success" ]; then
