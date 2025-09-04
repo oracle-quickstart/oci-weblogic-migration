@@ -181,7 +181,7 @@ fi
 log "info" "Stack file created: $STACK_FILE"
 
 ##################################### SUB_SECTION : Upload OCI Resource Manager Stack to OCI ################################
-run_migration_step "Uploading stack to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_to_oci" "true" "true"
+run_migration_step "Uploading stack to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_stack_to_oci" "true" "true"
 
 upload_exit_code=$RETURN_STATUS
 if [ "$upload_exit_code" -eq 0 ]; then
