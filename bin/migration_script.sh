@@ -170,10 +170,10 @@ if ! STACK_FILE=$(get_json_key "$MIGRATION_DATA_JSON" "stack_file"); then
 fi
 
 log "info" "Stack file created: $STACK_FILE"
-bucket_folder="$(basename "$STACK_FILE" .zip)"
 
 ##################################### SUB_SECTION : Upload OCI Resource Manager Stack to OCI ################################
 if [[ "$skip_transfer" = "false" && -n "$STACK_FILE" ]]; then
+	bucket_folder="$(basename "$STACK_FILE" .zip)"
 	run_migration_step "Uploading stack to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_stack_to_oci" "true" "true"
 
 	upload_exit_code=$RETURN_STATUS
