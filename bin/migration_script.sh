@@ -109,32 +109,23 @@ get_json_key() {
 }
 
 upload_stack_to_oci_func() {
-  if [[ "$skip_transfer" = "false" && -n "$STACK_FILE" ]]; then
-    if [[ -n "$bucket_name" && -n "$tenancy_namespace" && -n "$compartment_ocid" ]]; then
-      python3 -c "import sys; sys.path.insert(0, '../lib/python'); \
-			from upload_stack_to_oci import upload_unzipped_stack_to_oci; \
-			sys.exit(upload_unzipped_stack_to_oci('$STACK_FILE', '$bucket_name', '$tenancy_namespace', '$compartment_ocid', '$upload_log_file', '$file_timestamp'))"
-      exit_code=$?
+  bucket_folder="$(basename "$STACK_FILE" .zip)"
+  python3 -c "import sys; sys.path.insert(0, '../lib/python'); \
+	from upload_stack_to_oci import upload_unzipped_stack_to_oci; \
+	sys.exit(upload_unzipped_stack_to_oci('$STACK_FILE', '$bucket_name', '$tenancy_namespace', '$compartment_ocid', '$upload_log_file', '$bucket_folder'))"
+  exit_code=$?
 
-      if [ "$exit_code" -eq 0 ]; then
-        return 0
-      elif [ "$exit_code" -eq 2 ]; then
-        log "warning" "Bucket check failed. Skipping upload. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
-        return 2
-      elif [ "$exit_code" -eq 3 ]; then
-        log "warning" "Failed to create bucket or upload. Check OCI credentials. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
-        return 3
-      else
-        log "error" "Stack upload failed. Check $upload_log_file for details." | tee -a "$upload_log_file"
-        return 4
-      fi
-    else
-      log "warning" "bucket_name, tenancy_namespace, or compartment_ocid not set. Skipping stack upload." | tee -a "$upload_log_file"
-      return 5
-    fi
+  if [ "$exit_code" -eq 0 ]; then
+    return 0
+  elif [ "$exit_code" -eq 2 ]; then
+    log "warning" "Bucket check failed. Skipping upload. Check "$upload_log_file" for details. Download $STACK_FILE" | tee -a "$upload_log_file"
+    return 2
+  elif [ "$exit_code" -eq 3 ]; then
+    log "warning" "Failed to create bucket or upload. Check OCI credentials. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
+    return 3
   else
-    log "info" "Skipping stack upload: skip_transfer=$skip_transfer or STACK_FILE is missing." | tee -a "$upload_log_file"
-    return 6
+    log "error" "Stack upload failed. Check $upload_log_file for details." | tee -a "$upload_log_file"
+    return 4
   fi
 }
 
@@ -179,14 +170,20 @@ if ! STACK_FILE=$(get_json_key "$MIGRATION_DATA_JSON" "stack_file"); then
 fi
 
 log "info" "Stack file created: $STACK_FILE"
+bucket_folder="$(basename "$STACK_FILE" .zip)"
 
 ##################################### SUB_SECTION : Upload OCI Resource Manager Stack to OCI ################################
-run_migration_step "Uploading stack to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_stack_to_oci" "true" "true"
+if [[ "$skip_transfer" = "false" && -n "$STACK_FILE" ]]; then
+	run_migration_step "Uploading stack to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_stack_to_oci" "true" "true"
 
-upload_exit_code=$RETURN_STATUS
-if [ "$upload_exit_code" -eq 0 ]; then
-  log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $file_timestamp. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
+	upload_exit_code=$RETURN_STATUS
+	if [ "$upload_exit_code" -eq 0 ]; then
+		log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $bucket_folder. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
+	fi
+	else
+    log "info" "Skipping stack upload: skip_transfer=$skip_transfer or STACK_FILE is missing." | tee -a "$upload_log_file"
 fi
+
 
 ########################################## SUB_SECTION : Archive Weblogic Domain ############################################
 
