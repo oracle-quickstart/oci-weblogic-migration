@@ -14,6 +14,8 @@ LOG_FILE_NAME="migration_script.log"
 MIGRATION_SCRIPT_LOG="$toolHome/logs/$LOG_FILE_NAME"
 MIGRATION_DATA_JSON="$toolHome/logs/migration_data.json"
 ON_PREM_ENV_FILE="$toolHome/config/on-prem.env"
+# Removing the option to skip archive creation
+skip_archive=false
 
 
 [ "$user_functions_loaded" ] || source "$toolHome/bin/shared.sh"
