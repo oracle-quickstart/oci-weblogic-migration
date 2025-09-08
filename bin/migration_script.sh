@@ -118,13 +118,10 @@ upload_stack_to_oci_func() {
   if [ "$exit_code" -eq 0 ]; then
     return 0
   elif [ "$exit_code" -eq 2 ]; then
-    log "warning" "Bucket check failed. Skipping upload. Check "$upload_log_file" for details. Download $STACK_FILE" | tee -a "$upload_log_file"
     return 2
   elif [ "$exit_code" -eq 3 ]; then
-    log "warning" "Failed to create bucket or upload. Check OCI credentials. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
     return 3
   else
-    log "error" "Stack upload failed. Check $upload_log_file for details." | tee -a "$upload_log_file"
     return 4
   fi
 }
@@ -172,7 +169,7 @@ fi
 log "info" "Stack file created: $STACK_FILE"
 
 ##################################### SUB_SECTION : Upload OCI Resource Manager Stack to OCI ################################
-if [[ "$skip_transfer" = "false" && -n "$STACK_FILE" ]]; then
+if [[ "$skip_transfer" = "false" ]]; then
 	bucket_folder="$(basename "$STACK_FILE" .zip)"
 	run_migration_step "Uploading stack to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_stack_to_oci" "true" "true"
 
@@ -181,7 +178,7 @@ if [[ "$skip_transfer" = "false" && -n "$STACK_FILE" ]]; then
 		log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $bucket_folder. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
 	fi
 else
-  log "info" "Skipping stack upload: skip_transfer=$skip_transfer or STACK_FILE is missing." | tee -a "$upload_log_file"
+  log "info" "Skipping stack upload as skip_transfer=$skip_transfer." | tee -a "$upload_log_file"
 fi
 
 

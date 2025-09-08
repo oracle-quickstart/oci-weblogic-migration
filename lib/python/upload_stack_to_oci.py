@@ -1,3 +1,8 @@
+"""
+Copyright (c) 2025 Oracle and/or its affiliates.
+Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+"""
+
 import subprocess
 import os
 import zipfile
@@ -35,10 +40,8 @@ def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_
             3 - Bucket creation or upload failure
     """
 
-    # Create a temporary directory for unzipping the stack files
     temp_dir = tempfile.mkdtemp(prefix=f"stack_upload_{file_timestamp}_")
 
-    # Local logging function to write logs to both stdout and the specified log file
     def log(level, message):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         line = f"{timestamp}  [{level}] {message}"
@@ -46,14 +49,14 @@ def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_
         with open(log_file, "a") as lf:
             lf.write(line + "\n")
 
-    # Step 1: Validate that the stack zip file exists
-    if not os.path.isfile(stack_zip):
+    # Step 1: Check if stack zip exists
+    if not os.path.exists(stack_zip):
         log("error", f"Stack zip file not found: {stack_zip}")
         return 1
 
     log("info", f"Checking if bucket {bucket_name} exists in namespace {namespace}...")
 
-    # Step 2: Check if the target bucket exists using OCI CLI
+    # Step 2: Check if the bucket exists
     try:
         bucket_exists = subprocess.check_output(
             [
@@ -66,38 +69,41 @@ def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_
             stderr=subprocess.PIPE
         ).decode().strip()
     except subprocess.CalledProcessError as e:
-        # Log CLI error to log file
         with open(log_file, "a") as lf:
             lf.write(e.stderr.decode() + "\n")
-        log("warning", f"Bucket check failed for {bucket_name} in {namespace}. Skipping upload.")
-        return 2   # Special code for namespace/policy error
+        log("warning", f"Failed to check if bucket {bucket_name} exists in namespace {namespace}.")
+        return 2
 
-    # Step 3: Create the bucket if it doesn't already exist
+    # Step 3: Create bucket if missing
     if bucket_exists == "0":
-        log("info", f"Bucket {bucket_name} not found. Creating...")
-        subprocess.run(
-            [
-                "oci", "os", "bucket", "create",
-                "--namespace-name", namespace,
-                "--name", bucket_name,
-                "--compartment-id", compartment_id
-            ],
-            stdout=open(log_file, "a"),
-            stderr=open(log_file, "a")
-        )
-        log("info", f"Bucket {bucket_name} created.")
+        log("info", f"Bucket {bucket_name} not found in namespace {namespace}. Creating...")
+        try:
+            subprocess.check_call(
+                [
+                    "oci", "os", "bucket", "create",
+                    "--namespace-name", namespace,
+                    "--name", bucket_name,
+                    "--compartment-id", compartment_id
+                ],
+                stdout=open(log_file, "a"),
+                stderr=open(log_file, "a")
+            )
+            log("info", f"Bucket {bucket_name} created successfully.")
+        except subprocess.CalledProcessError as e:
+            log("warning", f"Failed to create bucket {bucket_name}. See {log_file} for details.")
+            return 3
     else:
         log("info", f"Bucket {bucket_name} already exists.")
 
-    # Step 4: Unzip the stack archive into the temporary directory
+    # Step 4: Unzip stack
     log("info", f"Unzipping stack: {stack_zip} to {temp_dir}")
     with zipfile.ZipFile(stack_zip, "r") as zip_ref:
         zip_ref.extractall(temp_dir)
 
-    # Step 5: Upload the unzipped files to OCI Object Storage
-    log("info", "Uploading unzipped stack to OCI bucket...")
+    # Step 5: Upload stack
+    log("info", "Uploading unzipped stack to OCI bucket {bucket_name}...")
     try:
-        subprocess.run(
+        subprocess.check_call(
             [
                 "oci", "os", "object", "bulk-upload",
                 "--bucket-name", bucket_name,
@@ -109,17 +115,14 @@ def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_
             stdout=open(log_file, "a"),
             stderr=open(log_file, "a")
         )
-
-        # Step 6: Clean up temporary directory
+        log("info", "Upload completed successfully.")
+    except subprocess.CalledProcessError:
+        log("warning", f"Failed to upload stack to bucket {bucket_name}. See {log_file} for details.")
+        return 4
+    finally:
+        # Cleanup
         try:
             shutil.rmtree(temp_dir)
             log("info", f"Temporary directory {temp_dir} deleted.")
         except Exception as e:
             log("warning", f"Failed to delete temp dir {temp_dir}: {e}")
-
-    except subprocess.CalledProcessError as e:
-        # Log upload failure
-        with open(log_file, "a") as lf:
-            lf.write(e.stderr.decode() + "\n")
-        log("warning", f"Bucket check failed for {bucket_name} in {namespace}. Skipping upload.")
-        return 3  # code for namespace/policy error
