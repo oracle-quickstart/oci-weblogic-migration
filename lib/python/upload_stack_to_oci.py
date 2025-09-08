@@ -71,7 +71,7 @@ def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_
     except subprocess.CalledProcessError as e:
         with open(log_file, "a") as lf:
             lf.write(e.stderr.decode() + "\n")
-        log("warning", f"Failed to check if bucket {bucket_name} exists in namespace {namespace}.")
+        log("warning", f"Failed to check if bucket {bucket_name} exists in namespace {namespace}. See {log_file} for details.")
         return 2
 
     # Step 3: Create bucket if missing
