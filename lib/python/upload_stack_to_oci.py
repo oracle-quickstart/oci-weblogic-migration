@@ -78,7 +78,7 @@ def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_
     if bucket_exists == "0":
         log("info", f"Bucket {bucket_name} not found in namespace {namespace}. Creating...")
         try:
-            subprocess.check_call(
+            subprocess.run(
                 [
                     "oci", "os", "bucket", "create",
                     "--namespace-name", namespace,
