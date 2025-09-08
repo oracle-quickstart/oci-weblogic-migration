@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
+# Copyright (c) 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #############################################################################################################################
@@ -218,13 +218,6 @@ else
     if [[ "${env_vars[skip_transfer]}" != "false" && "${env_vars[skip_transfer]}" != "true" ]]; then
         errors+=("skip_transfer value in the $env_file can be true or false")
     fi
-
-# # Removing the option to skip archive creation
-#    # Check if skip_archive value is valid or not (valid values: true or false)
-#    if [[ "${env_vars[skip_archive]}" != "false" && "${env_vars[skip_archive]}" != "true" ]]; then
-#        errors+=("skip_archive value in the $env_file can be true or false")
-#    fi
-
 fi
 
 set -e
