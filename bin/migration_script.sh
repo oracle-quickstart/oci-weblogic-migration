@@ -180,8 +180,8 @@ if [[ "$skip_transfer" = "false" && -n "$STACK_FILE" ]]; then
 	if [ "$upload_exit_code" -eq 0 ]; then
 		log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $bucket_folder. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
 	fi
-	else
-    log "info" "Skipping stack upload: skip_transfer=$skip_transfer or STACK_FILE is missing." | tee -a "$upload_log_file"
+else
+  log "info" "Skipping stack upload: skip_transfer=$skip_transfer or STACK_FILE is missing." | tee -a "$upload_log_file"
 fi
 
 
