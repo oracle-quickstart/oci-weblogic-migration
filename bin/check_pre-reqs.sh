@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
+# Copyright (c) 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #############################################################################################################################
@@ -178,7 +178,7 @@ else
     done < <(grep '=' "$env_file")
 
     # Define the list of required keys to check
-    required_keys=("ssh_user" "domain_home" "oracle_home" "bucket_name" "compartment_ocid" "tenancy_namespace")
+    required_keys=("ssh_user" "domain_home" "oracle_home" "bucket_name" "compartment_ocid" "tenancy_namespace" "skip_transfer")
 
     # Track missing keys
     missing_keys=()
@@ -213,6 +213,11 @@ else
     if [[ -n "${env_vars[ssh_password_file]:-}" && ! -f "${env_vars[ssh_password_file]}" ]]; then
         errors+=("The file specified for 'ssh_password_file' (${env_vars[ssh_password_file]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
     fi
+
+    # Check if skip_transfer value is valid or not (valid values: true or false)
+    if [[ "${env_vars[skip_transfer]}" != "false" && "${env_vars[skip_transfer]}" != "true" ]]; then
+        errors+=("skip_transfer value in the $env_file can be true or false")
+    fi
 fi
 
 set -e
@@ -241,15 +246,31 @@ if [[ -n "${env_vars[ssh_password_file]:-}" ]]; then
     fi
 fi
 
+set -e
 
-if ! rpm -qa | grep -i python3-paramiko >/dev/null 2>&1 && ! python3 -c "import paramiko" >/dev/null 2>&1; then
-    errors+=("Unable to find Paramiko Python SSH client library")
+end_section
+
+################################################ OCI CLI Pre-Check ####################################################
+
+start_section "OCI CLI Pre-Check"
+
+# allow failures in this block
+set +e
+
+# only do the check if skip_transfer is "false"
+if [ "${env_vars[skip_transfer]}" = "false" ]; then
+
+  # make sure oci is on $PATH
+  if ! oci > /dev/null 2>&1; then
+    errors+=("Oracle Cloud Infrastructure CLI (oci) not found in the path.")
+  fi
+
+  # make sure oci is configured for the current ssh user
+  if ! echo n |oci iam region list > /dev/null 2>&1; then
+    errors+=("Failed to verify OCI CLI is configured. For more information visit: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm")
+  fi
+
 fi
-
-if ! which jq 2>&1 > /dev/null; then
-    errors+=("Unable to find jq. For more information see https://jqlang.github.io/jq/download/")
-fi
-
 
 set -e
 

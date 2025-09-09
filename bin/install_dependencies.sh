@@ -8,17 +8,13 @@
 # Description          : Install all required dependencies needed to run OCI Weblogic Migration Tool
 # Dependencies         : $DEPS_WDT_HOME set in common.sh
 #############################################################################################################################
-
-
 scriptName=$(basename "$0")
 scriptPath=$(dirname "$0")
 toolHome=$(builtin cd "$scriptPath/.."|| exit; pwd )
 LOG_FILE_NAME="owm_install_deps.log"
-# echo $scriptPath
-# echo $toolHome
 over_write_deps=False
 
-[ "$user_functions_loaded" ] || source ./shared.sh
+[ "$user_functions_loaded" ] || source "$scriptPath/shared.sh"
 
 install_oci_sdk_release(){
   local skip_download=${1}
@@ -46,31 +42,6 @@ install_oci_sdk_release(){
   fi
   log "info" "OCI JAVA SDK setup completed"
 }
-
-install_jq_release(){
-    if [[ ! -d $DEPS_JQ_HOME ]]; then
-         log "info" "Creating JQ dependency directory"
-         if [[ $(mkdir -p $DEPS_JQ_HOME) -eq 0 ]]; then
-             log "info" "$DEPS_JQ_HOME directory created. "
-         else
-             log "error" "Failed to create JQ depenency directory. exiting..."
-             end_section "DEPENDENCIES"
-             exit 1
-         fi
-    fi
-
-   log "info" "Downloading JQ tool."
-   if ! curl -L $JQ_DOWNLOAD_RELEASE_URL -o $DEPS_JQ_HOME/jq >> "$LOG_FILE" 2>&1; then
-        log "error" "Failed to downlload and install JQ. Check logs.  exiting..."
-        end_section "DEPENDENCIES"
-        exit 1
-   fi
-   chmod +x $DEPS_JQ_HOME/jq
-   log "info" "Install and download JQ tool in $DEPS_JQ_HOME completed."
-}
-
-
-
 
 install_wdt_release(){
    if [[ ! -d $DEPS_WDT_HOME ]]; then
@@ -113,8 +84,6 @@ install_deps() {
     fi
 
     install_wdt_release
-    install_jq_release
-    #install_oci_sdk_release
     end_section "DEPENDENCIES"
 }
 
@@ -128,7 +97,6 @@ print_help() {
     echo "Usage: $0 [option] [env_name]"
     echo "Options:"
     echo "  all   Download and install all dependencies. This is the Default option"
-    echo "  js  Download and install Jason Parser JQ tool"
     echo "  sdk   Download OCI Java SDK release"
     echo "  wdt   Download Weblogic Deployment Tool - WDT"
 }
@@ -141,9 +109,6 @@ fi
 case "$1" in
     "all")
         install_deps $2
-        ;;
-    "js")
-        install_jq_release
         ;;
     "sdk")
         install_oci_sdk_release $2

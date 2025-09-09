@@ -30,6 +30,7 @@ locals{
 locals {
   wls_adminserver_name    = try(local.wls_topology["AdminServerName"], "")
   wls_adminserver_details = try(local.wls_topology["Server"][local.wls_adminserver_name], "")
+  wls_admin_conole_port   = try(local.wls_adminserver_details["AdminConsolePort"],local.ADMIN_DEFAULT_SSL_LISTEN_PORT)
   wls_admin_listen_port   = try(lookup(local.wls_adminserver_details, "ListenPort", null), local.ADMIN_DEFAULT_LISTEN_PORT) # 7001
   ##
   #  "SSL" : {

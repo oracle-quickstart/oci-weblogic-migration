@@ -1,11 +1,13 @@
+# -*- coding: utf-8 -*-
 """
-Copyright (c) 2023, 2024, Oracle Corporation and/or its affiliates.
+Copyright (c) 2023, 2025, Oracle Corporation and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 The main module for the WebLogic Deploy tool to verify the user's SSH configuration is compatible with WDT.
 """
 import os
 import sys
+import traceback
 
 from oracle.weblogic.deploy.util import SSHException, WLSDeployArchive
 from oracle.weblogic.deploy.util import CLAException
@@ -36,7 +38,7 @@ from wls_migration_archive import WLSMigrationArchiver
 
 
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))),'deps', 'wdt','lib','python'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))), 'deps', 'wdt', 'lib', 'python'))
 
 from wlsdeploy.aliases.location_context import LocationContext
 from wlsdeploy.util.model import Model
@@ -54,6 +56,7 @@ from wlsdeploy.util import env_helper
 from wlsdeploy.tool.discover import discoverer
 from wlsdeploy.json import json_translator
 from wlsdeploy.aliases.wlst_modes import WlstModes
+from java.io import ByteArrayInputStream
 
 from oracle.weblogic.deploy.util import FileUtils
 from oracle.weblogic.deploy.util import PyOrderedDict as OrderedDict
@@ -94,6 +97,9 @@ from wlsdeploy.util.cla_utils import CommandLineArgUtil
 from wlsdeploy.util.exit_code import ExitCode
 
 
+from wlsdeploy.util.cla_utils import CommandLineArgUtil
+CommandLineArgUtil.SPACE_MAP_SWITCH = '-space_map'      # new switch for JSON map
+CommandLineArgUtil.ADMIN_RETURN_SWITCH = '-admin_return'  # new switch for admin space flag
 
 wlst_helper.wlst_functions = globals()
 
@@ -134,8 +140,9 @@ __optional_arguments = [
     CommandLineArgUtil.SSH_PRIVATE_KEY_PASSPHRASE_FILE_SWITCH,
     CommandLineArgUtil.SSH_PRIVATE_KEY_PASSPHRASE_PROMPT_SWITCH,
     CommandLineArgUtil.SSH_HOST_SWITCH,
-    CommandLineArgUtil.SKIP_ARCHIVE_FILE_SWITCH
-
+    CommandLineArgUtil.SKIP_ARCHIVE_FILE_SWITCH,
+    CommandLineArgUtil.SPACE_MAP_SWITCH,
+    CommandLineArgUtil.ADMIN_RETURN_SWITCH
     #
     # OUTPUT_DIR_SWITCH          = "-output_dir"
     # REMOTE_OUTPUT_DIR_SWITCH   = '-remote_output_dir'
@@ -295,7 +302,138 @@ def __generate_remote_report_json(model_context):
                          class_name=_class_name, method_name=_method_name)
 
 
+def load_env_file(file_path):
+    """Reads key=value lines from an env file and returns them as a dict.
+
+    :param file_path: path of the file to be loaded
+    :return: dict of keys : values from the file
+    """
+    _method_name = 'load_env_file'
+    env = {}
+    if not os.path.isfile(file_path):
+        __logger.info('WLSDPLY-05027', 'on-prem.env file not found, skipping load_env_file function...',
+                      class_name=_class_name, method_name=_method_name)
+        return env
+
+    f = open(file_path, 'r')
+    try:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            key, val = line.split('=', 1)
+            key = key.strip()
+            val = val.strip().strip('"').strip("'")
+            env[key] = val
+    finally:
+        try:
+            f.close()
+        except:
+            pass
+
+    return env
+
+
+def ensure_bucket(oci_bucket_name, oci_compartment_id, log_file):
+    """
+    Make sure the OCI Object Storage bucket exists, creating it if necessary.
+
+    :param oci_bucket_name:   name of the bucket to check/create
+    :param oci_compartment_id: OCID of the compartment in which to create the bucket
+    :param log_file:          path to a logfile to append oci CLI output to
+    """
+    _method_name = 'ensure_bucket'
+    # 1) Try to 'get' the bucket; redirect stdout+stderr to our log_file
+    get_cmd = "oci os bucket get --bucket-name %s >> %s 2>&1" % (oci_bucket_name, log_file)
+    result = os.system(get_cmd)
+    if result != 0:
+        # bucket is not there, so try to create it
+        __logger.info('WLSDPLY-05027', 'Bucket does not exist. Attempting to create bucket...',
+                      class_name=_class_name, method_name=_method_name)
+        # debug‑log the exact create command
+        debug_msg = "Running command: oci os bucket create --name %s --compartment-id %s" % (
+            oci_bucket_name, oci_compartment_id)
+        __logger.info('WLSDPLY-05027', 'Debug: %s' %debug_msg,
+                      class_name=_class_name, method_name=_method_name)
+
+        create_cmd = ("oci os bucket create --name %s "
+                      "--compartment-id %s >> %s 2>&1") % (
+                         oci_bucket_name, oci_compartment_id, log_file)
+        result2 = os.system(create_cmd)
+        if result2 != 0:
+            # creation failed
+            __logger.warning('WLSDPLY-05027',"Error: Failed to create bucket. Check OCI credentials, policies or compartment OCID: %s. Exiting..." %oci_compartment_id, class_name=_class_name, method_name=_method_name)
+            # under Jython/WLST, sys.exit(1) will abort the WLST tool with error
+            sys.exit(1)
+
+        # success
+        __logger.info('WLSDPLY-05027',"Bucket created.", class_name=_class_name, method_name=_method_name)
+
+
+def upload_to_bucket(file_path, log_file, on_prem_values):
+    """
+    Upload a file to OCI Object Storage using direct OCI CLI calls.
+    Reads bucket_name and tenancy_namespace from on-prem.env.
+    Adds extensive debug output to trace all steps.
+
+    :param file_path: path of the file to be uploaded to the bucket
+    :param log_file: path to a logfile to append oci CLI output to
+    :param on_prem_values: The dictionary have all the on-prem.env file values
+    """
+    global __logger, _class_name
+    _method_name = 'upload_to_bucket'
+
+    # Read bucket and namespace and compartment
+    bucket = on_prem_values.get('bucket_name')
+    namespace = on_prem_values.get('tenancy_namespace')
+    compartment_id = on_prem_values.get('compartment_ocid')
+
+    if not bucket or not namespace or not compartment_id:
+        msg = "Missing bucket or namespace or compartment ocid: bucket=%s, namespace=%s, compartment_ocid=%s. Cannot upload %s" % (bucket, namespace, compartment_id, file_path)
+        __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
+        # under Jython/WLST, sys.exit(1) will abort the WLST tool with error
+        sys.exit(1)
+
+    ensure_bucket(bucket, compartment_id, log_file)
+
+    cmd = "oci os object put --namespace %s --bucket-name %s --file %s --force" % (namespace, bucket, file_path)
+    __logger.info('WLSDPLY-05027', 'Running command to upload to oci bucket: %s' %cmd, class_name=_class_name, method_name=_method_name)
+
+    try:
+        result = os.system(cmd)
+    except Exception, e:
+        __logger.warning('WLSDPLY-05027', 'Exception running upload command: %s' % str(e),
+                         class_name=_class_name, method_name=_method_name)
+        return
+
+    if result == 0:
+        msg = 'Successfully uploaded %s to bucket %s' % (file_path, bucket)
+        __logger.info('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
+    else:
+        msg = "Upload failed (exit code %s) for %s. Retry running bash migration_script.sh after fixing the issue." % (result, file_path)
+        __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
+        # under Jython/WLST, sys.exit(1) will abort the WLST tool with error
+        sys.exit(1)
+
+
+def delete_local(file_path):
+    """Delete a local file if it exists.
+
+    :param file_path: path of the file to be deleted
+    """
+    _method_name = 'delete_local'
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+            msg = "Deleted local archive %s" % file_path
+            __logger.info('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
+        except Exception, e:
+            msg = "Failed to delete %s: %s" % (file_path, str(e))
+            __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
+
+
 def __archive_directories(model, model_context, helper):
+    global init_argument_map
     """
     Archive WebLogic Home, Middleware Home, JDK Home, Custom Directories
     :param model_context: the model context
@@ -317,50 +455,134 @@ def __archive_directories(model, model_context, helper):
     elif len(unix_machine_nodes) > 0:
         nodes=unix_machine_nodes
 
-    # Verify tool is running from the same host.
-    # if len(nodes)==1 and not model_context.is_ssh():
+    # Determine env file location (fallback if __file__ not set)
+    try:
+        script_path = __file__
+    except NameError:
+        script_path = sys.argv[0]
+
+    script_path = os.path.abspath(script_path)
+    base_dir = os.path.dirname(os.path.dirname(script_path))  # go from lib/python → base
+    env_file = os.path.abspath(os.path.join(base_dir,'..', 'config', 'on-prem.env'))
+    log_file = os.path.abspath(os.path.join(base_dir,'..', 'logs', 'upload_to_oci_archive.log'))
+
+    # Load the on-prem.env file
+    on_prem_values = load_env_file(env_file)
+
+    # Read admin-level precheck return code (0=OK,1=not enough space)
+    space_admin_rc = int(os.environ.get('SPACE_ADMIN_RETURNCODE', '0'))
+
+    # Read per-node JSON map {host:0/1}
+    json_space_input = os.environ.get('SPACE_STATUS_JSON', '{}')
+
+    # turn the Python string into a Java InputStream
+    bais = ByteArrayInputStream(json_space_input.encode('utf-8'))
+
+    # parse it
+    try:
+        space_status = json_translator.JsonStreamToPython('SPACE_STATUS_JSON', bais, False).parse()
+    except Exception, je:
+        # je will already be a JsonException if parsing failed
+        __logger.warning('Failed to parse SPACE_STATUS_JSON, defaulting to empty map: %s', je)
+        space_status = {}
+
+    # Read skip_transfer flag from on-prem.env
+    skip_transfer = on_prem_values.get('skip_transfer', 'false').lower() == 'true'
+
     admin_server_name = topology['AdminServerName']
     admin_machine = None
     if 'Machine' in topology['Server'][admin_server_name]:
         admin_machine=topology['Server'][admin_server_name]["Machine"]
+    else:
+        ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902', "Admin machine not found")
+        __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+        raise ex
+
+    # Case 1: Admin has enough space-just create the archives, and if skip-transfer is true then don't upload or delete, else upload and delete
+    if space_admin_rc == 0:
         if admin_machine in nodes:
             #Do local Discovery.  It should include any managed server registered.
             archive_result=WLSMigrationArchiver(admin_machine,model_context, OrderedDict(), base_location, model).archive()
             if not infra_constants.SUCCESS == archive_result:
-                ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902',
-                                                           "ERROR")
+                ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902', "Admin archive failed")
                 __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
                 raise ex
-            nodes
-    else:
-        #  Todo raise an exception. Could not discover.
-        ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902',
-                                                   "ERROR")
-        __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-        raise ex
 
-    for machine in nodes:
-        #__logger.info('WLSDPLY-02300', type(machine))
-        if not machine == admin_machine:
+        for machine in nodes:
+            if not machine == admin_machine:
+                node_details = OrderedDict()
+                listen_address = common.traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
+                init_argument_map[CommandLineArgUtil.SSH_HOST_SWITCH] = listen_address
+                is_encryption_supported = EncryptionUtils.isEncryptionSupported()
+                if is_encryption_supported:
+                    __logger.info('WLSDPLY-20044',
+                                  init_argument_map, class_name=_class_name, method_name=_method_name)
+                else:
+                    __logger.info('WLSDPLY-20045',
+                                  init_argument_map, class_name=_class_name, method_name=_method_name)
+                per_machine_model_context = __process_args(init_argument_map, is_encryption_supported)
+                host_result = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model).archive()
+                if not infra_constants.SUCCESS == host_result:
+                    ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902', "Node archive failed")
+                    __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+                    raise ex
+
+        if not skip_transfer:
+            admin_out = model_context.get_local_output_dir()
+            for fname in os.listdir(admin_out):
+                if fname.endswith('.tar.gz'):
+                    upload_to_bucket(os.path.join(admin_out, fname), log_file, on_prem_values)
+                    delete_local(os.path.join(admin_out, fname))
+
+    # Case 2: Admin has NO space and skip_transfer = true (Manual steps only)
+    elif skip_transfer:
+        __logger.warning('WLSDPLY-05027',
+                         'Admin VM has insufficient space and skip_transfer = true.\n',
+                         class_name=_class_name, method_name=_method_name)
+        return
+
+    # Case 3: Admin has NO space and skip_transfer = false (Selective remote archive + upload + delete)
+    else:
+        for machine in nodes:
             node_details = OrderedDict()
-            listen_address=common.traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
-            global init_argument_map
-            init_argument_map[CommandLineArgUtil.SSH_HOST_SWITCH]=listen_address
+            listen_address = common.traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
+            init_argument_map[CommandLineArgUtil.SSH_HOST_SWITCH] = listen_address
             is_encryption_supported = EncryptionUtils.isEncryptionSupported()
             if is_encryption_supported:
-                __logger.info('WLSDPLY-20044', init_argument_map, class_name=_class_name, method_name=_method_name)
+                __logger.info('WLSDPLY-20044',
+                              init_argument_map, class_name=_class_name, method_name=_method_name)
             else:
-                __logger.info('WLSDPLY-20045', init_argument_map, class_name=_class_name, method_name=_method_name)
-            per_machine_model_context=__process_args(init_argument_map,is_encryption_supported)
-            host_result=WLSMigrationArchiver(machine,per_machine_model_context, node_details, base_location, model).archive()
-            if not infra_constants.SUCCESS == host_result:
-                ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902',
-                                                           "ERROR")
+                __logger.info('WLSDPLY-20045',
+                              init_argument_map, class_name=_class_name, method_name=_method_name)
+            per_machine_model_context = __process_args(init_argument_map, is_encryption_supported)
+
+            # checking per node space
+            if space_status.get(listen_address, 1) == 1:
+                archiver = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model)
+                archiver.print_per_host_todo_commands()
+                __logger.warning('WLSDPLY-05027',
+                                 'Not enough space on %s to create the archives. Please run the commands manually mentioned in the TODO to create the archive, '
+                                 'scp to the admin host and upload to bucket.' % machine,
+                                 class_name=_class_name, method_name=_method_name)
+                continue
+
+            result = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model).archive()
+            if not infra_constants.SUCCESS == result:
+                ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902', "Node archive failed")
                 __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
                 raise ex
-    if len(hosts_details) == 0 :
-        #  Todo raise an exception. Could not discover.
+
+            # Upload and delete
+            node_dir = per_machine_model_context.get_local_output_dir()
+            for fname in os.listdir(node_dir):
+                if fname.endswith('.tar.gz'):
+                    path = os.path.join(node_dir, fname)
+                    upload_to_bucket(path,log_file,on_prem_values)
+                    delete_local(path)
+
+    if len(hosts_details) == 0:
         return
+
     __logger.exiting(class_name=_class_name, method_name=_method_name, result=model.get_model_resources())
     return
 
@@ -419,7 +641,11 @@ def main(model_context):
         # set domain home result in model context, for use by deployers and helpers
         model_context.set_domain_home(_get_domain_path(model_context, model_dictionary))
         model = Model(model_dictionary)
-        __archive_directories(model, model_context, helper)
+        try:
+            __archive_directories(model, model_context, helper)
+        except Exception:
+            traceback.print_exc()
+            raise
 
     except CLAException, ex:
         _exit_code = ex.getExitCode()

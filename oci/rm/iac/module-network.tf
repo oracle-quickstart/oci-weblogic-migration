@@ -337,6 +337,7 @@ module "network" {
   allow_wlsserver_ssh_access        = var.allow_wlsservers_ssh_access
   allow_bastion_domain_access       = var.allow_bastion_domain_access
   allow_bastion_adminserver_access  = var.allow_bastion_adminserver_access
+  wls_admin_console_port            = local.wls_admin_conole_port
   assign_dns                        = var.assign_dns
   bastion_allowed_cidrs             = var.bastion_allowed_cidrs
   bastion_is_public                 = var.bastion_is_public
@@ -476,5 +477,5 @@ output "lpg_all_attributes" {
 
 output "adminserver_port" {
   description = "Port of admin node"
-  value       = try(module.network.adminserver_port, null)
+  value       = local.wls_admin_conole_port
 }

@@ -22,12 +22,12 @@ toolHome=$(builtin cd "$scriptPath/.."; pwd)
 readonly OWLSMIG_NAME="OCI Weblogic Migration Tool"
 DEPS_DIR=$toolHome/deps
 readonly DEPS_WDT_HOME=$DEPS_DIR/wdt
-readonly DEPS_JQ_HOME=$DEPS_DIR/jq
+#readonly DEPS_JQ_HOME=$DEPS_DIR/jq
 readonly DEPS_OCI_SDK_HOME=$DEPS_DIR/oci
 readonly LOG_DIR=$toolHome/logs
 LOG_FILE="$LOG_DIR/$LOG_FILE_NAME"
 readonly WDT_DOWNLOAD_RELEASE_URL="https://github.com/oracle/weblogic-deploy-tooling/releases/download/release-4.3.5/weblogic-deploy.tar.gz"
-readonly JQ_DOWNLOAD_RELEASE_URL="https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64"
+#readonly JQ_DOWNLOAD_RELEASE_URL="https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64"
 readonly OCI_JAVA_SDK_DOWNLOAD_RELEASE_URL="https://github.com/oracle/oci-java-sdk/releases/download/v3.49.0/oci-java-sdk-3.49.0.zip"
 readonly REPO_ARCHIVE_PATH=${3:-$toolHome/out}
 
@@ -77,6 +77,34 @@ function log(){
 
     #echo "$timestamp" "$section" ["${level^^}"] "$message"  | tee /dev/fd/3
     #exec 3>&1 1>"$LOG_FILE" 2>&1
+}
+
+update_migration_data_json() {
+  #Creating & updating  a metadata json file: migration_data.json.
+
+  local key=$1
+  local value=$2
+  local MIGRATION_DATA_JSON="$toolHome/logs/migration_data.json"
+  local MIGRATION_SCRIPT_LOG="$toolHome/logs/migration_script.log"
+
+  # Checks if the metadata, files exists. Creates one if doesn't exists
+  python3 "$toolHome/lib/python/json_utils.py" ensure_json "$MIGRATION_DATA_JSON"
+
+  # Check if JSON metadata file is invalid or corrupted.
+  if ! python3 "$toolHome/lib/python/json_utils.py" validate_json "$MIGRATION_DATA_JSON" 2>>"$MIGRATION_SCRIPT_LOG"; then
+    log "error" "The metadata file [$MIGRATION_DATA_JSON] is invalid or corrupted."
+    log "error" "Check [$MIGRATION_SCRIPT_LOG] for details. Refer to the README.md for recovery steps, or manually delete the metadata file [$MIGRATION_DATA_JSON] and contents of [$toolHome/out] before re-running migration_script.sh"
+    log "error" "Migration failed."
+    exit 1
+  fi
+
+  # Update the file using Python script
+  if ! python3 "$toolHome/lib/python/json_utils.py" update_json "$MIGRATION_DATA_JSON" "$key" "$value" >>"$MIGRATION_SCRIPT_LOG" 2>&1; then
+    log "error" "Python script failed to update key [$key] in $MIGRATION_DATA_JSON. See $MIGRATION_SCRIPT_LOG for details."
+    log "error" "Run migration_script.sh again after resolving the issue."
+    log "error" "Migration failed."
+    exit 1
+  fi
 }
 
 is_empty_dir() {
@@ -205,6 +233,22 @@ run_ssh_command(){
      log "info" "SSH command executed successfully"
 }
 
+# Construct SSH authentication arguments based on available config values.
+# Priority: private key (with optional passphrase) > password file.
+get_ssh_args() {
+  local ssh_args=""
+  [[ -n "$ssh_user" ]] && ssh_args="$ssh_args -ssh_user $ssh_user"
+  if [[ -n "$ssh_private_key_file" && -f "$ssh_private_key_file" ]]; then
+    ssh_args="$ssh_args -ssh_private_key $ssh_private_key_file"
+    if [[ -n "$ssh_private_key_pass_file" && -f "$ssh_private_key_pass_file" ]]; then
+      ssh_args="$ssh_args -ssh_private_key_pass_file $ssh_private_key_pass_file"
+    fi
+  elif [[ -n "$ssh_password_file" && -f "$ssh_password_file" ]]; then
+    ssh_args="$ssh_args -ssh_pass_file $ssh_password_file"
+  fi
+  echo "$ssh_args"
+}
+
 secure_copy(){
      source=$1
      destination=$2
@@ -228,4 +272,4 @@ log_exit_attempt(){
   printf '%*s\n' "${COLUMNS:-80}" '' | tr ' ' '='
 }
 
-export user_functions_loaded=0
+user_functions_loaded=0
