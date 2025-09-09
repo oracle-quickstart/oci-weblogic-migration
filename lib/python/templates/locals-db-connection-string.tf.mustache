@@ -1,0 +1,106 @@
+# Copyright (c) 2024, 2025 Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
+# shellcheck disable=SC1091
+# This is an auto-generated file.
+
+locals {
+    jdbc_driver_thin_string="jdbc:oracle:thin:@"
+
+    #  For DB Systems
+    #   - find database home
+    #   - get field connection_strings and cdb_default to have easy connect string.
+    #   - if pdbname is !="", replace cdb string with pdb, else assume connection is to cdb.
+    #   - replace(connetion, cdb, pdb_name)
+    #   db_unique_name or cdb#
+    #    "Database System" = one(data.oci_database_database.ocidb_database_1).db_unique_name #,
+    #        "Database System" = var.oci_db_pdb_service_name_1 #)
+
+
+{{#datasources}}
+    db_options_{{{datasourceName}}}= {
+        "Edit JDBC String" = trimspace(var.oci_db_connection_string_{{{datasourceName}}}) != var.ds_{{{datasourceName}}} && length(trimspace(var.oci_db_connection_string_{{{datasourceName}}})) >0 ? var.oci_db_connection_string_{{{datasourceName}}} :"unchanged"
+        "Autonomous Transaction Processing Database" = local.is_atp_db_{{{datasourceName}}} ? local.desired_atp_db_profile_value_{{{datasourceName}}} : ""
+        "Database System" = var.oci_db_dbsystem_id_{{{datasourceName}}} !="" ? trimspace(var.oci_db_pdb_service_name_{{{datasourceName}}}) !="" ? replace(tostring(data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].connection_strings[0].cdb_default),data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].db_unique_name,var.oci_db_pdb_service_name_{{{datasourceName}}}) :tostring(data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].connection_strings[0].cdb_default) : ""
+    }
+{{/datasources}}
+
+    #  "Database System"
+    datasources = var.update_any_ds? {
+{{#datasources}}
+    {{{datasourceName}}} = {
+            on_prem = var.ds_{{{datasourceName}}}
+            oci = format("%s%s",local.jdbc_driver_thin_string,try(trimspace(local.db_options_{{{datasourceName}}}[var.db_strategy_{{{datasourceName}}}]),"empty"))
+            is_atp = trimspace(var.atp_db_id_{{{datasourceName}}}) != ""
+            is_oci_db = local.is_oci_db_{{{datasourceName}}}
+            db_id = coalesce(var.atp_db_id_{{{datasourceName}}}, var.oci_db_dbsystem_id_{{{datasourceName}}}, "none")
+            atp_db = local.atp_db_{{{datasourceName}}}
+            oci_db = local.oci_db_{{{datasourceName}}}
+            custom_jdbc = local.is_db_connection_string_{{{datasourceName}}}
+            connection_string = var.oci_db_connection_string_{{{datasourceName}}}
+            is_vcn_peering    = local.is_vcn_peering_{{{datasourceName}}}
+            db_network_compartment_id = local.db_network_compartment_id_{{{datasourceName}}}
+            db_existing_vcn_id = local.db_existing_vcn_id_{{{datasourceName}}}
+            db_subnet_id = local.db_subnet_id_{{{datasourceName}}}
+            existing_vcn_add_seclist =  local.create_seclist_{{{datasourceName}}}
+            db_port  = local.db_port_{{{datasourceName}}}
+        }
+{{/datasources}}
+    } : null
+    }
+
+# Database
+locals {
+{{#datasources}}
+    is_atp_db_{{{datasourceName}}} = trimspace(var.atp_db_id_{{{datasourceName}}}) != ""
+    is_atp_dedicated_{{{datasourceName}}} = try(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).is_dedicated,"none")
+    is_atp_with_private_endpoints_{{{datasourceName}}} = local.is_atp_db_{{{datasourceName}}} ? var.atp_db_uses_private_endpoint_{{{datasourceName}}} : false
+    desired_atp_db_profile_value_{{{datasourceName}}}  = local.is_atp_db_{{{datasourceName}}} ? [for profile in data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].connection_strings[0].profiles : profile.value if upper(profile.consumer_group) == upper(var.atp_db_level_{{{datasourceName}}})][0] : ""
+
+    atp_db_{{{datasourceName}}} = {
+        atp_type                      = local.is_atp_dedicated_{{{datasourceName}}}
+        compartment_id                = var.atp_db_compartment_id_{{{datasourceName}}}
+        db_name                        = try(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).db_name,"empty")
+        db_level                       = var.atp_db_level_{{{datasourceName}}}
+    }
+    oci_db_{{{datasourceName}}} = {
+        is_oci_db                = local.is_oci_db_{{{datasourceName}}}
+        compartment_id           = var.oci_db_compartment_id_{{{datasourceName}}}
+    }
+
+    is_oci_connection_string_{{{datasourceName}}}      = trimspace(var.oci_db_connection_string_{{{datasourceName}}}) == "" ? false : true
+
+    #OCI DB
+    is_oci_db_{{{datasourceName}}}                    = (trimspace(var.oci_db_dbsystem_id_{{{datasourceName}}}) != "") ? true : false
+    is_db_connection_string_{{{datasourceName}}} = trimspace(var.ds_{{{datasourceName}}}) != trimspace(var.oci_db_connection_string_{{{datasourceName}}}) ? true : false
+    is_ocidb_system_id_available_{{{datasourceName}}} = trimspace(var.oci_db_dbsystem_id_{{{datasourceName}}}) != ""
+
+    #VCN Peering
+
+    // Criteria for VCN peering:
+    // 1. Only when both create_vcn is true and DB VCN ID is provided (either oci_db_existing_vcn_id_{{{datasourceName}}} or atp_db_existing_vcn_id_{{{datasourceName}}})
+    // 2. or when both WLS VCN ID is provided and DB VCN ID is provided (either oci_db_existing_vcn_id_{{{datasourceName}}} or atp_db_existing_vcn_id_{{{datasourceName}}}) and they are different IDs,
+
+    db_strategy_{{{datasourceName}}}_is_atp_db = local.is_atp_db_{{{datasourceName}}} ? true : false
+    db_strategy_{{{datasourceName}}}_is_oci_db = local.is_oci_db_{{{datasourceName}}} ? true : false
+
+    atp_db_{{{datasourceName}}}_subnet_id = local.is_atp_db_{{{datasourceName}}} && local.is_atp_with_private_endpoints_{{{datasourceName}}} ? data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}[0].subnet_id : ""
+    oci_db_{{{datasourceName}}}_subnet_id = local.is_oci_db_{{{datasourceName}}} ? data.oci_database_db_systems.ocidb_db_systems_{{{datasourceName}}}[0].db_systems[0].subnet_id : ""
+
+    db_network_compartment_id_{{{datasourceName}}} = (local.db_strategy_{{{datasourceName}}}_is_atp_db && var.atp_db_uses_private_endpoint_{{{datasourceName}}} ? var.atp_db_network_compartment_id_{{{datasourceName}}} : (local.db_strategy_{{{datasourceName}}}_is_oci_db ? var.oci_db_network_compartment_id_{{{datasourceName}}} : ""))
+    db_existing_vcn_id_{{{datasourceName}}}        = (local.db_strategy_{{{datasourceName}}}_is_atp_db && var.atp_db_uses_private_endpoint_{{{datasourceName}}} ? var.atp_db_existing_vcn_id_{{{datasourceName}}} : (local.db_strategy_{{{datasourceName}}}_is_oci_db ? var.oci_db_existing_vcn_id_{{{datasourceName}}} : ""))
+    db_subnet_id_{{{datasourceName}}}              = (local.db_strategy_{{{datasourceName}}}_is_atp_db && var.atp_db_uses_private_endpoint_{{{datasourceName}}} ? local.atp_db_{{{datasourceName}}}_subnet_id : (local.db_strategy_{{{datasourceName}}}_is_oci_db ? local.oci_db_{{{datasourceName}}}_subnet_id : ""))
+    db_port_{{{datasourceName}}}                   = (local.db_strategy_{{{datasourceName}}}_is_atp_db ? "1522" : (local.db_strategy_{{{datasourceName}}}_is_oci_db ? var.oci_db_port_{{{datasourceName}}} : ""))
+    new_vcn_and_oci_db_{{{datasourceName}}}        = local.db_strategy_{{{datasourceName}}}_is_oci_db && var.create_vcn ? true : false
+
+    existing_vcn_and_oci_db_different_vcn_{{{datasourceName}}} = local.db_strategy_{{{datasourceName}}}_is_oci_db && var.vcn_id != "" && var.vcn_id != var.oci_db_existing_vcn_id_{{{datasourceName}}} ? true : false
+
+    new_vcn_and_atp_db_private_endpoint_{{{datasourceName}}}                    = local.db_strategy_{{{datasourceName}}}_is_atp_db && var.create_vcn && var.atp_db_uses_private_endpoint_{{{datasourceName}}} ? true : false
+    existing_vcn_and_atp_db_private_endpoint_different_vcn_{{{datasourceName}}} = local.db_strategy_{{{datasourceName}}}_is_atp_db && var.vcn_id != "" && var.atp_db_uses_private_endpoint_{{{datasourceName}}} && (var.vcn_id != var.atp_db_existing_vcn_id_{{{datasourceName}}}) ? true : false
+
+    is_vcn_peering_{{{datasourceName}}} = local.db_strategy_{{{datasourceName}}}_is_atp_db || local.db_strategy_{{{datasourceName}}}_is_oci_db ? (local.new_vcn_and_oci_db_{{{datasourceName}}} || local.new_vcn_and_atp_db_private_endpoint_{{{datasourceName}}}  || local.existing_vcn_and_oci_db_different_vcn_{{{datasourceName}}} || local.existing_vcn_and_atp_db_private_endpoint_different_vcn_{{{datasourceName}}}) : false
+
+    create_seclist_{{{datasourceName}}} = ((local.db_strategy_{{{datasourceName}}}_is_atp_db && var.atp_db_uses_private_endpoint_{{{datasourceName}}} && var.existing_vcn_add_seclist_{{{datasourceName}}}) || (local.db_strategy_{{{datasourceName}}}_is_oci_db && var.existing_vcn_add_seclist_{{{datasourceName}}})) ? true : false
+
+{{/datasources}}
+}
+
