@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
+# Copyright (c) 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #############################################################################################################################
@@ -20,25 +20,29 @@ ON_PREM_ENV_FILE="$toolHome/config/on-prem.env"
 load_config "$ON_PREM_ENV_FILE" > /dev/null 2>&1
 
 run_migration_step() {
-
-  #Executes the specified migration step
-  #arg1: step name.
-  #arg2: script command.
-  #arg3: (Optional) Allow exit code 1 to pass (Used in the case of WDT).(default : false).
-  #arg4: (Optional) json key for the metadata (migration_data.json) file. (default: $(step_name)_status).
-  #arg5: (Optional) returns the exit code if set to true. (default : false).
+  # Executes the specified migration step
+  # arg1: step name.
+  # arg2: script command.
+  # arg3: (Optional) Allow exit code 1 to pass (Used in the case of WDT).(default: false).
+  # arg4: (Optional) json key for the metadata (migration_data.json) file. (default: ${step_name}_status).
+  # arg5: (Optional) returns the exit code if set to true. (default: false).
+  # arg6: (Optional) soft fail - do not stop script on failure. (default: false).
 
   local step_name="$1"
   local script_cmd="$2"
   local allow_exit_code_1="${3:-false}"
   local json_key="${4:-${step_name}_status}"
   local return_exit_code="${5:-false}"
+  local soft_fail="${6:-false}"
 
   # Skip if already marked as success, continues otherwise.
   local status=""
   status=$(python3 "$toolHome/lib/python/json_utils.py" get_optional_key "$MIGRATION_DATA_JSON" "$json_key")
   if [ "$status" = "success" ]; then
     log "info" "\"$step_name\" already completed successfully. Skipping."
+    if [ "$return_exit_code" = "true" ]; then
+        RETURN_STATUS=0
+    fi
     return
   fi
 
@@ -60,7 +64,17 @@ run_migration_step() {
 
   else
     update_migration_data_json "$json_key" "failed"
-    log "error" " \"$step_name\" failed. Check $MIGRATION_SCRIPT_LOG for details. Run migration_script.sh again after resolving the issue."
+
+    if [ "$soft_fail" = "true" ]; then
+      log "warning" "\"$step_name\" failed (non-blocking). Check $MIGRATION_SCRIPT_LOG for details."
+      if [ "$return_exit_code" = "true" ]; then
+        RETURN_STATUS=$exit_code
+        return 0
+      fi
+      return 0
+    fi
+
+    log "error" "\"$step_name\" failed. Check $MIGRATION_SCRIPT_LOG for details. Run migration_script.sh again after resolving the issue."
 
     if [ "$return_exit_code" = "true" ]; then
       RETURN_STATUS=$exit_code
@@ -92,6 +106,15 @@ get_json_key() {
   echo "$output"
 }
 
+upload_stack_to_oci_func() {
+  bucket_folder="$(basename "$STACK_FILE" .zip)"
+  upload_log_file="$toolHome/logs/upload_unzipped_stack_to_oci_${bucket_folder}.log"
+  python3 -c "import sys; sys.path.insert(0, '../lib/python'); \
+	from upload_stack_to_oci import upload_unzipped_stack_to_oci; \
+	sys.exit(upload_unzipped_stack_to_oci('$STACK_FILE', '$bucket_name', '$tenancy_namespace', '$compartment_ocid', '$upload_log_file', '$bucket_folder'))"
+  exit_code=$?
+  return $exit_code
+}
 
 ########################################## SECTION : Install Dependencies ###################################################
 run_migration_step  "Installing dependencies" "bash \"$MIGRATION_SCRIPT_DIR/install_dependencies.sh\"" "" "install_dependencies"
@@ -134,6 +157,21 @@ if ! STACK_FILE=$(get_json_key "$MIGRATION_DATA_JSON" "stack_file"); then
 fi
 
 log "info" "Stack file created: $STACK_FILE"
+
+##################################### SUB_SECTION : Upload OCI Resource Manager Stack to OCI ################################
+if [[ "$skip_transfer" = "false" ]]; then
+	bucket_folder="$(basename "$STACK_FILE" .zip)"
+	upload_log_file="$toolHome/logs/upload_unzipped_stack_to_oci_${bucket_folder}.log"
+	run_migration_step "Uploading stack to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_stack_to_oci" "true" "true"
+
+	upload_exit_code=$RETURN_STATUS
+	if [ "$upload_exit_code" -eq 0 ]; then
+		log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $bucket_folder. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
+	fi
+else
+  log "info" "Skipping stack upload as skip_transfer=$skip_transfer." | tee -a "$upload_log_file"
+fi
+
 
 ########################################## SUB_SECTION : Archive Weblogic Domain ############################################
 
