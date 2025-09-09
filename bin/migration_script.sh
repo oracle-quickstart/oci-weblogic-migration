@@ -10,8 +10,6 @@
 MIGRATION_SCRIPT_DIR="$(dirname "$0")"
 toolHome=$(builtin cd "$MIGRATION_SCRIPT_DIR/.." ||exit; pwd)
 mkdir -p "$toolHome/logs/"
-file_timestamp="$(date +"%Y%m%d")_$(head /dev/urandom | tr -dc a-z0-9 | head -c 6)"
-upload_log_file="$toolHome/logs/upload_unzipped_stack_to_oci_${file_timestamp}.log"
 LOG_FILE_NAME="migration_script.log"
 MIGRATION_SCRIPT_LOG="$toolHome/logs/$LOG_FILE_NAME"
 MIGRATION_DATA_JSON="$toolHome/logs/migration_data.json"
@@ -110,6 +108,7 @@ get_json_key() {
 
 upload_stack_to_oci_func() {
   bucket_folder="$(basename "$STACK_FILE" .zip)"
+  upload_log_file="$toolHome/logs/upload_unzipped_stack_to_oci_${bucket_folder}.log"
   python3 -c "import sys; sys.path.insert(0, '../lib/python'); \
 	from upload_stack_to_oci import upload_unzipped_stack_to_oci; \
 	sys.exit(upload_unzipped_stack_to_oci('$STACK_FILE', '$bucket_name', '$tenancy_namespace', '$compartment_ocid', '$upload_log_file', '$bucket_folder'))"
@@ -162,6 +161,7 @@ log "info" "Stack file created: $STACK_FILE"
 ##################################### SUB_SECTION : Upload OCI Resource Manager Stack to OCI ################################
 if [[ "$skip_transfer" = "false" ]]; then
 	bucket_folder="$(basename "$STACK_FILE" .zip)"
+	upload_log_file="$toolHome/logs/upload_unzipped_stack_to_oci_${bucket_folder}.log"
 	run_migration_step "Uploading stack to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_stack_to_oci" "true" "true"
 
 	upload_exit_code=$RETURN_STATUS

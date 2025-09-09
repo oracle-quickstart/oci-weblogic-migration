@@ -105,7 +105,7 @@ def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_
     else:
         log("info", f"Bucket {bucket_name} is ready.")
 
-    # Step 2b: Check write/upload permission
+    # Step 3: Check write/upload permission
     temp_test_file = os.path.join(tempfile.gettempdir(), f"oci_write_test_{file_timestamp}.tmp")
     open(temp_test_file, "w").close()  # zero-byte file
     try:
@@ -131,12 +131,12 @@ def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_
         except Exception:
             pass
 
-    # Step 3: Unzip stack
+    # Step 4: Unzip stack
     log("info", f"Unzipping stack: {stack_zip} to {temp_dir}")
     with zipfile.ZipFile(stack_zip, "r") as zip_ref:
         zip_ref.extractall(temp_dir)
 
-    # Step 4: Upload stack
+    # Step 5: Upload stack
     log("info", f"Uploading unzipped stack to OCI bucket {bucket_name}...")
     try:
         subprocess.check_call(
@@ -155,6 +155,7 @@ def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_
     except subprocess.CalledProcessError:
         log("warning", f"Failed to upload stack to bucket {bucket_name}. See {log_file} for details.")
         return 4
+    # Step 6: Cleanup
     finally:
         try:
             shutil.rmtree(temp_dir)
