@@ -114,16 +114,7 @@ upload_stack_to_oci_func() {
 	from upload_stack_to_oci import upload_unzipped_stack_to_oci; \
 	sys.exit(upload_unzipped_stack_to_oci('$STACK_FILE', '$bucket_name', '$tenancy_namespace', '$compartment_ocid', '$upload_log_file', '$bucket_folder'))"
   exit_code=$?
-
-  if [ "$exit_code" -eq 0 ]; then
-    return 0
-  elif [ "$exit_code" -eq 2 ]; then
-    return 2
-  elif [ "$exit_code" -eq 3 ]; then
-    return 3
-  else
-    return 4
-  fi
+  return $exit_code
 }
 
 ########################################## SECTION : Install Dependencies ###################################################
