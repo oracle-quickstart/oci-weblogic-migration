@@ -137,40 +137,8 @@ log "info" "Stack file created: $STACK_FILE"
 
 ########################################## SUB_SECTION : Archive Weblogic Domain ############################################
 
-# Invalid condition: Cannot skip archive but still try to transfer
-if [ "$skip_archive" = "true" ] && [ "$skip_transfer" = "false" ]; then
-  log "warning" "Invalid configuration: skip_archive is set to true, but skip_transfer is false. Cannot transfer archives that were not created."
-  log "info"  "Either create the archives manually and proceed with transfer."
-  echo "To manually perform the archive step, navigate to the bin directory and execute the following command:
-    | bash owm.sh archive $INFRA_JSON -skip_archive |
-    Then follow the instructions provided in the terminal output (look for TODO messages)." >> "$MIGRATION_SCRIPT_LOG"
-  echo "The restore process expects all of the archives to be stored in a Oracle Cloud Object Storage Bucket. Follow Oracle Cloud documentation on how to transfer files via the Oracle Cloud Console. You can use OCI CLI to create an object store bucket and upload the archives to it.  More information at :
-          https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
-          https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/managingbuckets_topic-To_create_a_bucket.htm#top
-          https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/managingobjects_topic-To_upload_objects_to_a_bucket.htm" >> "$MIGRATION_SCRIPT_LOG"
-  update_migration_data_json "archive_weblogic_domain" "skipped"
-  update_migration_data_json "upload_to_oci" "skipped"
-  exit 1
-fi
-
-# Skipping the archive and lift.
-if [ "$skip_archive" = "true" ] && [ "$skip_transfer" = "true" ]; then
-  log "info" "Skipping the Archive Weblogic Domain and the transfer archives to OCI Object Storage step as [skip_archive] : \"$skip_archive\" | [skip_transfer] : \"$skip_transfer\". Create the archives manually by following the instruction in $MIGRATION_SCRIPT_LOG ."
-  echo "To manually perform the archive step, navigate to the bin directory and execute the following command:
-    | bash owm.sh archive $INFRA_JSON -skip_archive |
-    Then follow the instructions provided in the terminal output (look for TODO messages)." >> "$MIGRATION_SCRIPT_LOG"
-  echo "The restore process expects all of the archives to be stored in a Oracle Cloud Object Storage Bucket. Follow Oracle Cloud documentation on how to transfer files via the Oracle Cloud Console. You can use OCI CLI to create an object store bucket and upload the archives to it.  More information at :
-        https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
-        https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/managingbuckets_topic-To_create_a_bucket.htm#top
-        https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/managingobjects_topic-To_upload_objects_to_a_bucket.htm" >> "$MIGRATION_SCRIPT_LOG"
-  update_migration_data_json "archive_weblogic_domain" "skipped"
-  update_migration_data_json "upload_to_oci" "skipped"
-  exit 1
-fi
-
-
 # Skipping the transfer
-if [ "$skip_archive" = "false" ] && [ "$skip_transfer" = "true" ]; then
+if [ "$skip_transfer" = "true" ]; then
 
   run_migration_step "Archiving WebLogic domain" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" archive $INFRA_JSON" "" "archive_weblogic_domain" "true"
   exit_code=$RETURN_STATUS
@@ -190,7 +158,7 @@ fi
 
 ##################################### SUB_SECTION : Upload Archives to OCI Object Storage (Optional) ########################
 
-if [ "$skip_archive" = "false" ] && [ "$skip_transfer" = "false" ]; then
+if [ "$skip_transfer" = "false" ]; then
   run_migration_step "Archiving WebLogic domain" "bash \"$MIGRATION_SCRIPT_DIR/owm.sh\" archive $INFRA_JSON" "" "archive_weblogic_domain"
 fi
 

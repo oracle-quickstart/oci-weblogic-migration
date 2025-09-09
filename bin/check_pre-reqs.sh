@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
+# Copyright (c) 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #############################################################################################################################
@@ -178,7 +178,7 @@ else
     done < <(grep '=' "$env_file")
 
     # Define the list of required keys to check
-    required_keys=("ssh_user" "domain_home" "oracle_home" "bucket_name" "compartment_ocid" "tenancy_namespace" "skip_archive" "skip_transfer")
+    required_keys=("ssh_user" "domain_home" "oracle_home" "bucket_name" "compartment_ocid" "tenancy_namespace" "skip_transfer")
 
     # Track missing keys
     missing_keys=()
@@ -218,12 +218,6 @@ else
     if [[ "${env_vars[skip_transfer]}" != "false" && "${env_vars[skip_transfer]}" != "true" ]]; then
         errors+=("skip_transfer value in the $env_file can be true or false")
     fi
-
-    # Check if skip_archive value is valid or not (valid values: true or false)
-    if [[ "${env_vars[skip_archive]}" != "false" && "${env_vars[skip_archive]}" != "true" ]]; then
-        errors+=("skip_archive value in the $env_file can be true or false")
-    fi
-
 fi
 
 set -e
