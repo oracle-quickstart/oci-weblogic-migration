@@ -10,6 +10,8 @@ locals {
   bucket_compartment            = var.bucket_compartment
   network_compartment_id        = var.network_compartment_id
 
+  is_vcn_peering = var.wls_datasources_config == null ? false : anytrue([for _, v in var.wls_datasources_config : v.is_vcn_peering])
+
   wlsserver_group_rules = var.use_defined_tags ? format("ALL {%v}", join(", ", [
     format("tag.%v.role.value='wlsserver'", var.tag_namespace),
     format("tag.%v.state_id.value='%v'", var.tag_namespace, var.state_id),
@@ -40,9 +42,11 @@ locals {
   ])
 
   # This policy with "inspect virtual-network-family" verb is needed to read VCN information like CIDR, etc.
-  network_compartment_policy_statements = [
+  # This policy with "manage virtual-network-family" verb is needed for vcn peering.
+  network_compartment_policy_statements = !local.is_vcn_peering ? tolist([
     format("Allow dynamic-group ${local.wlsserver_group_name} to inspect virtual-network-family in compartment id %v", var.network_compartment_id)
-  ]
+  ]) : tolist([
+    format("Allow dynamic-group ${local.wlsserver_group_name} to manage virtual-network-family in compartment id %v", var.network_compartment_id)])
 
   # === IAM policy for multi data sources ===
 
