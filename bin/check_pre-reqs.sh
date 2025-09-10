@@ -33,7 +33,7 @@ if [[ $(uname | tr '[:upper:]' '[:lower:]') != "linux" ]]; then
 fi
 
 if [[ $(/usr/bin/id -u) -eq 0 ]]; then
-    echo "No need to run this as root user.  Please run it with a non-root user"
+    echo "No need to run this as root user. Please run it with a non-root user"
     exit 1
 fi
 
@@ -177,8 +177,8 @@ else
         env_vars["$key"]="$value"
     done < <(grep '=' "$env_file")
 
-    # Define the list of required keys to check
-    required_keys=("ssh_user" "domain_home" "oracle_home" "bucket_name" "compartment_ocid" "tenancy_namespace" "skip_transfer")
+    # Always-required keys
+    required_keys=("ssh_user" "domain_home" "oracle_home" "skip_transfer")
 
     # Track missing keys
     missing_keys=()
@@ -189,14 +189,25 @@ else
         fi
     done
 
+    # Extra required keys if skip_transfer=false
+    if [[ "${env_vars[skip_transfer]}" == "false" ]]; then
+        extra_keys=("bucket_name" "compartment_ocid" "tenancy_namespace")
+        for key in "${extra_keys[@]}"; do
+            if [[ -z "${env_vars[$key]:-}" ]]; then
+                errors+=("Missing value or key '$key' in $env_file (required when skip_transfer=false).")
+                missing_keys+=("$key")
+            fi
+        done
+    fi
+
     # Check if the directory specified by domain_home exists
     if [[ -n "${env_vars[domain_home]:-}" && ! -d "${env_vars[domain_home]}" ]]; then
-        errors+=("The path specified for 'domain_home' (${env_vars[domain_home]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
+        errors+=("The path specified for 'domain_home' (${env_vars[domain_home]}) does not exist or is not accessible by the current user ($(whoami)). Please check the permissions or update the path in $env_file.")
     fi
 
     # Check if the directory specified by oracle_home exists
     if [[ -n "${env_vars[oracle_home]:-}" && ! -d "${env_vars[oracle_home]}" ]]; then
-        errors+=("The path specified for 'oracle_home' (${env_vars[oracle_home]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
+        errors+=("The path specified for 'oracle_home' (${env_vars[oracle_home]}) does not exist or is not accessible by the current user ($(whoami)). Please check the permissions or update the path in $env_file.")
     fi
 
     # Ensure at least one SSH authentication method is set
@@ -206,12 +217,12 @@ else
 
     # Check if the ssh_private_key_file exists if specified
     if [[ -n "${env_vars[ssh_private_key_file]:-}" && ! -f "${env_vars[ssh_private_key_file]}" ]]; then
-        errors+=("The file specified for 'ssh_private_key_file' (${env_vars[ssh_private_key_file]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
+        errors+=("The file specified for 'ssh_private_key_file' (${env_vars[ssh_private_key_file]}) does not exist or is not accessible by the current user ($(whoami)). Please check the permissions or update the path in $env_file.")
     fi
 
     # Check if the ssh_password_file exists if specified
     if [[ -n "${env_vars[ssh_password_file]:-}" && ! -f "${env_vars[ssh_password_file]}" ]]; then
-        errors+=("The file specified for 'ssh_password_file' (${env_vars[ssh_password_file]}) does not exist or is not accessible by the current user ($(whoami)).Please check the permissions or update the path in $env_file.")
+        errors+=("The file specified for 'ssh_password_file' (${env_vars[ssh_password_file]}) does not exist or is not accessible by the current user ($(whoami)). Please check the permissions or update the path in $env_file.")
     fi
 
     # Check if skip_transfer value is valid or not (valid values: true or false)

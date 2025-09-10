@@ -169,7 +169,7 @@ if [[ "$skip_transfer" = "false" ]]; then
 		log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $bucket_folder. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
 	fi
 else
-  log "info" "Skipping stack upload as skip_transfer=$skip_transfer." | tee -a "$upload_log_file"
+  log "info" "Skipping stack upload as skip_transfer=$skip_transfer."
 fi
 
 
@@ -189,7 +189,7 @@ if [ "$skip_transfer" = "true" ]; then
   update_migration_data_json "upload_to_oci" "skipped"
 
   if [ $exit_code -ne 0 ]; then
-    log "error" "Migration failed."
+    log "error" "Migration script failed."
     exit $exit_code
   fi
 fi
@@ -201,4 +201,4 @@ if [ "$skip_transfer" = "false" ]; then
 fi
 
 #############################################################################################################################
-log "info" "Migration scripts completed successfully!"
+log "info" "Migration script completed successfully!"
