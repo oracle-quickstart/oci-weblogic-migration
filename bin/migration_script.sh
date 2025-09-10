@@ -169,7 +169,7 @@ if [[ "$skip_transfer" = "false" ]]; then
 		log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $bucket_folder. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
 	fi
 else
-  log "info" "Skipping stack upload as skip_transfer=$skip_transfer." | tee -a "$upload_log_file"
+  log "info" "Skipping stack upload as skip_transfer=$skip_transfer."
 fi
 
 
