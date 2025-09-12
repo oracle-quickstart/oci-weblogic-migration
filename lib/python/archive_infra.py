@@ -333,7 +333,7 @@ def delete_local(file_path):
             msg = "Failed to delete %s: %s" % (file_path, str(e))
             __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
 
-def delete_remote_with_args(model_context, file_pattern):
+def delete_remote_archives(model_context, file_pattern):
     """
     Perform a remote cleanup on a given host by connecting over SSH and removing matching files.
 
@@ -517,7 +517,7 @@ def __archive_directories(model, model_context, helper):
                         upload_to_bucket(os.path.join(admin_out, fname), log_file, on_prem_values)
                         delete_local(os.path.join(admin_out, fname))
                         # remote cleanup on per-host model context
-                        delete_remote_with_args(per_machine_model_context, fname)
+                        delete_remote_archives(per_machine_model_context, fname)
 
     # Case 2: Admin has NO space and skip_transfer = true (Manual steps only)
     elif skip_transfer:
@@ -566,7 +566,7 @@ def __archive_directories(model, model_context, helper):
                         upload_to_bucket(path,log_file,on_prem_values)
                         delete_local(path)
                         # remote cleanup on per-host model context
-                        delete_remote_with_args(per_machine_model_context, fname)
+                        delete_remote_archives(per_machine_model_context, fname)
 
     if len(hosts_details) == 0:
         return
