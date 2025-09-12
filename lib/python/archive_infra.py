@@ -343,7 +343,7 @@ def delete_remote_archives(model_context, file_pattern):
     :param model_context: the WDT model context containing SSH connection details
     :param file_pattern: the filename or wildcard pattern (e.g., "*.tar.gz") to remove from remote_dir
     """
-    _method_name = 'delete_remote_with_args'
+    _method_name = 'delete_remote_archives'
     try:
         # Extract SSH parameters from model_context
         try:
