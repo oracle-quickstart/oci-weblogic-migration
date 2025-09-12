@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2023, 2025, Oracle Corporation and/or its affiliates.
+Copyright (c) 2025, Oracle Corporation and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 The main module for the WebLogic Deploy tool to verify the user's SSH configuration is compatible with WDT.
@@ -8,26 +8,11 @@ The main module for the WebLogic Deploy tool to verify the user's SSH configurat
 import os
 import sys
 import traceback
+import fnmatch
 
 from oracle.weblogic.deploy.util import SSHException, WLSDeployArchive
 from oracle.weblogic.deploy.util import CLAException
-from oracle.weblogic.deploy.util import FileUtils
-from oracle.weblogic.deploy.util import TranslateException
-from oracle.weblogic.deploy.util import VariableException
-from oracle.weblogic.deploy.validate import ValidateException
 from oracle.weblogic.deploy.encrypt import EncryptionUtils
-
-
-# from lib.python.migrate.infra.infra_discoverer import InfraDiscoverer
-
-from java.io import File
-from java.io import IOException
-from java.lang import IllegalArgumentException
-from java.lang import IllegalStateException
-from java.lang import String
-from java.lang import System
-
-
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))),'lib', 'python','migrate','infra'))
 import infra_constants
@@ -36,54 +21,29 @@ import common
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))),'lib', 'python','migrate','data'))
 from wls_migration_archive import WLSMigrationArchiver
 
-
-
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))), 'deps', 'wdt', 'lib', 'python'))
 
 from wlsdeploy.aliases.location_context import LocationContext
 from wlsdeploy.util.model import Model
-from wlsdeploy.util import model_translator
-from wlsdeploy.exception import exception_helper
-from wlsdeploy.tool.util import model_context_helper
-from wlsdeploy.tool.util import wlst_helper
-from wlsdeploy.tool.util.wlst_helper import WlstHelper
-from wlsdeploy.util import path_helper
-from wlsdeploy.util import tool_main
-from wlsdeploy.util.cla_utils import CommandLineArgUtil
 from wlsdeploy.util.cla_utils import TOOL_TYPE_DEFAULT
-from wlsdeploy.util.exit_code import ExitCode
-from wlsdeploy.util import env_helper
 from wlsdeploy.tool.discover import discoverer
 from wlsdeploy.json import json_translator
-from wlsdeploy.aliases.wlst_modes import WlstModes
 from java.io import ByteArrayInputStream
 
 from oracle.weblogic.deploy.util import FileUtils
 from oracle.weblogic.deploy.util import PyOrderedDict as OrderedDict
 from oracle.weblogic.deploy.discover import DiscoverException
 from oracle.weblogic.deploy.util import TranslateException
-from oracle.weblogic.deploy.util import WebLogicDeployToolingVersion
 from wlsdeploy.aliases import model_constants
-from wlsdeploy.aliases.model_constants import DOMAIN_INFO
 from wlsdeploy.aliases.aliases import Aliases
-from wlsdeploy.aliases.model_constants import DEFAULT_WLS_DOMAIN_NAME
-from wlsdeploy.aliases.model_constants import DOMAIN_NAME
 from wlsdeploy.aliases.model_constants import TOPOLOGY
-from wlsdeploy.aliases.wlst_modes import WlstModes
-from wlsdeploy.exception import exception_helper
 from wlsdeploy.exception.exception_types import ExceptionType
-from wlsdeploy.logging.platform_logger import PlatformLogger
-from wlsdeploy.tool.create.domain_creator import DomainCreator
 from wlsdeploy.tool.util import model_context_helper
-from wlsdeploy.tool.util.archive_helper import ArchiveList
 from wlsdeploy.tool.util.wlst_helper import WlstHelper
 from wlsdeploy.tool.util import wlst_helper
 from wlsdeploy.util import cla_helper
-from wlsdeploy.util import tool_main
 from wlsdeploy.aliases.model_constants import UNIX_MACHINE
 from wlsdeploy.aliases.model_constants import MACHINE
-from wlsdeploy.aliases.model_constants import MACHINES
-from wlsdeploy.aliases.model_constants import NAME
 from wlsdeploy.util import dictionary_utils
 
 from wlsdeploy.aliases.wlst_modes import WlstModes
@@ -91,11 +51,7 @@ from wlsdeploy.exception import exception_helper
 from wlsdeploy.logging.platform_logger import PlatformLogger
 from wlsdeploy.tool.util import filter_helper
 from wlsdeploy.util import env_helper
-from wlsdeploy.util import model_translator
-from wlsdeploy.util import variables
-from wlsdeploy.util.cla_utils import CommandLineArgUtil
 from wlsdeploy.util.exit_code import ExitCode
-
 
 from wlsdeploy.util.cla_utils import CommandLineArgUtil
 CommandLineArgUtil.SPACE_MAP_SWITCH = '-space_map'      # new switch for JSON map
@@ -117,10 +73,8 @@ init_argument_map= None
 __required_arguments = [
     CommandLineArgUtil.ORACLE_HOME_SWITCH,
     CommandLineArgUtil.MODEL_FILE_SWITCH,
-    # CommandLineArgUtil.OUTPUT_DIR_SWITCH,
     CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH,
     CommandLineArgUtil.LOCAL_OUTPUT_DIR_SWITCH
-    # CommandLineArgUtil.ARCHIVE_FILE_SWITCH,
     #-output_dir <path to store archives>
     #-remote_output_dir <path to generate it remotely>
     #-local_output_dir <path to store archives>
@@ -164,66 +118,14 @@ def __process_args(args, is_encryption_supported):
         combined_argument_map = cla_util.process_args(args, TOOL_TYPE_DEFAULT)
         init_argument_map=combined_argument_map
         __verify_remote_output_dir_argument(init_argument_map)
-    # __process_archive_filename_arg(init_argument_map)
     model_context = model_context_helper.create_context(_program_name, init_argument_map)
     return model_context
 
 def __check_initialize_argument_map():
     global init_argument_map
     if init_argument_map is None:
-        # init_argument_map = map
         return True
     return False
-
-# def __process_archive_filename_arg(argument_map):
-#     """
-#     Validate the archive file name and load the archive file object.
-#     :param argument_map: the optional arguments map
-#     :raises CLAException: if a validation error occurs while loading the archive file object
-#     """
-#     _method_name = '__process_archive_filename_arg'
-#
-#     if CommandLineArgUtil.ARCHIVE_FILE_SWITCH not in argument_map:
-#         archive_file = None
-#         if CommandLineArgUtil.SKIP_ARCHIVE_FILE_SWITCH not in argument_map and \
-#                 CommandLineArgUtil.REMOTE_SWITCH not in argument_map:
-#             ex = exception_helper.create_cla_exception(ExitCode.USAGE_ERROR, 'WLSDPLY-06028')
-#             __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#             raise ex
-#     elif CommandLineArgUtil.SKIP_ARCHIVE_FILE_SWITCH in argument_map or \
-#             CommandLineArgUtil.REMOTE_SWITCH in argument_map:
-#         ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR,
-#                                                    'WLSDPLY-06033')
-#         __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#         raise ex
-#     else:
-#         archive_file_name = argument_map[CommandLineArgUtil.ARCHIVE_FILE_SWITCH]
-#         path_helper_obj = path_helper.get_path_helper()
-#         archive_dir_name = path_helper_obj.get_local_parent_directory(archive_file_name)
-#         if not os.path.exists(archive_dir_name):
-#             ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR,
-#                                                        'WLSDPLY-06026', archive_file_name)
-#             __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#             raise ex
-#
-#         # Delete any existing archive file for discoverDomain so that we always start with a fresh zip file.
-#         archive_file_obj = FileUtils.getCanonicalFile(archive_file_name)
-#         if archive_file_obj.exists() and not archive_file_obj.delete():
-#             ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR,'WLSDPLY-06047',
-#                                                        _program_name, archive_file_name)
-#             __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#             raise ex
-#
-#         try:
-#             archive_file = WLSDeployArchive(archive_file_name)
-#         except (IllegalArgumentException, IllegalStateException), ie:
-#             ex = exception_helper.create_cla_exception(ExitCode.ARG_VALIDATION_ERROR,
-#                                                        'WLSDPLY-06013', _program_name, archive_file_name,
-#                                                        ie.getLocalizedMessage(), error=ie)
-#             __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-#             raise ex
-#         argument_map[CommandLineArgUtil.ARCHIVE_FILE] = archive_file
-
 
 def __verify_java_home(optional_arg_map):
     _method_name = '__process_java_home'
@@ -431,6 +333,77 @@ def delete_local(file_path):
             msg = "Failed to delete %s: %s" % (file_path, str(e))
             __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
 
+def delete_remote_archives(model_context, file_pattern):
+    """
+    Perform a remote cleanup on a given host by connecting over SSH and removing matching files.
+
+    The SSH connection details (user, host, key file, and remote output directory) are obtained
+    directly from the provided model_context.
+
+    :param model_context: the WDT model context containing SSH connection details
+    :param file_pattern: the filename or wildcard pattern (e.g., "*.tar.gz") to remove from remote_dir
+    """
+    _method_name = 'delete_remote_archives'
+    try:
+        # Extract SSH parameters from model_context
+        try:
+            ssh_user = model_context.get_ssh_user()
+            ssh_host = model_context.get_ssh_host()
+            ssh_key  = model_context.get_ssh_private_key()
+            remote_dir = model_context.get_remote_output_dir()
+        except Exception, e:
+            __logger.warning('WLSDPLY-05027',
+                             'Failed to read SSH params from model_context: %s' % str(e),
+                             class_name=_class_name, method_name=_method_name)
+            __logger.warning('WLSDPLY-05027',
+                             'Manual cleanup required for %s (param extraction failed)' % file_pattern,
+                             class_name=_class_name, method_name=_method_name)
+            return
+
+        # Validate that all required SSH parameters are present
+        if not ssh_user or not ssh_host or not ssh_key or not remote_dir:
+            __logger.warning('WLSDPLY-05027',
+                             'Missing SSH parameters in model_context, cannot perform remote cleanup',
+                             class_name=_class_name, method_name=_method_name)
+            __logger.warning('WLSDPLY-05027',
+                             'Manual cleanup required for %s (missing params)' % file_pattern,
+                             class_name=_class_name, method_name=_method_name)
+            return
+
+        cmd_array = [
+            "ssh", "-i", ssh_key,
+            "%s@%s" % (ssh_user, ssh_host),
+            "rm -f %s/%s" % (remote_dir, file_pattern)
+        ]
+
+        __logger.info('WLSDPLY-05027', 'Running remote cleanup: %s' % (" ".join(cmd_array)),
+                      class_name=_class_name, method_name=_method_name)
+
+        runtime = Runtime.getRuntime()
+        proc = runtime.exec(cmd_array)
+        exit_code = proc.waitFor()
+
+        if exit_code == 0:
+            __logger.info('WLSDPLY-05027',
+                          "Remote cleanup successful on host %s" % ssh_host,
+                          class_name=_class_name, method_name=_method_name)
+        else:
+            __logger.warning('WLSDPLY-05027',
+                             "Remote cleanup failed on host %s (exit %s)" % (ssh_host, exit_code),
+                             class_name=_class_name, method_name=_method_name)
+            __logger.warning('WLSDPLY-05027',
+                             'Manual cleanup required for %s on host %s' % (file_pattern, ssh_host),
+                             class_name=_class_name, method_name=_method_name)
+
+    except Exception, e:
+        __logger.warning('WLSDPLY-05027',
+                         "Exception during remote cleanup: %s" % str(e),
+                         class_name=_class_name, method_name=_method_name)
+        __logger.warning('WLSDPLY-05027',
+                         'Manual cleanup required for %s due to exception' % file_pattern,
+                         class_name=_class_name, method_name=_method_name)
+        return
+
 
 def __archive_directories(model, model_context, helper):
     global init_argument_map
@@ -443,6 +416,7 @@ def __archive_directories(model, model_context, helper):
     _method_name = '__archive_directories'
     __logger.entering(class_name=_class_name, method_name=_method_name)
     topology = model.get_model_topology()
+    wls_domain_name = topology['Name']
     machines = model.get_model_resources()
     hosts_details = OrderedDict()
     base_location = LocationContext()
@@ -465,6 +439,14 @@ def __archive_directories(model, model_context, helper):
     base_dir = os.path.dirname(os.path.dirname(script_path))  # go from lib/python → base
     env_file = os.path.abspath(os.path.join(base_dir,'..', 'config', 'on-prem.env'))
     log_file = os.path.abspath(os.path.join(base_dir,'..', 'logs', 'upload_to_oci_archive.log'))
+
+    # Define the archive file patterns
+    archive_patterns = (
+        "%s-weblogic_home.tar.gz" % wls_domain_name,
+        "%s-java_home.tar.gz" % wls_domain_name,
+        "%s-domain_home.tar.gz" % wls_domain_name,
+        "%s-custom_dirs.tar.gz" % wls_domain_name
+    )
 
     # Load the on-prem.env file
     on_prem_values = load_env_file(env_file)
@@ -530,9 +512,12 @@ def __archive_directories(model, model_context, helper):
         if not skip_transfer:
             admin_out = model_context.get_local_output_dir()
             for fname in os.listdir(admin_out):
-                if fname.endswith('.tar.gz'):
-                    upload_to_bucket(os.path.join(admin_out, fname), log_file, on_prem_values)
-                    delete_local(os.path.join(admin_out, fname))
+                for pattern in archive_patterns:
+                    if fnmatch.fnmatch(fname, "*%s" % pattern):
+                        upload_to_bucket(os.path.join(admin_out, fname), log_file, on_prem_values)
+                        delete_local(os.path.join(admin_out, fname))
+                        # remote cleanup on per-host model context
+                        delete_remote_archives(per_machine_model_context, fname)
 
     # Case 2: Admin has NO space and skip_transfer = true (Manual steps only)
     elif skip_transfer:
@@ -575,10 +560,13 @@ def __archive_directories(model, model_context, helper):
             # Upload and delete
             node_dir = per_machine_model_context.get_local_output_dir()
             for fname in os.listdir(node_dir):
-                if fname.endswith('.tar.gz'):
-                    path = os.path.join(node_dir, fname)
-                    upload_to_bucket(path,log_file,on_prem_values)
-                    delete_local(path)
+                for pattern in archive_patterns:
+                    if fnmatch.fnmatch(fname, "*%s" % pattern):
+                        path = os.path.join(node_dir, fname)
+                        upload_to_bucket(path,log_file,on_prem_values)
+                        delete_local(path)
+                        # remote cleanup on per-host model context
+                        delete_remote_archives(per_machine_model_context, fname)
 
     if len(hosts_details) == 0:
         return
