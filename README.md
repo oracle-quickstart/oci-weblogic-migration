@@ -289,7 +289,7 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
 > For Multi Data Source (MDS) configurations, only **manual JDBC string replacement** is supported.
 
 > **Prerequisites for JRF WebLogic-enabled domains:**  
-> * Databases should be migrated to OCI.  
+> * Databases should be migrated to OCI before running the Resource Manager **Apply** action.  
 > * JDBC connection strings must be known before running the Resource Manager **Apply** action.
   
   
