@@ -1,21 +1,22 @@
 Purpose
 -------
-The **OCI WebLogic Migration Tool** enables lift-and-shift migration of single or multi-node WebLogic domains to Oracle Cloud Infrastructure (OCI), optionally fronted by a load balancer.  
+The **OCI WebLogic Migration Tool** enables lift-and-shift migration of single or multi-node WebLogic domains from on-premises environments to **Oracle Cloud Infrastructure (OCI)**, optionally fronted by a load balancer.  
 
-- The solution creates only **one stack at a time**, and further modifications are applied to the same stack.  
-- The tool introspects an existing WebLogic Domain and generates a tailored Resource Manager Stack that leverages OCI Resource Manager capabilities to securely provision:  
-  - OCI Networking resources  
-  - Compute Instances to host the discovered WebLogic Domain  
+Key features of the tool:
 
-> **Note:**  
-> The tool does **not** migrate or provision any on-premises databases in OCI.  
-> It only updates the WebLogic JDBC configuration files so that the migrated domain can connect to the appropriate target database (Autonomous Database, OCI DB System, or a manually specified JDBC string).  
-> It is the **user’s responsibility** to migrate the databases to OCI Database (DB System) or Autonomous Database (ATP/ADW) using appropriate tools (e.g., Oracle Data Pump, GoldenGate, or Database Migration Service).
+- The tool **introspects the existing WebLogic Domain** to discover domain configuration, managed servers, clusters, applications, and resources.  
+- Based on this discovery, it generates a **tailored Resource Manager stack** that leverages OCI Resource Manager to securely provision and configure:  
+  - **OCI Networking resources** (VCN, subnets, gateways, route tables, and security lists)  
+  - **Compute Instances** to host the discovered WebLogic domain  
+  - Optional **load balancers** for distributing traffic across WebLogic managed servers  
+- The tool updates **JDBC datasource configuration files** in the domain so that WebLogic servers in OCI can connect to target databases.  
 
+> **Important:**  
+> It is the **user’s responsibility** to complete the database migration prior to applying the stack.
 
 
 Requirements
------------------------------
+----------------------------
 
 *On-Premise Requirements*
 
@@ -253,6 +254,7 @@ bash migration_script.sh
 2025-09-11 14:39:28  [info] Archiving WebLogic domain...
 2025-09-11 14:48:13  [info] Migration script completed successfully!
  ```
+
 
 Migrate WLS Domain to OCI Cloud
 ---------------------------------
