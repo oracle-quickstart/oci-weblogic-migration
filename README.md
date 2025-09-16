@@ -285,9 +285,13 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
   * Autonomous Database (ADB)
   * OCI Database (DB System)
   * Manual JDBC string replacement
-  **NOTE:** For Multi Data Source (MDS) configurations, only manual JDBC string replacement is supported.
-  **Pre-requisites for JFR Weblogic enabled domains :**
-    Databases should be migrated to OCI. JDBC String must be known before running Resource Manager `Apply` action
+> **Note:**  
+> For Multi Data Source (MDS) configurations, only **manual JDBC string replacement** is supported.
+
+> **Prerequisites for JRF WebLogic-enabled domains:**  
+> * Databases should be migrated to OCI.  
+> * JDBC connection strings must be known before running the Resource Manager **Apply** action.
+  
   
 ### Inputs to Resource Manager
 ---------------------------------
