@@ -2,8 +2,8 @@
 # *****************************************************************************
 # discoverDatasources.sh
 #
-# Copyright (c) 2024 Oracle and/or its affiliates.
-# Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 #
 #     NAME
 #       discoverDatasources.sh - Tool to discover datasources in a Weblogic Domain Model file and update a Resource Manager Stack Terraform variable file

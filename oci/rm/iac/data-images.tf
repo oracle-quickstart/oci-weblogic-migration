@@ -1,5 +1,5 @@
-# Copyright (c) 2024 Oracle and/or its affiliates.
-# Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 # Used to retrieve available worker node images, k8s versions, shapes...
 data "oci_containerengine_node_pool_option" "wls" {

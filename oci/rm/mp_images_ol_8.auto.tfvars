@@ -1,5 +1,5 @@
-# Copyright (c) 2024, Oracle and/or its affiliates.
-# Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 #TODO: mp_images_ol.auto.tfvars is generated from build_orm
 # If inventory detected OL/RHEL 7,  Values of images bellow is updated to Weblogic Marketplace Images (mp_images_ol_7.auto.tfvars).

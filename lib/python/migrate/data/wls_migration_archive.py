@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2023, 2024, 2025 Oracle Corporation and/or its affiliates.
+Copyright (c) 2025, Oracle Corporation and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 The main module for the WebLogic Deploy tool to verify the user's SSH configuration is compatible with WDT.

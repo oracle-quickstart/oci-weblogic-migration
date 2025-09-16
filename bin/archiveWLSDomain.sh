@@ -2,8 +2,8 @@
 # *****************************************************************************
 # archiveWLSDomain.sh
 #
-# Copyright (c) 2024 Oracle and/or its affiliates.
-# Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 #
 #     NAME
 #       archiveWLSDomain.sh - Tool to package local or remote java_home, WLS_HOME, DOMAIN_HOME and custom directories
