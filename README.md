@@ -277,7 +277,7 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
 * Allow the user to either:
   * Create a new VCN.
   * Use a pre-existing VCN.
-* Optional Resources:
+* Allow the user to provision optional Resources:
   * Bastion Host – Can be provisioned for secure SSH access to private WebLogic compute instances.
   * Public Load Balancer (LB) – Can be added to distribute traffic across managed servers.
   * IAM Policies – Can be created automatically for Object Storage and database access, or the user may use pre-existing policies.
