@@ -8,7 +8,10 @@ The **OCI WebLogic Migration Tool** enables lift-and-shift migration of single o
   - Compute Instances to host the discovered WebLogic Domain  
 
 > **Note:**  
-> The tool does **not** migrate any on-premises databases and does **not** configure any database components in OCI.
+> The tool does **not** migrate or provision any on-premises databases in OCI.  
+> It only updates the WebLogic JDBC configuration files so that the migrated domain can connect to the appropriate target database (Autonomous Database, OCI DB System, or a manually specified JDBC string).  
+> It is the **user’s responsibility** to migrate the databases to OCI Database (DB System) or Autonomous Database (ATP/ADW) using appropriate tools (e.g., Oracle Data Pump, GoldenGate, or Database Migration Service).
+
 
 
 Requirements
