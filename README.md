@@ -304,6 +304,36 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
 > **Prerequisites for JRF WebLogic-enabled domains:**  
 > * Databases should be migrated to OCI before running the Resource Manager **Apply** action.  
 > * JDBC connection strings must be known before running the Resource Manager **Apply** action.
+
+Required IAM Policies for Non-Admin Users
+-------------------------------------------
+
+### Non-Admin User Group Policies
+If the user applying the Resource Manager stack is **not an OCI administrator**, the following IAM policies must be created to allow proper provisioning and access:
+
+| Policy Statement | Purpose |
+|-----------------|---------|
+| `Allow group MyGroup to inspect instance-image in compartment MyCompartment` | To use the WebLogic for OCI images in Marketplace |
+| `Allow group MyGroup to use app-catalog-listing in compartment MyCompartment` | To access Marketplace applications catalog |
+| `Allow group MyGroup to manage instance-family in compartment MyCompartment` | To create Compute Instances |
+| `Allow group MyGroup to manage volume-family in compartment MyCompartment` | To create Block Volumes |
+| `Allow group MyGroup to inspect limits in tenancy` | To determine if resources are available in various compartments |
+| `Allow group MyGroup to manage virtual-network-family in compartment MyNetworkCompartment` | To create VCNs and subnets |
+| `Allow group MyGroup to manage load-balancers in compartment MyNetworkCompartment` | To create a Load Balancer |
+
+### Dynamic Group Policies (for users who unselect "Create Policies" checkbox)
+
+| Policy Statement | Purpose |
+|-----------------|---------|
+| `Allow dynamic-group <dynamic-group> to manage buckets in compartment MyCompartment` | To create Object Storage buckets |
+| `Allow dynamic-group <dynamic-group> to manage objects in compartment MyCompartment` | To upload archives or overwrite existing objects in Object Storage |
+| `Allow dynamic-group <dynamic-group> to use autonomous-transaction-processing-family in compartment <compartment>` | To download ATP/ADW database wallet |
+| `Allow group MyGroup to manage virtual-network-family in compartment MyNetworkCompartment` | Required for VCN Peering when WLS VCN is not the same as DB VCN and also if `Add Rule for WLS to Access DB` checkbox is selected |
+
+> **Note:**  
+> - Replace `MyGroup`, `MyCompartment`, `MyNetworkCompartment`, and `<dynamic-group>` with your actual group names, compartment OCIDs, and dynamic group definitions.  
+> - These policies ensure the user has sufficient permissions to provision networking, compute, storage, and WebLogic resources required by the migration stack.  
+
   
   
 ### Inputs to Resource Manager
