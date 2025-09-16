@@ -281,7 +281,13 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
   * Bastion Host – Can be provisioned for secure SSH access to private WebLogic compute instances.
   * Public Load Balancer (LB) – Can be added to distribute traffic across managed servers.
   * IAM Policies – Can be created automatically for Object Storage and database access, or the user may use pre-existing policies.
-* For WebLogic domains with JDBC Datasources, provides options to recreate the datasource connection strings in OCI using one of the following:
+*  Allow the user to select from multiple images for Compute instances:
+  * Oracle WebLogic Server Enterprise Edition UCM Image
+  * Oracle Weblogic Suite UCM Image
+  * Oracle WebLogic Server Enterprise Edition BYOL Image
+  * Oracle Weblogic Suite BYOL Image
+  * Platform Image(Oracle-Linux-8.10-2025.06.17-0)
+* Provides options to recreate the datasource connection strings in OCI for WebLogic domains with JDBC Datasources, using one of the following:
   * Autonomous Database (ADB)
   * OCI Database (DB System)
   * Manual JDBC string replacement
