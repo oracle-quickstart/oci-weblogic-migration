@@ -388,14 +388,14 @@ During the OCI Compute Instances boot process, the cloud-init are initiated whic
 
 ### Troubleshooting
 -------------------
-* Check Cloud-init Status
+#### Check Cloud-init Status
 To verify if the restore process is complete:
 ```bash
   cloud-init status
   status: done
-```  
+```   
 
-* Check Logs
+#### Check Logs
 All restore logs are available under `/var/log/owm/` in the compute instances.
 ```bash
   ls -lrth /var/log/owm
@@ -410,7 +410,8 @@ All restore logs are available under `/var/log/owm/` in the compute instances.
 
 Start OCI WebLogic Domain and Verify Services
 ------------------------------------------------
-All OCI Instances (Servers hosting AdminServers and Managed Servers) will be created in a Private Subnet in OCI Virtual Cloud Network. To access them, an SSH session should be established via a Bastion Host.
+All OCI Instances (Servers hosting AdminServers and Managed Servers) will be created in a Private Subnet in OCI Virtual Cloud Network. 
+To access them, an SSH session should be established via a Bastion Host.
 To find the commands to ssh, click on Stack - Application Details Tab and copy the SSH command example given.
 The complete ssh command to access the AdminServer should follow this format:
 
@@ -420,6 +421,6 @@ ssh -i <private ssh key file> -o 'UserKnownHostsFile /dev/null' -o 'StrictHostKe
 $admin-server> sudo su - <same username as on-premise> 
 ```
 
-Once in the new AdminServer instance, change directory to the WebLogic Domain Home and bring up your AdminServer and other servers. Verify and Test your WebLogic domain to confirm that the migration was successful. 
+Once the cloud-init scripts have completed, SSH to the new AdminServer instance, change directory to the WebLogic Domain Home and bring up your AdminServer. Similarly, start all managed servers. Verify and Test your WebLogic domain to confirm that the migration was successful. 
 
 
