@@ -381,7 +381,7 @@ User will have to provide the following as parameters to terraform:
    | `Database Listener Port`         | Port for DB connection (default: 1521).                   |
 
 
-Restore Process after Stack Application
+Restore Process after Stack Apply
 -------------------------------------------
 Once the ORM stack is applied, the restore process ensures that the cloud environment mirrors the on-premise WebLogic domain.
 During the OCI Compute Instances boot process, the cloud-init are initiated which complete the migration of the on-premise domain to OCI.
