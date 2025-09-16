@@ -1,10 +1,14 @@
 Purpose
 -------
-Oracle WebLogic Migration tool lifts and shifts single/multi node Weblogic Domain to Oracle Cloud Infrastructure optionally fronted
-by a load balancer. The solution will create only one stack at time and further modifications  will be done on the same stack.
+The **OCI WebLogic Migration Tool** enables lift-and-shift migration of single or multi-node WebLogic domains to Oracle Cloud Infrastructure (OCI), optionally fronted by a load balancer.  
 
-The Oracle WebLogic Migration tool is designed to facilitate a smooth lift-and-shift migration of WebLogic domains to the cloud. 
-The solution will introspect a Weblogic Domain and creates a tailored Resource Manager Stack that leverages the capabilities of OCI Resource Manager service to securely create OCI Network, Compute Instances to host the WebLogic Domain discovered.    
+- The solution creates only **one stack at a time**, and further modifications are applied to the same stack.  
+- The tool introspects an existing WebLogic Domain and generates a tailored Resource Manager Stack that leverages OCI Resource Manager capabilities to securely provision:  
+  - OCI Networking resources  
+  - Compute Instances to host the discovered WebLogic Domain  
+
+> **Note:**  
+> The tool does **not** migrate any on-premises databases and does **not** configure any database components in OCI.
 
 
 Requirements
@@ -24,7 +28,8 @@ To deploy the software, ensure the following prerequisites are met:
 
     Storage Space:  Admin Server disk space to store 3 times the space used by Oracle Middleware and Oracle Domain home combined.
 
-    Oracle Cloud Infrastructure CLI: The process of migrating an source on-premise WebLogic Domain involves compressing different directories and uploading them to an Oracle Cloud Object Storage Bucket. Current release uploads files using OCI cli.
+    Oracle Cloud Infrastructure CLI: The process of migrating an source on-premise WebLogic Domain involves compressing different directories and uploading them to an Oracle Cloud Object Storage Bucket. Current release uploads files using OCI cli. This requires the user to install and configure the OCI CLI on the admin server host of the on-premise domain.
+    Details on how to install and configured can be found at https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
 
 
 *Oracle Cloud Requirements*
@@ -35,10 +40,7 @@ To deploy the software, ensure the following prerequisites are met:
 
     OCI Resource Manager:  Oracle Cloud Account with permissions to create, plan and apply Stacks.
 
-    OCI Permissions:  Oracle CLoud user must have enough permissions to create, destroy, manage Virtual Cloud Network, Compute Instances, Block Storage, LoadBalancers, Private Resource Manager Endpoints.   
-
-    Oracle CLI:  Details on how to install and configured can be found at https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
-
+    OCI Permissions:  Oracle CLoud user must have enough permissions to create, destroy, manage Virtual Cloud Network, Compute Instances, Block Storage, LoadBalancers, Private Resource Manager Endpoints.    
 
 
 Installing Weblogic Migration Tool
