@@ -30,7 +30,7 @@ To deploy the software, ensure the following prerequisites are met:
 
     Network configuration: AdminServer Host must have an established SSH authentication system in place, connecting the AdminServer and all the Weblogic Managed server Linux hosts seamlessly.
 
-    Storage Space:  Admin Server disk space to store 3 times the space used by Oracle Middleware and Oracle Domain home combined.
+    Storage Space:  Each host must account for the space required to accomodate the archives: Oracle Home, JDK Home, Domain Home, and any custom directories.
 
     Oracle Cloud Infrastructure CLI: The process of migrating an source on-premise WebLogic Domain involves compressing different directories and uploading them to an Oracle Cloud Object Storage Bucket. Current release uploads files using OCI cli. This requires the user to install and configure the OCI CLI on the admin server host of the on-premise domain.
     Details on how to install and configured can be found at https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
