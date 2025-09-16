@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Copyright (c) 2024 Oracle Corporation and/or its affiliates.
-# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.${user}.com/licenses/upl
+# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 # shellcheck disable=SC1091 # Ignore unresolved file path present on base images
 
 set -o pipefail
