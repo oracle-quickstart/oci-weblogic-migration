@@ -272,13 +272,28 @@ set +e
 if [ "${env_vars[skip_transfer]}" = "false" ]; then
 
   # make sure oci is on $PATH
-  if ! oci > /dev/null 2>&1; then
-    errors+=("Oracle Cloud Infrastructure CLI (oci) not found in the path.")
-  fi
+  if ! command -v oci >/dev/null 2>&1; then
+    errors+=("Oracle Cloud Infrastructure CLI (oci) not found in the path.
+Please install OCI CLI: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm")
+  else
+    # make sure oci is configured for the current ssh user
+    if ! oci iam region list >/dev/null 2>&1; then
+      errors+=("Failed to verify OCI CLI configuration.
 
-  # make sure oci is configured for the current ssh user
-  if ! echo n |oci iam region list > /dev/null 2>&1; then
-    errors+=("Failed to verify OCI CLI is configured. For more information visit: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm")
+Run this command manually to debug:
+    oci iam region list
+
+Also verify that your OCI CLI config file (~/.oci/config) is set up correctly with valid values:
+
+[DEFAULT]
+user=<your_user_ocid>
+fingerprint=<your_api_key_fingerprint>
+tenancy=<your_tenancy_ocid>
+region=<your_region>
+key_file=<path to your private keyfile>
+
+Make sure the **key_file path is correct** and that the private key file is accessible by the current user.")
+    fi
   fi
 
 fi

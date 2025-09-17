@@ -107,12 +107,21 @@ get_json_key() {
 }
 
 upload_stack_to_oci_func() {
-  bucket_folder="$(basename "$STACK_FILE" .zip)"
-  upload_log_file="$toolHome/logs/upload_unzipped_stack_to_oci_${bucket_folder}.log"
-  python3 -c "import sys; sys.path.insert(0, '../lib/python'); \
-	from upload_stack_to_oci import upload_unzipped_stack_to_oci; \
-	sys.exit(upload_unzipped_stack_to_oci('$STACK_FILE', '$bucket_name', '$tenancy_namespace', '$compartment_ocid', '$upload_log_file', '$bucket_folder'))"
+  result=$(python3 -c "import sys, json; sys.path.insert(0, '../lib/python'); \
+from upload_stack_to_oci import upload_stack_zip_to_oci; \
+code, par_url = upload_stack_zip_to_oci('$STACK_FILE', '$bucket_name', '$tenancy_namespace', '$compartment_ocid', '/home/oracle/mig/oci-weblogic-migration/logs/migration_script.log', '$(date +%s)'); \
+print(json.dumps({'code': code, 'par_url': par_url})); \
+sys.exit(code)")
+
   exit_code=$?
+  # Extract PAR_URL if JSON is valid
+  if [ "$exit_code" -eq 0 ]; then
+    PAR_URL=$(echo "$result" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('par_url') or '')")
+    export PAR_URL
+  else
+    PAR_URL=""
+  fi
+
   return $exit_code
 }
 
@@ -160,16 +169,18 @@ log "info" "Stack file created: $STACK_FILE"
 
 ##################################### SUB_SECTION : Upload OCI Resource Manager Stack to OCI ################################
 if [[ "$skip_transfer" = "false" ]]; then
-	bucket_folder="$(basename "$STACK_FILE" .zip)"
-	upload_log_file="$toolHome/logs/upload_unzipped_stack_to_oci_${bucket_folder}.log"
-	run_migration_step "Uploading stack to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_stack_to_oci" "true" "true"
+	  stack_filename=$(basename "$STACK_FILE")
+    run_migration_step "Uploading $stack_filename to OCI Object Storage bucket $bucket_name" "upload_stack_to_oci_func" "" "upload_stack_to_oci" "true" "true"
 
-	upload_exit_code=$RETURN_STATUS
-	if [ "$upload_exit_code" -eq 0 ]; then
-		log "info" "Stack files are uploaded to bucket $bucket_name inside folder: $bucket_folder. Check "$upload_log_file" for details" | tee -a "$upload_log_file"
-	fi
+    upload_exit_code=$RETURN_STATUS
+    if [ "$upload_exit_code" -eq 0 ]; then
+        log "info" "$stack_filename uploaded to bucket $bucket_name."
+        if [[ -n "$PAR_URL" ]]; then
+            log "info" "Generated PAR URL (valid 6 months): $PAR_URL"
+        fi
+    fi
 else
-  log "info" "Skipping stack upload as skip_transfer=$skip_transfer."
+    log "info" "Skipping $stack_filename upload as skip_transfer=$skip_transfer."
 fi
 
 
