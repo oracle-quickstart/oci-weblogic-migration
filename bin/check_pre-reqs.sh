@@ -281,7 +281,7 @@ Please install OCI CLI: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/c
       errors+=("Failed to verify OCI CLI configuration.
 
 Run this command manually to debug:
-    oci iam region list
+    oci os ns get --auth instance_principal
 
 Also verify that your OCI CLI config file (~/.oci/config) is set up correctly with valid values:
 
