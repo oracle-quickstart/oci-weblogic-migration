@@ -1,14 +1,22 @@
 Purpose
 -------
-Oracle WebLogic Migration tool lifts and shifts single/multi node Weblogic Domain to Oracle Cloud Infrastructure optionally fronted
-by a load balancer. The solution will create only one stack at time and further modifications  will be done on the same stack.
+The **OCI WebLogic Migration Tool** enables lift-and-shift migration of single or multi-node WebLogic domains from on-premises environments to **Oracle Cloud Infrastructure (OCI)**, optionally fronted by a load balancer.  
 
-The Oracle WebLogic Migration tool is designed to facilitate a smooth lift-and-shift migration of WebLogic domains to the cloud. 
-The solution will introspect a Weblogic Domain and creates a tailored Resource Manager Stack that leverages the capabilities of OCI Resource Manager service to securely create OCI Network, Compute Instances to host the WebLogic Domain discovered.    
+Key features of the tool:
+
+- The tool **introspects the existing WebLogic Domain** to discover domain configuration, managed servers, clusters, applications, and resources.  
+- Based on this discovery, it generates a **tailored Resource Manager stack** that leverages OCI Resource Manager to securely provision and configure:  
+  - **OCI Networking resources** (VCN, subnets, gateways, route tables, and security lists)  
+  - **Compute Instances** to host the discovered WebLogic domain  
+  - Optional **load balancers** for distributing traffic across WebLogic managed servers  
+- The tool updates **JDBC datasource configuration files** in the domain so that WebLogic servers in OCI can connect to target databases.  
+
+> **Important:**  
+> It is the **user’s responsibility** to complete the database migration prior to applying the stack.
 
 
 Requirements
------------------------------
+----------------------------
 
 *On-Premise Requirements*
 
@@ -22,9 +30,10 @@ To deploy the software, ensure the following prerequisites are met:
 
     Network configuration: AdminServer Host must have an established SSH authentication system in place, connecting the AdminServer and all the Weblogic Managed server Linux hosts seamlessly.
 
-    Storage Space:  Admin Server disk space to store 3 times the space used by Oracle Middleware and Oracle Domain home combined.
+    Storage Space:  Each host must account for the space required to accomodate the archives: Oracle Home, JDK Home, Domain Home, and any custom directories.
 
-    Oracle Cloud Infrastructure CLI: The process of migrating an source on-premise WebLogic Domain involves compressing different directories and uploading them to an Oracle Cloud Object Storage Bucket. Current release uploads files using OCI cli.
+    Oracle Cloud Infrastructure CLI: The process of migrating an source on-premise WebLogic Domain involves compressing different directories and uploading them to an Oracle Cloud Object Storage Bucket. Current release uploads files using OCI cli. This requires the user to install and configure the OCI CLI on the admin server host of the on-premise domain.
+    Details on how to install and configured can be found at https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
 
 
 *Oracle Cloud Requirements*
@@ -35,10 +44,7 @@ To deploy the software, ensure the following prerequisites are met:
 
     OCI Resource Manager:  Oracle Cloud Account with permissions to create, plan and apply Stacks.
 
-    OCI Permissions:  Oracle CLoud user must have enough permissions to create, destroy, manage Virtual Cloud Network, Compute Instances, Block Storage, LoadBalancers, Private Resource Manager Endpoints.   
-
-    Oracle CLI:  Details on how to install and configured can be found at https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
-
+    OCI Permissions:  Oracle CLoud user must have enough permissions to create, destroy, manage Virtual Cloud Network, Compute Instances, Block Storage, LoadBalancers, Private Resource Manager Endpoints.    
 
 
 Installing Weblogic Migration Tool
@@ -249,6 +255,7 @@ bash migration_script.sh
 2025-09-11 14:48:13  [info] Migration script completed successfully!
  ```
 
+
 Migrate WLS Domain to OCI Cloud
 ---------------------------------
 
@@ -277,17 +284,57 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
 * Allow the user to either:
   * Create a new VCN.
   * Use a pre-existing VCN.
-* Optional Resources:
+* Allow the user to provision optional Resources:
   * Bastion Host – Can be provisioned for secure SSH access to private WebLogic compute instances.
   * Public Load Balancer (LB) – Can be added to distribute traffic across managed servers.
   * IAM Policies – Can be created automatically for Object Storage and database access, or the user may use pre-existing policies.
-* For WebLogic domains with JDBC Datasources, provides options to recreate the datasource connection strings in OCI using one of the following:
+* Allow the user to select from multiple images for Compute instances:
+  * Oracle WebLogic Server Enterprise Edition UCM Image
+  * Oracle Weblogic Suite UCM Image
+  * Oracle WebLogic Server Enterprise Edition BYOL Image
+  * Oracle Weblogic Suite BYOL Image
+  * Platform Image(Oracle-Linux-8.10-2025.06.17-0)
+* Provides options to recreate the datasource connection strings in OCI for WebLogic domains with JDBC Datasources, using one of the following:
   * Autonomous Database (ADB)
   * OCI Database (DB System)
   * Manual JDBC string replacement
-  **NOTE:** For Multi Data Source (MDS) configurations, only manual JDBC string replacement is supported.
-  **Pre-requisites for JFR Weblogic enabled domains :**
-    Databases should be migrated to OCI. JDBC String must be known before running Resource Manager `Apply` action
+> **Note:**  
+> For Multi Data Source (MDS) configurations, only **manual JDBC string replacement** is supported.
+
+> **Prerequisites for JRF WebLogic-enabled domains:**  
+> * Databases should be migrated to OCI before running the Resource Manager **Apply** action.  
+> * JDBC connection strings must be known before running the Resource Manager **Apply** action.
+
+Required IAM Policies for Non-Admin Users
+-------------------------------------------
+
+### Non-Admin User Group Policies
+If the user applying the Resource Manager stack is **not an OCI administrator**, the following IAM policies must be created to allow proper provisioning and access:
+
+| Policy Statement | Purpose |
+|-----------------|---------|
+| `Allow group MyGroup to inspect instance-image in compartment MyCompartment` | To use the WebLogic for OCI images in Marketplace |
+| `Allow group MyGroup to use app-catalog-listing in compartment MyCompartment` | To access Marketplace applications catalog |
+| `Allow group MyGroup to manage instance-family in compartment MyCompartment` | To create Compute Instances |
+| `Allow group MyGroup to manage volume-family in compartment MyCompartment` | To create Block Volumes |
+| `Allow group MyGroup to inspect limits in tenancy` | To determine if resources are available in various compartments |
+| `Allow group MyGroup to manage virtual-network-family in compartment MyNetworkCompartment` | To create VCNs and subnets |
+| `Allow group MyGroup to manage load-balancers in compartment MyNetworkCompartment` | To create a Load Balancer |
+
+### Dynamic Group Policies (for users who unselect "Create Policies" checkbox)
+
+| Policy Statement | Purpose |
+|-----------------|---------|
+| `Allow dynamic-group <dynamic-group> to manage buckets in compartment MyCompartment` | To create Object Storage buckets |
+| `Allow dynamic-group <dynamic-group> to manage objects in compartment MyCompartment` | To upload archives or overwrite existing objects in Object Storage |
+| `Allow dynamic-group <dynamic-group> to use autonomous-transaction-processing-family in compartment <compartment>` | To download ATP/ADW database wallet |
+| `Allow group MyGroup to manage virtual-network-family in compartment MyNetworkCompartment` | Required for VCN Peering when WLS VCN is not the same as DB VCN and also if `Add Rule for WLS to Access DB` checkbox is selected |
+
+> **Note:**  
+> - Replace `MyGroup`, `MyCompartment`, `MyNetworkCompartment`, and `<dynamic-group>` with your actual group names, compartment OCIDs, and dynamic group definitions.  
+> - These policies ensure the user has sufficient permissions to provision networking, compute, storage, and WebLogic resources required by the migration stack.  
+
+  
   
 ### Inputs to Resource Manager
 ---------------------------------
@@ -381,21 +428,21 @@ User will have to provide the following as parameters to terraform:
    | `Database Listener Port`         | Port for DB connection (default: 1521).                   |
 
 
-Restore Process after Stack Application
+Restore Process after Stack Apply
 -------------------------------------------
 Once the ORM stack is applied, the restore process ensures that the cloud environment mirrors the on-premise WebLogic domain.
 During the OCI Compute Instances boot process, the cloud-init are initiated which complete the migration of the on-premise domain to OCI.
 
 ### Troubleshooting
 -------------------
-* Check Cloud-init Status
+#### Check Cloud-init Status
 To verify if the restore process is complete:
 ```bash
   cloud-init status
   status: done
-```  
+```   
 
-* Check Logs
+#### Check Logs
 All restore logs are available under `/var/log/owm/` in the compute instances.
 ```bash
   ls -lrth /var/log/owm
@@ -410,7 +457,8 @@ All restore logs are available under `/var/log/owm/` in the compute instances.
 
 Start OCI WebLogic Domain and Verify Services
 ------------------------------------------------
-All OCI Instances (Servers hosting AdminServers and Managed Servers) will be created in a Private Subnet in OCI Virtual Cloud Network. To access them, an SSH session should be established via a Bastion Host.
+All OCI Instances (Servers hosting AdminServers and Managed Servers) will be created in a Private Subnet in OCI Virtual Cloud Network. 
+To access them, an SSH session should be established via a Bastion Host.
 To find the commands to ssh, click on Stack - Application Details Tab and copy the SSH command example given.
 The complete ssh command to access the AdminServer should follow this format:
 
@@ -420,6 +468,6 @@ ssh -i <private ssh key file> -o 'UserKnownHostsFile /dev/null' -o 'StrictHostKe
 $admin-server> sudo su - <same username as on-premise> 
 ```
 
-Once in the new AdminServer instance, change directory to the WebLogic Domain Home and bring up your AdminServer and other servers. Verify and Test your WebLogic domain to confirm that the migration was successful. 
+Once the cloud-init scripts have completed, SSH to the new AdminServer instance, change directory to the WebLogic Domain Home and bring up your AdminServer. Similarly, start all managed servers. Verify and Test your WebLogic domain to confirm that the migration was successful. 
 
 
