@@ -36,25 +36,26 @@ Requirements
 ----------------------------
 To use the tool, ensure the following prerequisites are met:
 
-### On-Premises Requirements
+### 1. On-Premises Requirements
 - **Oracle Linux compatibility:** The operating system release must be within the supported range.
-- **File system permissions:** Tool must be installed on the **AdminServer host**. User must have **read/write permissions** on WebLogic Domain, Oracle Middleware, and Java Home directories.
-- **Network configuration:** Passwordless **SSH authentication** must be established from AdminServer host to all Managed Server hosts.
-- **Storage space:** Sufficient disk space to archive **Oracle Home**, **JDK Home**, **Domain Home**, and any **custom directories** (e.g., external trust stores or keystores).
+- **File system permissions:** The tool must be installed on the **AdminServer host**. The user must have **read/write permissions** on WebLogic Domain, Oracle Middleware, and Java Home directories.
+- **Network configuration:** Passwordless **SSH authentication** must be established from the AdminServer host to all Managed Server hosts.
+- **Storage space:** Each host must have sufficient disk space to archive **Oracle Home**, **JDK Home**, **Domain Home**, and any **custom directories**.  
+  Example: external trust stores or keystores located outside the Domain or Middleware directories.
 
-### Oracle Cloud Requirements
-- **Oracle Cloud Account (Tenancy):** Resources discovered on-premise will be recreated under an OCI Tenancy.
-- **OCI Compartment:** Required to group all resources created by the OWM tool.
+### 2. Oracle Cloud Requirements
+- **Oracle Cloud Account (Tenancy):** Resources discovered on-premises will be recreated under an OCI Tenancy.
+- **OCI Compartment:** Required to logically group all resources created by the OWM tool.
 - **OCI Resource Manager:** Permissions to create, plan, and apply stacks.
-- **OCI Permissions:** Ability to create/manage:
-    - Virtual Cloud Networks
+- **OCI Permissions:** Ability to create and manage the following resources:
+    - Virtual Cloud Networks (VCNs)
     - Compute Instances
     - Block Storage
     - Load Balancers (Optional)
-  
-    Refer to [Required IAM Policies for Non-Admin Users](#Non-Admin User Group Policies) for detailed IAM policy requirements.
 
-### Optional IAM Policies
+> Refer to [Required IAM Policies for Non-Admin Users](#Non-Admin-User-Group-Policies) for detailed IAM policy requirements.
+
+### 3. Optional IAM Policies
 If stack users need to create IAM policies in the **Default Identity Domain** under the **root compartment**, additional policy management permissions are required.  
 Refer to the detailed **IAM Permissions** section later in this document.
 
