@@ -14,57 +14,57 @@ Key features of the tool:
 > **Important:**  
 > This tool does **not** migrate on-premises databases to OCI.
 
+---
+
+Terminology
+---------
+
+| Term | Description |
+|------|-------------|
+| **OCI** | Oracle Cloud Infrastructure, Oracle's public cloud platform. |
+| **On-Premise** | Refers to the source environment where the WebLogic domain currently resides (your local data center or server environment). |
+| **OWM** | OCI WebLogic Migration Tool; the tool used to migrate on-premises WebLogic domains to OCI. |
+| **AdminServer host** | The VM hosting the AdminServer of the on-premises WebLogic domain. |
+| **Custom directories** | File system paths referenced by the WebLogic domain configuration that are **outside** the standard three categories (Domain Home, Middleware Home, Java Home). <br>**Example:** External trust stores or keystores located outside the Domain or Middleware directories. |
+| **OS** | Operating System installed on a host, e.g., Oracle Linux. |
+
+
+
+---
 
 Requirements
 ----------------------------
 To use the tool, ensure the following prerequisites are met:
 
 ### On-Premises Requirements
+- **Oracle Linux compatibility:** The operating system release must be within the supported range.
+- **File system permissions:** Tool must be installed on the **AdminServer host**. User must have **read/write permissions** on WebLogic Domain, Oracle Middleware, and Java Home directories.
+- **Network configuration:** Passwordless **SSH authentication** must be established from AdminServer host to all Managed Server hosts.
+- **Storage space:** Sufficient disk space to archive **Oracle Home**, **JDK Home**, **Domain Home**, and any **custom directories** (e.g., external trust stores or keystores).
 
-- **Oracle Linux compatibility**  
-  The operating system release must be within the supported range.
+### Oracle Cloud Requirements
+- **Oracle Cloud Account (Tenancy):** Resources discovered on-premise will be recreated under an OCI Tenancy.
+- **OCI Compartment:** Required to group all resources created by the OWM tool.
+- **OCI Resource Manager:** Permissions to create, plan, and apply stacks.
+- **OCI Permissions:** Ability to create/manage:
+    - Virtual Cloud Networks
+    - Compute Instances
+    - Block Storage
+    - Load Balancers (Optional)
+  
+    Refer to [Required IAM Policies for Non-Admin Users](#required-iam-policies-for-non-admin-users) for detailed IAM policy requirements.
 
-- **File system permissions**  
-  The WebLogic Migration Tool must be installed directly on the **AdminServer host** of the on-premises WebLogic domain.  
-  An operating system user with **read and write permissions** on the WebLogic Domain, Oracle Middleware, and Java Home directories is required to perform tasks such as `unzip` and `tar`.
-
-- **Network configuration**  
-  The **AdminServer host** of the on-premises WebLogic domain must have established **SSH authentication** to all WebLogic managed server Linux hosts.
-
-- **Storage space**  
-  Each host must have sufficient disk space to accommodate archives of **Oracle Home**, **JDK Home**, **Domain Home**, and any **custom directories**.
-  Custom directories refer to any **file system paths referenced by the WebLogic domain configuration** that are **outside of the standard three categories** (Domain Home, Middleware Home, and Java Home).
-  Example:
-    - External trust stores or keystores located outside the Domain or Middleware directories.
+### Optional IAM Policies
+If stack users need to create IAM policies in the **Default Identity Domain** under the **root compartment**, additional policy management permissions are required.  
+Refer to the detailed **IAM Permissions** section later in this document.
 
 ---
 
-### Oracle Cloud Requirements
-
-- **Oracle Cloud Account (Tenancy)**  
-  Resources discovered on-premises will be recreated under an OCI Tenancy.
-
-- **OCI Compartment**  
-  A compartment is required to logically group all the resources created by the WebLogic Migration Tool.
-
-- **OCI Resource Manager**  
-  The Oracle Cloud account must have permissions to **create, plan, and apply stacks**.
-
-- **OCI Permissions (Required)**  
-  The OCI user must have permissions to create and manage the following:
-   - Virtual Cloud Networks
-   - Compute Instances
-   - Block Storage
-   - Load Balancers(Optional)
-
-  Refer to the section [Required IAM Policies for Non-Admin Users](#required-iam-policies-for-non-admin-users) for detailed IAM policy requirements.
-
-
 Installing Weblogic Migration Tool
 ----------------------------------------
-* Initiate a Secure Shell (SSH) connection to the AdminServer Linux Host of the On-Premise Weblogic domain, utilizing a user account with read and write file system permissions. This step enables secure remote access and interaction with the server.
-* Download the most recent release from  [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-* Get a local copy of the OCI Migration Tool repository to a folder where the user has read and write permissions.
+* Initiate a Secure Shell (SSH) connection to the **AdminServer host**, utilizing a user account with read and write file system permissions. This step enables secure remote access and interaction with the server.
+* Download the most recent release of GIT from  [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+* Get a local copy of the OWM Tool repository to a folder where the user has read and write permissions.
 * Folder will be referenced as $toolHome.
 
 Clone the repository with the commands:
@@ -102,6 +102,8 @@ drwxrwxr-x. 3 oracle oracle  113 Sep 11 14:48 out
 drwxrwxr-x. 2 oracle oracle 4.0K Sep 11 18:02 logs
 ```
 
+---
+
 WebLogic Migration Script
 -----------------------
 This repository contains a consolidated script migration_script.sh that automates the complete migration of an on-premise WebLogic domain to Oracle Cloud Infrastructure (OCI).
@@ -114,7 +116,6 @@ The script combines all required tasks into a single workflow:
 5. Upload stack to OCI Object Storage Bucket(Optional)
 6. Archive WebLogic domain
 7. Upload archives to OCI Object Storage Bucket(Optional)
-
 
 Usage
 ----------------------------------------
@@ -296,6 +297,7 @@ bash migration_script.sh
 2025-09-11 14:48:13  [info] Migration script completed successfully!
  ```
 
+---
 
 Migrate WLS Domain to OCI Cloud
 ---------------------------------
@@ -365,9 +367,10 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
 > **Note:**  
 > For Multi Data Source (MDS) configurations, only **manual JDBC string replacement** is supported.
 
+---
 
-Required IAM Policies for Non-Admin Users
--------------------------------------------
+Required IAM Policies 
+-----------------------
 
 ### Non-Admin User Group Policies
 If the user applying the Resource Manager stack is **not an OCI administrator**, the following IAM policies must be created to allow proper provisioning and access:
@@ -395,6 +398,7 @@ If the user applying the Resource Manager stack is **not an OCI administrator**,
 > - Replace `MyGroup`, `MyCompartment`, `MyNetworkCompartment`, and `<dynamic-group>` with your actual group names, compartment OCIDs, and dynamic group definitions.  
 > - These policies ensure the user has sufficient permissions to provision networking, compute, storage, and WebLogic resources required by the migration stack.  
 
+---
   
 ### Inputs to Resource Manager
 ---------------------------------
@@ -488,6 +492,8 @@ User will have to provide the following as parameters to the Resource Manager:
    | `Database Listener Port`         | Port for DB connection (default: 1521).                   |
 
 
+---
+
 Restore Process after Stack Apply
 -------------------------------------------
 Once the ORM stack is applied, the restore process ensures that the cloud environment mirrors the on-premise WebLogic domain.  
@@ -518,6 +524,7 @@ All restore logs are available under `/var/log/owm/` in the compute instances.
   -rw-r--r--. 1 root   root   3.4K Jul 31 09:44 datasource_update.log
 ```  
 
+---
 
 Start OCI WebLogic Domain and Verify Services
 ------------------------------------------------
