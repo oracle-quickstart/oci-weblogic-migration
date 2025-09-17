@@ -5,114 +5,118 @@ Licensed under the Universal Permissive License v 1.0 as shown at https://oss.or
 
 import subprocess
 import os
-import zipfile
 import tempfile
 import datetime
-import shutil
 import json
 
-def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_id, log_file, file_timestamp):
+def upload_stack_zip_to_oci(stack_zip, bucket_name, namespace, compartment_id, log_file, file_timestamp):
     """
-    Uploads the contents of a zipped OCI Resource Manager (ORM) stack to OCI Object Storage.
+    Uploads a stack.zip file (or any specified filename) to OCI Object Storage and generates a PAR URL (valid for 6 months).
 
     Returns:
-        int: Exit code
-            0 - Success
-            1 - Stack zip file not found
-            2 - Bucket exists but missing read permission
-            3 - Bucket creation failure (missing create policy)
-            4 - Upload failure
-            5 - Bucket exists but missing write/upload permission
+        tuple (exit_code, par_url)
+            exit_code:
+                0 - Success
+                1 - Stack zip file not found
+                2 - Bucket exists but missing read permission
+                3 - Bucket creation failure (missing create policy, or bucket exists in another compartment)
+                4 - Upload failure
+                5 - Bucket exists but missing write/upload permission
+            par_url: Pre-Authenticated Request URL if success, else None
     """
-
-    temp_dir = tempfile.mkdtemp(prefix=f"stack_upload_{file_timestamp}_")
 
     def log(level, message):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         line = f"{timestamp}  [{level}] {message}"
-        print(line)
         with open(log_file, "a") as lf:
             lf.write(line + "\n")
 
-    def check_or_create_bucket(namespace, bucket_name, compartment_id, log_file):
+    def check_or_create_bucket(namespace, bucket_name, compartment_id):
         """
-        Returns (exists: bool, reason: str)
-            reason: "missing", "unauthorized", "unknown"
+        Returns (exists: bool, reason: str, actual_compartment: str)
+        reason: "unauthorized", "wrong_compartment", "missing", "unknown"
         """
         try:
-            subprocess.check_output(
+            result = subprocess.run(
                 ["oci", "os", "bucket", "get",
                  "--namespace-name", namespace,
                  "--bucket-name", bucket_name],
+                stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
-            return True, None  # Exists and readable
-        except subprocess.CalledProcessError as e:
-            stderr_text = e.stderr.decode()
-            with open(log_file, "a") as lf:
-                lf.write(stderr_text + "\n")
-            error_code = ""
-            try:
-                json_start = stderr_text.find("{")
-                if json_start != -1:
-                    error_json = json.loads(stderr_text[json_start:])
-                    error_code = error_json.get("code", "").lower()
-            except Exception:
-                pass
 
-            # Unauthorized / no read permission
-            if error_code == "notauthorizedornotfound" or "not authorized" in stderr_text.lower():
-                return False, "unauthorized"
-
-            # Bucket not found → attempt create
-            if error_code == "bucketnotfound":
+            if result.returncode == 0:
+                bucket_json = json.loads(result.stdout.decode())
+                bucket_compartment = bucket_json["data"]["compartment-id"]
+                if bucket_compartment != compartment_id:
+                    return False, "wrong_compartment", bucket_compartment
+                return True, "ok", bucket_compartment
+            else:
+                stderr_text = result.stderr.decode()
+                error_code = ""
                 try:
+                    json_start = stderr_text.find("{")
+                    if json_start != -1:
+                        error_json = json.loads(stderr_text[json_start:])
+                        error_code = error_json.get("code", "").lower()
+                except Exception:
+                    pass
+
+                if error_code == "bucketnotfound":
                     create_proc = subprocess.run(
                         ["oci", "os", "bucket", "create",
                          "--namespace-name", namespace,
                          "--name", bucket_name,
                          "--compartment-id", compartment_id],
-                        stdout=open(log_file, "a"),
+                        stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE
                     )
-                    if create_proc.returncode != 0:
+                    if create_proc.returncode == 0:
+                        return True, "ok", compartment_id
+                    else:
                         create_err = create_proc.stderr.decode()
                         if "BucketAlreadyExists" in create_err:
-                            return False, "unauthorized"
+                            return False, "wrong_compartment", None
                         else:
-                            return False, "unknown"
-                    else:
-                        return True, None  # Created successfully
-                except subprocess.CalledProcessError:
-                    return False, "unknown"
+                            return False, "unknown", None
 
-            return False, "unknown"
+                elif error_code == "notauthorizedornotfound" or "not authorized" in stderr_text.lower():
+                    return False, "unauthorized", None
+                else:
+                    return False, "unknown", None
+
+        except Exception as e:
+            log("warning", f"Exception while checking/creating bucket: {e}")
+            return False, "unknown", None
 
     # Step 1: Check stack zip
     if not os.path.exists(stack_zip):
-        log("error", f"Stack zip file not found: {stack_zip}")
-        return 1
+        log("error", f"Stack file not found: {stack_zip}")
+        return 1, None
+
+    stack_filename = os.path.basename(stack_zip)
 
     # Step 2: Check or create bucket
     log("info", f"Checking if bucket {bucket_name} exists in namespace {namespace}...")
-    exists, reason = check_or_create_bucket(namespace, bucket_name, compartment_id, log_file)
+    exists, reason, actual_compartment = check_or_create_bucket(namespace, bucket_name, compartment_id)
 
     if not exists:
         if reason == "unauthorized":
             log("warning", f"Access denied to bucket {bucket_name}. Check IAM read policy.")
-            return 2
-        elif reason == "missing":
-            log("warning", f"Bucket {bucket_name} does not exist and cannot be created. Check create policy.")
-            return 3
+            return 2, None
+        elif reason == "wrong_compartment":
+            log("error", (f"Bucket {bucket_name} exists in a different compartment.\n"
+                          f"Actual: {actual_compartment}, Provided: {compartment_id}"))
+            return 3, None
         else:
             log("warning", f"Unexpected error while checking/creating bucket {bucket_name}.")
-            return 3
+            return 3, None
     else:
-        log("info", f"Bucket {bucket_name} is ready.")
+        log("info", f"Bucket {bucket_name} is ready in compartment {actual_compartment}.")
 
     # Step 3: Check write/upload permission
     temp_test_file = os.path.join(tempfile.gettempdir(), f"oci_write_test_{file_timestamp}.tmp")
-    open(temp_test_file, "w").close()  # zero-byte file
+    open(temp_test_file, "w").close()
     try:
         subprocess.check_call(
             [
@@ -123,49 +127,75 @@ def upload_unzipped_stack_to_oci(stack_zip, bucket_name, namespace, compartment_
                 "--file", temp_test_file,
                 "--force"
             ],
-            stdout=open(log_file, "a"),
-            stderr=open(log_file, "a")
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
         )
         log("info", "Write permission check passed.")
     except subprocess.CalledProcessError:
         log("warning", f"Missing write/upload permission for bucket {bucket_name}.")
-        return 5
+        return 5, None
     finally:
         try:
             os.remove(temp_test_file)
         except Exception:
             pass
 
-    # Step 4: Unzip stack
-    log("info", f"Unzipping stack: {stack_zip} to {temp_dir}")
-    with zipfile.ZipFile(stack_zip, "r") as zip_ref:
-        zip_ref.extractall(temp_dir)
-
-    # Step 5: Upload stack
-    log("info", f"Uploading unzipped stack to OCI bucket {bucket_name}...")
+    # Step 4: Upload stack file
+    log("info", f"Uploading {stack_filename} to OCI bucket {bucket_name}...")
     try:
         subprocess.check_call(
             [
-                "oci", "os", "object", "bulk-upload",
+                "oci", "os", "object", "put",
                 "--bucket-name", bucket_name,
                 "--namespace-name", namespace,
-                "--src-dir", temp_dir,
-                "--prefix", f"{file_timestamp}/",
-                "--overwrite"
+                "--name", stack_filename,
+                "--file", stack_zip,
+                "--force"
             ],
-            stdout=open(log_file, "a"),
-            stderr=open(log_file, "a")
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
         )
-        log("info", "Upload completed successfully.")
+        log("info", f"{stack_filename} uploaded successfully to bucket {bucket_name}.")
     except subprocess.CalledProcessError:
-        log("warning", f"Failed to upload stack to bucket {bucket_name}. See {log_file} for details.")
-        return 4
-    # Step 6: Cleanup
-    finally:
-        try:
-            shutil.rmtree(temp_dir)
-            log("info", f"Temporary directory {temp_dir} deleted.")
-        except Exception as e:
-            log("warning", f"Failed to delete temp dir {temp_dir}: {e}")
+        log("warning", f"Failed to upload {stack_filename} to bucket {bucket_name}.")
+        return 4, None
 
-    return 0
+    # Step 5: Create PAR URL valid for 6 months
+    log("info", f"Creating Pre-Authenticated Request (PAR) URL for {stack_filename} valid for 6 months...")
+    try:
+        par_proc = subprocess.run(
+            [
+                "oci", "os", "preauth-request", "create",
+                "--bucket-name", bucket_name,
+                "--namespace-name", namespace,
+                "--name", f"{stack_filename}-par-{file_timestamp}",
+                "--access-type", "ObjectRead",
+                "--time-expires", (datetime.datetime.utcnow() + datetime.timedelta(days=180)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "--object-name", stack_filename
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        if par_proc.returncode != 0:
+            log("warning", f"Failed to create PAR URL for {stack_filename}.")
+            return 4, None
+
+        par_json = json.loads(par_proc.stdout.decode())
+        par_url = par_json["data"]["full-path"]
+        log("info", f"PAR URL created (valid 6 months): {par_url}")
+
+        # Return JSON to shell
+        print(json.dumps({'code': 0, 'par_url': par_url}))
+        sys.exit(0)
+
+    except Exception as e:
+        log("warning", f"Exception while creating PAR URL: {e}")
+        return 4, None
+
+
+# If run directly for testing
+if __name__ == "__main__":
+    import sys
+    code, par_url = upload_stack_zip_to_oci(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+    print(json.dumps({'code': code, 'par_url': par_url}))
+    sys.exit(code)
