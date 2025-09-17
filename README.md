@@ -12,37 +12,49 @@ Key features of the tool:
 - The tool updates **JDBC datasource configuration files** in the domain so that WebLogic servers in OCI can connect to target databases.  
 
 > **Important:**  
-> It is the **user’s responsibility** to complete the database migration prior to applying the stack.
+> This tool does **not** migrate on-premises databases to OCI.
 
 
 Requirements
 ----------------------------
+To use the tool, ensure the following prerequisites are met:
 
-*On-Premise Requirements*
+### On-Premises Requirements
 
-To deploy the software, ensure the following prerequisites are met:
+- **Oracle Linux compatibility**  
+  The operating system release must be within the supported range.
 
-    Oracle Linux compatibility: The operating system release should be within the supported range.
+- **File system permissions**  
+  The WebLogic Migration Tool must be installed directly on the **AdminServer host** of the on-premises WebLogic domain.  
+  An operating system user with **read and write permissions** on the WebLogic Domain, Oracle Middleware, and Java Home directories is required to perform tasks such as `unzip` and `tar`.
 
-    File system permissions: WebLogic Migration Tool is designed to be installed directly on to the AdminServer Host of the On-Premise Weblogic domain. An Operating System user with read and write permissions on WebLogic Domain's , Oracle Middleware and Java Home is require to perform tasks such us unzip, tar.
+- **Network configuration**  
+  The AdminServer host must have established **SSH authentication** to all WebLogic managed server Linux hosts.
 
-    Network configuration: AdminServer Host must have an established SSH authentication system in place, connecting the AdminServer and all the Weblogic Managed server Linux hosts seamlessly.
+- **Storage space**  
+  Each host must have sufficient disk space to accommodate archives of **Oracle Home**, **JDK Home**, **Domain Home**, and any **custom directories**.
 
-    Storage Space:  Each host must account for the space required to accommodate the archives: Oracle Home, JDK Home, Domain Home, and any custom directories.
+---
 
-    Oracle Cloud Infrastructure CLI: The process of migrating an source on-premise WebLogic Domain involves compressing different directories and uploading them to an Oracle Cloud Object Storage Bucket. Current release uploads files using OCI cli. This requires the user to install and configure the OCI CLI on the admin server host of the on-premise domain.
-    Details on how to install and configured can be found at https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
+### Oracle Cloud Requirements
 
+- **Oracle Cloud Account (Tenancy)**  
+  Resources discovered on-premises will be recreated under an OCI Tenancy.
 
-*Oracle Cloud Requirements*
+- **OCI Compartment**  
+  A compartment is required to logically group all the resources created by the WebLogic Migration Tool.
 
-    Oracle Cloud Account (Tenancy) :  Resources discovered on-premise will be recreated under an OCI Tenancy.  
+- **OCI Resource Manager**  
+  The Oracle Cloud account must have permissions to **create, plan, and apply stacks**.
 
-    OCI Compartment:  Oracle Cloud facilitates the organzation of resources using a logical separation called compartments.  A compartment is requred to group all the resources created by Oracle WebLogic Migration Tool.
+- **OCI Permissions (Required)**  
+  The OCI user must have permissions to create and manage the following:
+   - Virtual Cloud Networks
+   - Compute Instances
+   - Block Storage
+   - Load Balancers(Optional)
 
-    OCI Resource Manager:  Oracle Cloud Account with permissions to create, plan and apply Stacks.
-
-    OCI Permissions:  Oracle CLoud user must have enough permissions to create, destroy, manage Virtual Cloud Network, Compute Instances, Block Storage, LoadBalancers, Private Resource Manager Endpoints.    
+  Refer to the section [Required IAM Policies for Non-Admin Users](#required-iam-policies-for-non-admin-users) for detailed IAM policy requirements.
 
 
 Installing Weblogic Migration Tool
@@ -229,17 +241,21 @@ Workflow
 6. Upload OCI Resource Manager Stack (Optional)
    By default, the script uploads the stack to the target Object Storage bucket for deployment via OCI Resource Manager.
    This behavior can be controlled using the `skip_transfer` option in `$toolHome/config/on-prem.env` file.
-      
-7. Archive WebLogic Domain
-   Archives Oracle Home, JDK Home, Domain Home, and any custom directories.
-   Uses naming convention:
+
+7. Archive WebLogic Domain  
+   Archives **Oracle Home, JDK Home, Domain Home, and any custom directories**.
+   Custom directories refer to any **file system paths referenced by the WebLogic domain configuration** that are **outside of the standard three categories** (Domain Home, Middleware Home, and Java Home).
+   Example:
+    - External trust stores or keystores located outside the Domain or Middleware directories
+    
+   **Archive Naming Convention**
    ```bash
    <machine>-<domain>-domain_home.tar.gz
    <machine>-<domain>-java_home.tar.gz
    <machine>-<domain>-weblogic_home.tar.gz
    <machine>-<domain>-custom_home.tar.gz
    ```
-   Note:  It is highly recommended that the WebLogic Domain is in stop state before compressing directories to avoid files being modified between read and write.
+    Note: It is highly recommended that the WebLogic Domain is in a stopped state before compressing directories, to avoid files being modified between read and write.
 
 8. Upload Archives to OCI (Optional) 
    By default, the script uploads all generated archives to a specified OCI Object Storage bucket.
@@ -301,6 +317,11 @@ Before launching the stack, ensure the following are completed:
 
 4. **Dynamic Group Policies**  
    If users unselect the **"Create Policies"** checkbox during stack creation, ensure appropriate dynamic group policies are already in place. See [Dynamic Group Policies](#dynamic-group-policies) for details.
+
+5. **Marketplace Terms (if using UCM images)**  
+   If you plan to use an Oracle WebLogic for OCI UCM image from the Marketplace, you must **accept the terms** for that listing in advance.
+    - If you do not accept the terms and select a UCM image during stack creation, the Resource Manager **Apply job will fail**.
+    - To resolve, log in to the OCI Console → go to **Marketplace** → search for the UCM listing → open it and click **Accept Terms**, then re-run the stack apply.
 
 #### Step 2: Collect the Stack File
 - **If `migration_script.sh` was executed with `skip_transfer=true`:**  
@@ -375,10 +396,9 @@ If the user applying the Resource Manager stack is **not an OCI administrator**,
 > - These policies ensure the user has sufficient permissions to provision networking, compute, storage, and WebLogic resources required by the migration stack.  
 
   
-  
 ### Inputs to Resource Manager
 ---------------------------------
-User will have to provide the following as parameters to terraform:
+User will have to provide the following as parameters to the Resource Manager:
 
 1. Stack Configuration
    | Variable                          | Description                                                                  | Default |
@@ -395,11 +415,11 @@ User will have to provide the following as parameters to terraform:
    | `Object Storage Bucket name` | Bucket name where on-premise Weblogic archives are stored.. | —             |
    
 3. Virtual Cloud Networking
-   | Variable                          | Description                                          | Default                    |
-   | --------------------------------- | ---------------------------------------------------- | -------------------------- |
-   | `Existing Virtual Cloud Network`  | Use an existing VCN. Required if `create_vcn=false`. | —                          |
-   | `Virtual Cloud Network Name`      | Name of the VCN (if created).                        | `wls-<terraform state id>` |
-   | `Virtual Cloud Network CIDR`      | CIDR for the new VCN.                                | `10.0.0.0/16`              |
+   | Variable                          | Description                                                  | Default                    |
+   | --------------------------------- | ------------------------------------------------------------ | -------------------------- |
+   | `Existing Virtual Cloud Network`  | OCID of the existing VCN. Required if `create_vcn=false`.    | —                          |
+   | `Virtual Cloud Network Name`      | Name of the new VCN if Use an Existing VCN is not selected   | `wls-<terraform state id>` |
+   | `Virtual Cloud Network CIDR`      | CIDR for the new VCN if Use an Existing VCN is not selected. | `10.0.0.0/16`              |
   
 4. WebLogic Server Compute
    | Variable                      | Description                         | Default                                 |
