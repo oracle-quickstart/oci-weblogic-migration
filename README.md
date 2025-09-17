@@ -21,8 +21,8 @@ Terminology
 
 | Term | Description |
 |------|-------------|
-| **OCI** | Oracle Cloud Infrastructure, Oracle's public cloud platform. |
-| **On-Premise** | Refers to the source environment where the WebLogic domain currently resides (your local data center or server environment). |
+| **OCI** | Oracle Cloud Infrastructure. |
+| **On-Premise** | Refers to the source environment where the WebLogic domain currently resides. |
 | **OWM** | OCI WebLogic Migration Tool; the tool used to migrate on-premises WebLogic domains to OCI. |
 | **AdminServer host** | The VM hosting the AdminServer of the on-premises WebLogic domain. |
 | **Custom directories** | File system paths referenced by the WebLogic domain configuration that are **outside** the standard three categories (Domain Home, Middleware Home, Java Home). <br>**Example:** External trust stores or keystores located outside the Domain or Middleware directories. |
@@ -316,16 +316,15 @@ Before launching the stack, ensure the following are completed:
    JDBC connection strings of the OCI Database must be known before running the Resource Manager **Apply** action.
 
 3. **IAM Policies for Non-Admin Users**  
-   Ensure you have the correct IAM permissions. For Non-Admin users, see [Required IAM Policies for Non-Admin Users](#required-iam-policies-for-non-admin-users).
+   Ensure you have the correct IAM permissions. For Non-Admin users, see [Required IAM Policies for Non-Admin Users](#non-admin-user-group-policies).
 
 4. **Dynamic Group Policies**  
-   If users unselect the **"Create Policies"** checkbox during stack creation, ensure appropriate dynamic group policies are already in place. See [Dynamic Group Policies](#dynamic-group-policies) for details.
+   If you unselect the **"Create Policies"** checkbox during stack creation, ensure appropriate dynamic group policies are already in place. See [Dynamic Group Policies](#dynamic-group-policies-for-users-who-unselect-create-policies-checkbox) for details.
 
 5. **Marketplace Terms (if using UCM images)**  
    If you plan to use an Oracle WebLogic for OCI UCM image from the Marketplace, you must **accept the terms** for that listing in advance.
     - If you do not accept the terms and select a UCM image during stack creation, the Resource Manager **Apply job will fail**.
-    - To resolve, log in to the OCI Console → go to **Marketplace** → search for the UCM listing → open it and click **Accept Terms**, then re-run the stack apply.
-
+    
 #### Step 2: Collect the Stack File
 - **If `migration_script.sh` was executed with `skip_transfer=true`:**  
   Transfer the stack file to a workstation that has access to Oracle Cloud via a browser.
@@ -340,7 +339,7 @@ Before launching the stack, ensure the following are completed:
 3. In the dropdown, click **Stacks**, then click **Create Stack**.
 4. In the **Create Stack** wizard, under **Stack Configuration**, select **.Zip file** and upload the collected stack file.
 5. Click **Next**.
-6. Customize any stack variables required for your environment(see [### Inputs to Resource Manager](#inputs-to-resource-manager)), or leave them as default.
+6. Customize any stack variables required for your environment (see [Inputs to Resource Manager](#inputs-to-resource-manager)), or leave them as default.
 7. Click **Create**.
 8. From the **Stack Details** page, click **Apply** to launch the stack and provision the OCI resources.
 
