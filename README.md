@@ -1,6 +1,6 @@
 Purpose
 -------
-The **OCI WebLogic Migration Tool** enables lift-and-shift migration of single or multi-node WebLogic domains from on-premises environments to **Oracle Cloud Infrastructure (OCI)**, optionally fronted by a load balancer.  
+The **OCI WebLogic Migration(OWM) Tool** enables lift-and-shift migration of single or multi-node WebLogic domains from on-premises environments to **Oracle Cloud Infrastructure (OCI)**, optionally fronted by a load balancer.  
 
 Key features of the tool:
 
