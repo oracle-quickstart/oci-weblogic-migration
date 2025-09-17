@@ -24,13 +24,11 @@ To deploy the software, ensure the following prerequisites are met:
 
     Oracle Linux compatibility: The operating system release should be within the supported range.
 
-    File system permissions: WebLogic Migration Tool is designed to be installed directly on to the AdminServer Host. An Operating System user with read and write permissions on WebLogic Domain's , Oracle Middleware and Java Home is require to perform tasks such us unzip, tar.
-
-    Internet Connection: WebLogic Migration Tool requires access to github.com repositories to download two required libraries - Weblogic Deployment Tool - to discover the source WebLogic environment. Alternatively, specific releases can be manually download and placed in $toolHome/deps/wdt. 
+    File system permissions: WebLogic Migration Tool is designed to be installed directly on to the AdminServer Host of the On-Premise Weblogic domain. An Operating System user with read and write permissions on WebLogic Domain's , Oracle Middleware and Java Home is require to perform tasks such us unzip, tar.
 
     Network configuration: AdminServer Host must have an established SSH authentication system in place, connecting the AdminServer and all the Weblogic Managed server Linux hosts seamlessly.
 
-    Storage Space:  Each host must account for the space required to accomodate the archives: Oracle Home, JDK Home, Domain Home, and any custom directories.
+    Storage Space:  Each host must account for the space required to accommodate the archives: Oracle Home, JDK Home, Domain Home, and any custom directories.
 
     Oracle Cloud Infrastructure CLI: The process of migrating an source on-premise WebLogic Domain involves compressing different directories and uploading them to an Oracle Cloud Object Storage Bucket. Current release uploads files using OCI cli. This requires the user to install and configure the OCI CLI on the admin server host of the on-premise domain.
     Details on how to install and configured can be found at https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
@@ -49,7 +47,7 @@ To deploy the software, ensure the following prerequisites are met:
 
 Installing Weblogic Migration Tool
 ----------------------------------------
-* Initiate a Secure Shell (SSH) connection to the AdminServer Linux Host, utilizing a user account with read and write file system permissions. This step enables secure remote access and interaction with the server.
+* Initiate a Secure Shell (SSH) connection to the AdminServer Linux Host of the On-Premise Weblogic domain, utilizing a user account with read and write file system permissions. This step enables secure remote access and interaction with the server.
 * Download the most recent release from  https://github.com/oracle-quickstart/oci-weblogic-migration/releases
 * Unzip the installer to a folder where the user has read and write permissions.
 * Folder will be referenced as $toolHome.
@@ -98,14 +96,16 @@ The script combines all required tasks into a single workflow:
 2. Discover WebLogic domain and infrastructure
 3. Discover datasources
 4. Generate OCI Resource Manager stack
-5. Upload stack to OCI Object Storage Bucket
+5. Upload stack to OCI Object Storage Bucket(Optional)
 6. Archive WebLogic domain
-7. Upload archives to OCI Object Storage Bucket
+7. Upload archives to OCI Object Storage Bucket(Optional)
 
 
 Usage
 ----------------------------------------
 ### Step 1.  Declare WebLogic source domain details in $toolHome/config/on-prem.env
+
+Example:
 
 ```bash
 ######################################################################
@@ -113,7 +113,7 @@ Usage
 #            on WebLogic Domain, Oracle Middleware and Java Home.
 # Example oracle
 ######################################################################
-ssh_user=
+ssh_user=oracle
 
 ######################################################################
 # CLEAR VALUE (leave blank) if ssh_password_file is set.
@@ -121,7 +121,7 @@ ssh_user=
 #                        to use when authenticating with a public/private key pair.
 # Example /home/oracle/.ssh/id_rsa
 ######################################################################
-ssh_private_key_file=
+ssh_private_key_file=/home/oracle/.ssh/id_rsa
 
 ######################################################################
 # CLEAR VALUE (leave blank) if ssh_private_key_file is not passphrase protected.
@@ -142,8 +142,8 @@ ssh_password_file=
 # oracle_home:  Home directory of the Oracle WebLogic installation.
 #               Set to ORACLE_HOME in local Linux Server.
 ######################################################################
-domain_home=
-oracle_home=
+domain_home=/u01/data/domains/test_domain
+oracle_home=/u01/app/oracle/middleware
 
 ######################################################################
 # CLEAR VALUE (leave blank) if Weblogic Deployment Type is not Node Manager per Machine.
@@ -166,12 +166,35 @@ skip_transfer=false
 #                    is pre-existing) or to be created(in case bucket is not pre-existing).
 # tenancy_namespace: Namespace of the tenancy.
 ######################################################################
-bucket_name=
-compartment_ocid=
-tenancy_namespace=  
+bucket_name=test_bucket
+compartment_ocid=ocid1.compartment.oc1..aaaaxxxxxxxxxxxxxxhiyqarxuguncyfwnroeppa2kmva
+tenancy_namespace=abcxxxyyyzzz  
 ```
 
-### Step 2. Run the migration script from the $toolHome/bin directory.
+### Step 2. Pre-requisite Steps
+
+Before executing the migration script `migration_script.sh`, ensure the following pre-requisites are completed:
+
+1. **Internet Connection**  
+   The WebLogic Migration Tool requires access to GitHub to download required libraries (WebLogic Deployment Tool) to discover the source WebLogic environment.
+   - Alternatively, specific releases can be manually downloaded and placed in `$toolHome/deps/wdt`.
+
+2. **OCI-CLI Installation (Optional)**  
+   If you plan to perform step 5 (upload stack) and step 7 (upload archives) manually, set `skip_transfer=true` in `on-prem.env`.
+   - If you want the script to handle uploads automatically, install the OCI-CLI on the AdminServer host of the source domain.
+   - Installation and configuration details: [OCI CLI Documentation](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
+   - To verify installation, run:
+     ```bash
+     oci iam region list
+     ```  
+   - **Required User Policies for Non-Admin Users** (if automatic upload is needed):
+      1. Allow group `Non-Admin` to manage object-family in the compartment specified in `on-prem.env` for storage bucket details.
+      2. Allow group `Non-Admin` to read buckets in the tenancy.
+
+3. **SSH Authentication**  
+   The AdminServer host of the source domain must have passwordless SSH authentication established to all WebLogic Managed Server Linux hosts. This allows seamless remote operations during migration.
+
+### Step 3. Run the migration script from the $toolHome/bin directory.
  
 ```bash
 $ bash migration_script.sh
@@ -226,7 +249,9 @@ Workflow
 Logs and Error Handling
 ---------------
 Detailed execution logs are available under `$toolHome/logs`.
-The main log for this script is `migration_script.log`
+The main log for this script is `migration_script.log`.
+
+To get the log for only the most recent script execution, either move the existing log to another location or delete it before re-running the script.
 
 If any step fails:
 
@@ -260,22 +285,40 @@ Migrate WLS Domain to OCI Cloud
 ---------------------------------
 
 ### Resource Manager
--------------------
-OCI Resource Manager requires the compressed file created in section `Generate OCI Resource Manager Stack`. 
+OCI Resource Manager requires the compressed stack file created in the **Generate OCI Resource Manager Stack** step by `migration_script.sh`.
 
-If the `migration_script.sh` was executed with `skip_transfer` option then transfer it to workstation that has access to OracleCloud from a Browser.
-Open a new Browser window/Tab and login into your OCI Tenancy. 
-Once authenticated, select `Developer Services` from the list of OCI Services.(Top-Left corner)  
-From the displayed dropdown, click on  `Developer Services`, select Stacks, then click on `Create Stack` button.
-A `Create Stack` Wizard will be displayed. 
-Under section `Stack Configuration`, select the option `.Zip file`.
-Browse and Upload the Resource Manager stack file. Click Next.   
+#### Step 1: Pre-requisites for Resource Manager
+Before launching the stack, ensure the following are completed:
 
-Else, if the `migration_script.sh` was executed with `skip_transfer` option disabled then, use the PAR URL to launch the `Create Stack` Wizard.
+1. **Database Migration (for JRF WebLogic-enabled domains)**  
+   Complete the on-premise database migration to OCI-DB or ATP-DB as appropriate before running the Resource Manager **Apply** action.**.
 
-Customize any Stack variable that your environment requires or go with default.
-Then click create. 
-From the Stack Details, click `Apply`. 
+2. **JDBC Connection Strings (for JRF WebLogic-enabled domains)**  
+   JDBC connection strings of the OCI Database must be known before running the Resource Manager **Apply** action.
+
+3. **IAM Policies for Non-Admin Users**  
+   Ensure you have the correct IAM permissions. For Non-Admin users, see [Required IAM Policies for Non-Admin Users](#required-iam-policies-for-non-admin-users).
+
+4. **Dynamic Group Policies**  
+   If users unselect the **"Create Policies"** checkbox during stack creation, ensure appropriate dynamic group policies are already in place. See [Dynamic Group Policies](#dynamic-group-policies) for details.
+
+#### Step 2: Collect the Stack File
+- **If `migration_script.sh` was executed with `skip_transfer=true`:**  
+  Transfer the stack file to a workstation that has access to Oracle Cloud via a browser.
+
+- **If `migration_script.sh` was executed with `skip_transfer=false`:**
+   - **Windows:** Use the PAR URL generated by the script to access the stack directly.
+   - **Linux:** Download the `stack.zip` locally using the PAR URL.
+
+#### Step 3: Launch the Stack
+1. Open a browser and log in to your OCI Tenancy.
+2. From the top-left corner, select **Developer Services**.
+3. In the dropdown, click **Stacks**, then click **Create Stack**.
+4. In the **Create Stack** wizard, under **Stack Configuration**, select **.Zip file** and upload the collected stack file.
+5. Click **Next**.
+6. Customize any stack variables required for your environment(see [### Inputs to Resource Manager](#inputs-to-resource-manager)), or leave them as default.
+7. Click **Create**.
+8. From the **Stack Details** page, click **Apply** to launch the stack and provision the OCI resources.
 
 ### Resource Manager Provisioning Behavior
 --------------------------------------------
@@ -301,9 +344,6 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
 > **Note:**  
 > For Multi Data Source (MDS) configurations, only **manual JDBC string replacement** is supported.
 
-> **Prerequisites for JRF WebLogic-enabled domains:**  
-> * Databases should be migrated to OCI before running the Resource Manager **Apply** action.  
-> * JDBC connection strings must be known before running the Resource Manager **Apply** action.
 
 Required IAM Policies for Non-Admin Users
 -------------------------------------------
@@ -430,8 +470,12 @@ User will have to provide the following as parameters to terraform:
 
 Restore Process after Stack Apply
 -------------------------------------------
-Once the ORM stack is applied, the restore process ensures that the cloud environment mirrors the on-premise WebLogic domain.
-During the OCI Compute Instances boot process, the cloud-init are initiated which complete the migration of the on-premise domain to OCI.
+Once the ORM stack is applied, the restore process ensures that the cloud environment mirrors the on-premise WebLogic domain.  
+During the OCI Compute Instances boot process, `cloud-init` is initiated which completes the migration of the on-premise domain to OCI.
+
+**Important:** No WebLogic Server domain servers or Node Manager processes are started automatically after the restore.  
+You should first review the migrated contents before starting services.  
+See [Start OCI WebLogic Domain and Verify Services](#start-oci-weblogic-domain-and-verify-services) for the next steps.
 
 ### Troubleshooting
 -------------------
