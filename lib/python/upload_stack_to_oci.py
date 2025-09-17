@@ -7,6 +7,7 @@ import subprocess
 import os
 import tempfile
 import datetime
+import sys
 import json
 
 def upload_stack_zip_to_oci(stack_zip, bucket_name, namespace, compartment_id, log_file, file_timestamp):
