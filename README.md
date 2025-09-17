@@ -29,10 +29,13 @@ To use the tool, ensure the following prerequisites are met:
   An operating system user with **read and write permissions** on the WebLogic Domain, Oracle Middleware, and Java Home directories is required to perform tasks such as `unzip` and `tar`.
 
 - **Network configuration**  
-  The AdminServer host must have established **SSH authentication** to all WebLogic managed server Linux hosts.
+  The **AdminServer host** of the on-premises WebLogic domain must have established **SSH authentication** to all WebLogic managed server Linux hosts.
 
 - **Storage space**  
   Each host must have sufficient disk space to accommodate archives of **Oracle Home**, **JDK Home**, **Domain Home**, and any **custom directories**.
+  Custom directories refer to any **file system paths referenced by the WebLogic domain configuration** that are **outside of the standard three categories** (Domain Home, Middleware Home, and Java Home).
+  Example:
+    - External trust stores or keystores located outside the Domain or Middleware directories.
 
 ---
 
@@ -60,11 +63,11 @@ To use the tool, ensure the following prerequisites are met:
 Installing Weblogic Migration Tool
 ----------------------------------------
 * Initiate a Secure Shell (SSH) connection to the AdminServer Linux Host of the On-Premise Weblogic domain, utilizing a user account with read and write file system permissions. This step enables secure remote access and interaction with the server.
-* Download the most recent release from  https://github.com/oracle-quickstart/oci-weblogic-migration/releases
-* Unzip the installer to a folder where the user has read and write permissions.
+* Download the most recent release from  [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+* Get a local copy of the OCI Migration Tool repository to a folder where the user has read and write permissions.
 * Folder will be referenced as $toolHome.
 
-Alternately, clone the repository with the commands:
+Clone the repository with the commands:
 
 ```bash
 git clone https://github.com/oracle-quickstart/oci-weblogic-migration
@@ -183,11 +186,11 @@ compartment_ocid=ocid1.compartment.oc1..aaaaxxxxxxxxxxxxxxhiyqarxuguncyfwnroeppa
 tenancy_namespace=abcxxxyyyzzz  
 ```
 
-### Step 2. Pre-requisite Steps
+### Step 2. Pre-requisite Steps for executing the Migration Script
 
 Before executing the migration script `migration_script.sh`, ensure the following pre-requisites are completed:
 
-1. **Internet Connection**  
+1. **Internet Connection(Optional)**  
    The WebLogic Migration Tool requires access to GitHub to download required libraries (WebLogic Deployment Tool) to discover the source WebLogic environment.
    - Alternatively, specific releases can be manually downloaded and placed in `$toolHome/deps/wdt`.
 
@@ -244,10 +247,7 @@ Workflow
 
 7. Archive WebLogic Domain  
    Archives **Oracle Home, JDK Home, Domain Home, and any custom directories**.
-   Custom directories refer to any **file system paths referenced by the WebLogic domain configuration** that are **outside of the standard three categories** (Domain Home, Middleware Home, and Java Home).
-   Example:
-    - External trust stores or keystores located outside the Domain or Middleware directories
-    
+   
    **Archive Naming Convention**
    ```bash
    <machine>-<domain>-domain_home.tar.gz
