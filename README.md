@@ -285,17 +285,18 @@ Since the script is idempotent, previously completed steps will be skipped, and 
 Example Run:
 ```bash
 bash migration_script.sh 
-2025-09-11 14:39:27  [info] "Installing dependencies" already completed successfully. Skipping.
-2025-09-11 14:39:27  [info] "Checking prerequisites" already completed successfully. Skipping.
-2025-09-11 14:39:27  [info] "Discovering WebLogic domain" already completed successfully. Skipping.
-2025-09-11 14:39:27  [info] "Discovering infrastructure" already completed successfully. Skipping.
-2025-09-11 14:39:28  [info] "Discovering datasources" already completed successfully. Skipping.
-2025-09-11 14:39:28  [info] "Building OCI Resource Manager stack" already completed successfully. Skipping.
-2025-09-11 14:39:28  [info] Stack file created: /home/oracle/mig/oci-weblogic-migration/oci/stack/owm_rm_202509100820.zip
-2025-09-11 14:39:28  [info] "Uploading stack to OCI Object Storage bucket wls_mbimg" already completed successfully. Skipping.
-2025-09-11 14:39:28  [info] Stack files are uploaded to bucket wls_mbimg inside folder: owm_rm_202509100820. Check /home/oracle/mig/oci-weblogic-migration/logs/upload_unzipped_stack_to_oci_owm_rm_202509100820.log for details
-2025-09-11 14:39:28  [info] Archiving WebLogic domain...
-2025-09-11 14:48:13  [info] Migration script completed successfully!
+2025-09-17 13:52:15  [info] Installing dependencies...
+2025-09-17 13:52:15  [info] Checking prerequisites...
+2025-09-17 13:52:17  [info] Discovering WebLogic domain...
+2025-09-17 13:52:56  [info] Discovering infrastructure...
+2025-09-17 13:53:14  [info] Discovering datasources...
+2025-09-17 13:53:25  [info] Building OCI Resource Manager stack...
+2025-09-17 13:53:25  [info] Stack file created: /home/oracle/mig/oci-weblogic-migration/oci/stack/owm_rm_202509171353.zip
+2025-09-17 13:53:25  [info] Uploading owm_rm_202509171353.zip to OCI Object Storage bucket wls_mbimg...
+2025-09-17 13:53:28  [info] owm_rm_202509171353.zip uploaded to bucket wls_mbimg.
+2025-09-17 13:53:28  [info] Generated PAR URL (valid 6 months): https://ax8cfrmecktw.objectstorage.us-ashburn-1.oci.customer-oci.com/p/ItgGDQVxon0cVpmqP4yp5E3fZkX2xMJ4LKydmQLTjVrb8DAWGh-0n0XZwTbOA8kk/n/ax8cfrmecktw/b/wls_mbimg/o/owm_rm_202509171353.zip
+2025-09-17 13:53:28  [info] Archiving WebLogic domain...
+2025-09-11 14:11:13  [info] Migration script completed successfully!
  ```
 
 ---
