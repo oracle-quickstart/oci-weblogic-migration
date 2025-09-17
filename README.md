@@ -368,100 +368,98 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
 > For Multi Data Source (MDS) configurations, only **manual JDBC string replacement** is supported.
 
 ---
-  
-### Inputs to Resource Manager
+
+Inputs to Resource Manager
+---------------------------
 
 User will have to provide the following as parameters to the Resource Manager:
 
-1. Stack Configuration
-   | Variable                          | Description                                                                  | Default |
-   | --------------------------------- | ---------------------------------------------------------------------------- | ------- |
-   | `OCI Policies`                    | Create IAM policies for Object Storage and ATP DB access. Optional.          | `true`  |
-   | `Create a Virtual Cloud Network`  | Create a new Virtual Cloud Network (VCN). Optional if using an existing VCN. | `true`  |
-   | `Provision Public Load Balancer`  | Provision a Public Load Balancer. Optional.                                  | `true`  |
-   | `Provision Bastion Instance`      | Provision a Bastion host for SSH access. Optional.                           | `true`  |
-   | `SSH Public Key`                  | SSH public key for compute instance access. Required.     
+#### 1. Stack Configuration
+| Variable                          | Description                                                                  | Default |
+| --------------------------------- | ---------------------------------------------------------------------------- | ------- |
+| `OCI Policies`                    | Create IAM policies for Object Storage and ATP DB access. Optional.          | `true`  |
+| `Create a Virtual Cloud Network`  | Create a new Virtual Cloud Network (VCN). Optional if using an existing VCN. | `true`  |
+| `Provision Public Load Balancer`  | Provision a Public Load Balancer. Optional.                                  | `true`  |
+| `Provision Bastion Instance`      | Provision a Bastion host for SSH access. Optional.                           | `true`  |
+| `SSH Public Key`                  | SSH public key for compute instance access. Required.                        | —       |
 
-2. OCI Object Storage Archive Repository
-   | Variable                     | Description                                                 | Default       |
-   | ---------------------------- | ----------------------------------------------------------- | ------------- |
-   | `Object Storage Bucket name` | Bucket name where on-premise Weblogic archives are stored.. | —             |
-   
-3. Virtual Cloud Networking
-   | Variable                          | Description                                                  | Default                    |
-   | --------------------------------- | ------------------------------------------------------------ | -------------------------- |
-   | `Existing Virtual Cloud Network`  | OCID of the existing VCN. Required if `create_vcn=false`.    | —                          |
-   | `Virtual Cloud Network Name`      | Name of the new VCN if Use an Existing VCN is not selected   | `wls-<terraform state id>` |
-   | `Virtual Cloud Network CIDR`      | CIDR for the new VCN if Use an Existing VCN is not selected. | `10.0.0.0/16`              |
-  
-4. WebLogic Server Compute
-   | Variable                      | Description                         | Default                                 |
-   | ----------------------------- | ----------------------------------- | --------------------------------------- |
-   | `Compute Shape`               | Compute shape for WebLogic servers. | VM.Standard.E4.Flex (1 OCPU, 16 GB RAM) |
-   | `WebLogic Server Subnet CIDR` | Subnet CIDR for WebLogic instances. | `10.0.2.0/24`                           |
+#### 2. OCI Object Storage Archive Repository
+| Variable                     | Description                                                 | Default |
+| ---------------------------- | ----------------------------------------------------------- | ------- |
+| `Object Storage Bucket name` | Bucket name where on-premise WebLogic archives are stored. | —       |
 
-5. Operating System Image
-   | Variable               | Description                                   | Default                                             |
-   | ---------------------- | --------------------------------------------- | --------------------------------------------------- |
-   | `wlsserver_image_type` | Image license type (Marketplace, Platform.).  | Oracle WebLogic Server Enterprise Edition UCM Image |
-   | `terms_and_conditions` | Accept terms if using Marketplace UCM images. | `false`                                             |
+#### 3. Virtual Cloud Networking
+| Variable                          | Description                                                  | Default                    |
+| --------------------------------- | ------------------------------------------------------------ | -------------------------- |
+| `Existing Virtual Cloud Network`  | OCID of the existing VCN. Required if `create_vcn=false`.    | —                          |
+| `Virtual Cloud Network Name`      | Name of the new VCN if Use an Existing VCN is not selected   | `wls-<terraform state id>` |
+| `Virtual Cloud Network CIDR`      | CIDR for the new VCN if Use an Existing VCN is not selected. | `10.0.0.0/16`              |
 
-6. Load Balancer (Optional)
-   | Variable             | Description                                             | Default       |
-   | -------------------- | ------------------------------------------------------- | ------------- |
-   | `LB Subnet CIDR`     | Subnet CIDR for load balancer.                          | `10.0.3.0/24` |
-   | `LB MIN Bandwith`    | Minimum bandwidth (Mbps). Options: 10/100/400/1000/8000 | `10`          |
-   | `LB Max Bandwith`    | Maximum bandwidth (Mbps). Options: 10/100/400/1000/8000 | `100`         |
+#### 4. WebLogic Server Compute
+| Variable                      | Description                         | Default                                 |
+| ----------------------------- | ----------------------------------- | --------------------------------------- |
+| `Compute Shape`               | Compute shape for WebLogic servers. | VM.Standard.E4.Flex (1 OCPU, 16 GB RAM) |
+| `WebLogic Server Subnet CIDR` | Subnet CIDR for WebLogic instances. | `10.0.2.0/24`                           |
 
-7. Bastion (Optional)
-   | Variable              | Description                   | Default                                 |
-   | --------------------- | ----------------------------- | --------------------------------------- |
-   | `Bastion Subnet CIDR` | Subnet CIDR for bastion host. | `10.0.1.0/24`                           |
-   | `Bastion shape`       | Compute shape for bastion.    | VM.Standard.E4.Flex (1 OCPU, 16 GB RAM) |
+#### 5. Operating System Image
+| Variable               | Description                                   | Default                                             |
+| ---------------------- | --------------------------------------------- | --------------------------------------------------- |
+| `wlsserver_image_type` | Image license type (Marketplace, Platform).  | Oracle WebLogic Server Enterprise Edition UCM Image |
+| `terms_and_conditions` | Accept terms if using Marketplace UCM images. | `false`                                             |
 
-8. Datasource Options
-   For each discovered JDBC datasource, Resource Manager generates a section titled: `DB Connection String #<datasourceName>`
-   Each datasource can be recreated in OCI using one of the following strategies:
+#### 6. Load Balancer (Optional)
+| Variable             | Description                                             | Default       |
+| -------------------- | ------------------------------------------------------- | ------------- |
+| `LB Subnet CIDR`     | Subnet CIDR for load balancer.                          | `10.0.3.0/24` |
+| `LB MIN Bandwidth`   | Minimum bandwidth (Mbps). Options: 10/100/400/1000/8000 | `10`          |
+| `LB Max Bandwidth`   | Maximum bandwidth (Mbps). Options: 10/100/400/1000/8000 | `100`         |
 
-   A. Manual String Replacement (Always Available)
-   | Variable                                    | Description                                                        | Default        |
-   | ------------------------------------------- | ------------------------------------------------------------------ | -------------- |
-   | `Unique jdbc connection string discovered`  | Original JDBC connection string discovered from on-premise domain. | Auto-populated |
-   | `edit jdbc connection string discovered`    | Allows editing the JDBC connection string manually.                | Optional       |
-   | `Database Strategy`                         | Select `Manual` to replace the JDBC string manually.               | —              |
-    
-    **NOTE:** If the datasource is a Multi Data Source (MDS), only Manual JDBC String Replacement is supported.
+#### 7. Bastion (Optional)
+| Variable              | Description                   | Default                                 |
+| --------------------- | ----------------------------- | --------------------------------------- |
+| `Bastion Subnet CIDR` | Subnet CIDR for bastion host. | `10.0.1.0/24`                           |
+| `Bastion shape`       | Compute shape for bastion.    | VM.Standard.E4.Flex (1 OCPU, 16 GB RAM) |
 
-   B. Autonomous Database (ATP)
-   | Variable                                  | Description                                                                                    |
-   | ------------------------------------------| --------------------------------------------------------------------------------------------   |
-   | `Database Strategy>`                      | Select `Autonomous DB` as the datasource strategy.                                             |
-   | `Autonomous Database Compartment`         | Compartment OCID of the target Autonomous Database.                                            |
-   | `Autonomous Database>`                    | OCID of the target Autonomous Database.                                                        |
-   | `Autonomous Database Service Level`       | ATP workload level (TP, OLTP, DW).                                                             |
-   | `Database uses private endpoint`          | Whether the ATP uses a private endpoint.                                                       |
-   | `Autonomous Database Network Compartment` | Compartment for ATP networking.                                                                |
-   | `Autonomous Database Network`             | Existing VCN for ATP (required if using private endpoint).                                     |
-   | `Add Rule for WLS to Access DB`           | Add rules to existing subnet security list for DB access (required if using private endpoint). |
+#### 8. Datasource Options
+For each discovered JDBC datasource, Resource Manager generates a section titled: `DB Connection String #<datasourceName>`.  
+Each datasource can be recreated in OCI using one of the following strategies:
 
+**A. Manual String Replacement (Always Available)**
+| Variable                                    | Description                                                        | Default        |
+| ------------------------------------------- | ------------------------------------------------------------------ | -------------- |
+| `Unique jdbc connection string discovered`  | Original JDBC connection string discovered from on-premise domain. | Auto-populated |
+| `edit jdbc connection string discovered`    | Allows editing the JDBC connection string manually.                | Optional       |
+| `Database Strategy`                         | Select `Manual` to replace the JDBC string manually.               | —              |
 
-   C. OCI Database System (DB System)
-   | Variable                         | Description                                               |
-   | ---------------------------------| --------------------------------------------------------- |
-   | `Database Strategy`              | Select `OCI DB System` as the datasource strategy.        |
-   | `DB System Compartment`          | Compartment OCID of the target DB System.                 |
-   | `DB System`                      | OCID of the target DB System.                             |
-   | `Database home in the DB System` | OCID of the target DB Home.                               |
-   | `Version of the DB System`       | Database major version.                                   |
-   | `Database in the DB System`      | OCID of the target Database.                              |
-   | `PDB`                            | Pluggable DB (PDB) service name.                          |
-   | `DB System Network Compartment`  | Compartment for DB networking.                            |
-   | `DB System Network`              | Existing VCN for DB access.                               |
-   | `Add Rule for WLS to Access DB`  | Add rules to existing subnet security list for DB access. |
-   | `Database Listener Port`         | Port for DB connection (default: 1521).                   |
+> **Note:** If the datasource is a Multi Data Source (MDS), only Manual JDBC String Replacement is supported.
 
+**B. Autonomous Database (ATP)**
+| Variable                                  | Description                                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `Database Strategy`                        | Select `Autonomous DB` as the datasource strategy.                                               |
+| `Autonomous Database Compartment`          | Compartment OCID of the target Autonomous Database.                                              |
+| `Autonomous Database`                      | OCID of the target Autonomous Database.                                                         |
+| `Autonomous Database Service Level`        | ATP workload level (TP, OLTP, DW).                                                              |
+| `Database uses private endpoint`           | Whether the ATP uses a private endpoint.                                                        |
+| `Autonomous Database Network Compartment`  | Compartment for ATP networking.                                                                 |
+| `Autonomous Database Network`              | Existing VCN for ATP (required if using private endpoint).                                        |
+| `Add Rule for WLS to Access DB`            | Add rules to existing subnet security list for DB access (required if using private endpoint).   |
 
----
+**C. OCI Database System (DB System)**
+| Variable                         | Description                                               |
+| ---------------------------------| --------------------------------------------------------- |
+| `Database Strategy`               | Select `OCI DB System` as the datasource strategy.        |
+| `DB System Compartment`           | Compartment OCID of the target DB System.                 |
+| `DB System`                       | OCID of the target DB System.                             |
+| `Database home in the DB System`  | OCID of the target DB Home.                               |
+| `Version of the DB System`        | Database major version.                                   |
+| `Database in the DB System`       | OCID of the target Database.                              |
+| `PDB`                             | Pluggable DB (PDB) service name.                          |
+| `DB System Network Compartment`   | Compartment for DB networking.                            |
+| `DB System Network`               | Existing VCN for DB access.                               |
+| `Add Rule for WLS to Access DB`   | Add rules to existing subnet security list for DB access. |
+| `Database Listener Port`          | Port for DB connection (default: 1521).                   |
+
 
 Required IAM Policies
 -----------------------
@@ -479,6 +477,7 @@ If the user applying the Resource Manager stack is **not an OCI administrator**,
 | `Allow group MyGroup to manage virtual-network-family in compartment MyNetworkCompartment` | To create VCNs and subnets |
 | `Allow group MyGroup to manage load-balancers in compartment MyNetworkCompartment` | To create a Load Balancer |
 
+
 ### Dynamic Group Policies (for users who unselect "Create Policies" checkbox)
 
 | Policy Statement | Purpose |
@@ -487,6 +486,7 @@ If the user applying the Resource Manager stack is **not an OCI administrator**,
 | `Allow dynamic-group <dynamic-group> to manage objects in compartment MyCompartment` | To upload archives or overwrite existing objects in Object Storage |
 | `Allow dynamic-group <dynamic-group> to use autonomous-transaction-processing-family in compartment <compartment>` | To download ATP/ADW database wallet |
 | `Allow group MyGroup to manage virtual-network-family in compartment MyNetworkCompartment` | Required for VCN Peering when WLS VCN is not the same as DB VCN and also if `Add Rule for WLS to Access DB` checkbox is selected |
+
 
 > **Note:**
 > - Replace `MyGroup`, `MyCompartment`, `MyNetworkCompartment`, and `<dynamic-group>` with your actual group names, compartment OCIDs, and dynamic group definitions.
