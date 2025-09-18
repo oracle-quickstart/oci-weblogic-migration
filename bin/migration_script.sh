@@ -109,7 +109,7 @@ get_json_key() {
 upload_stack_to_oci_func() {
   result=$(python3 -c "import sys, json; sys.path.insert(0, '../lib/python'); \
 from upload_stack_to_oci import upload_stack_zip_to_oci; \
-code, par_url = upload_stack_zip_to_oci('$STACK_FILE', '$bucket_name', '$tenancy_namespace', '$compartment_ocid', '/home/oracle/mig/oci-weblogic-migration/logs/migration_script.log', '$(date +%s)'); \
+code, par_url = upload_stack_zip_to_oci('$STACK_FILE', '$bucket_name', '$tenancy_namespace', '$compartment_ocid', '$MIGRATION_SCRIPT_LOG', '$(date +%s)'); \
 print(json.dumps({'code': code, 'par_url': par_url})); \
 sys.exit(code)")
 
