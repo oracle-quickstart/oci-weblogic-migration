@@ -276,26 +276,51 @@ if [ "${env_vars[skip_transfer]}" = "false" ]; then
     errors+=("Oracle Cloud Infrastructure CLI (oci) not found in the path.
 Please install OCI CLI: https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm")
   else
-    # make sure oci is configured for the current ssh user
-    if ! oci iam region list >/dev/null 2>&1; then
-      errors+=("Failed to verify OCI CLI configuration.
+    if ! oci -v >/dev/null 2>&1; then
+      errors+=("OCI CLI is installed but 'oci -v' failed.
+Please verify your OCI CLI installation.")
+    else
+      echo "OCI CLI found: $(oci -v)"
 
-Run this command manually to debug:
-    oci os ns get --auth instance_principal
+      CONFIG_FILE="${OCI_CLI_CONFIG_FILE:-$HOME/.oci/config}"
+      PROFILE="${OCI_CLI_PROFILE:-DEFAULT}"
 
-Also verify that your OCI CLI config file (~/.oci/config) is set up correctly with valid values:
+      if [ ! -f "$CONFIG_FILE" ]; then
+        errors+=("OCI CLI config file not found: $CONFIG_FILE")
+      else
+        required_fields=("user" "fingerprint" "tenancy" "region" "key_file")
+        missing=()
 
-[DEFAULT]
-user=<your_user_ocid>
-fingerprint=<your_api_key_fingerprint>
-tenancy=<your_tenancy_ocid>
-region=<your_region>
-key_file=<path to your private keyfile>
+        for field in "${required_fields[@]}"; do
+          if ! awk -v profile="[$PROFILE]" -v key="$field" '
+            $0 == profile {in_profile=1; next}
+            /^\[/{in_profile=0}
+            in_profile && $0 ~ "^[[:space:]]*"key"=" {found=1}
+            END {exit !found}' "$CONFIG_FILE"; then
+            missing+=("$field")
+          fi
+        done
 
-Make sure the **key_file path is correct** and that the private key file is accessible by the current user.")
+        if [ ${#missing[@]} -ne 0 ]; then
+          errors+=("OCI CLI config file [$PROFILE] is missing required fields: ${missing[*]}")
+        else
+          echo "All required fields are present in $CONFIG_FILE [$PROFILE]"
+
+          # check key_file path exists
+          key_file=$(awk -v profile="[$PROFILE]" '
+            $0 == profile {in_profile=1; next}
+            /^\[/{in_profile=0}
+            in_profile && $0 ~ "^[[:space:]]*key_file=" {
+              split($0,a,"="); print a[2]; exit
+            }' "$CONFIG_FILE")
+
+          if [ -n "$key_file" ] && [ ! -f "$key_file" ]; then
+            errors+=("OCI CLI config file [$PROFILE] specifies key_file=$key_file, but the file does not exist.")
+          fi
+        fi
+      fi
     fi
   fi
-
 fi
 
 set -e
