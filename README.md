@@ -203,7 +203,12 @@ Before executing the migration script `migration_script.sh`, ensure the followin
    - To verify installation, run:
      ```bash
      oci iam region list
-     ```  
+     ``` 
+     **IAM Policy Requirement:**  
+     The user running this command must belong to a group with the following policy at the tenancy level:
+     ```bash
+     Allow group <YourGroupName> to inspect regions in tenancy 
+     ``` 
    - **Required User Policies for Non-Admin Users** (if automatic upload is needed):
       1. Allow group `Non-Admin` to manage object-family in the compartment specified in `on-prem.env` for storage bucket details.
       2. Allow group `Non-Admin` to read buckets in the tenancy.
