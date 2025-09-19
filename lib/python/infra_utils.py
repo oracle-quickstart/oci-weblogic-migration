@@ -67,4 +67,23 @@ class InfraUtils:
         for machine_info in self._machines.values():
             if machine_info.get("DETAILS", {}).get("Hostname") == hostname:
                 return machine_info.get(key)
-        return []
+        return None
+
+    def get_topology_property(self, key):
+        """
+        Fetch a property from the 'topology' section of the infra JSON.
+        Supports dotted keys (e.g., 'NMProperties.JavaHome').
+        Args:
+            key (str): The key to look up. Can be nested using dots.
+        Returns:
+            Any: The value if found, otherwise None.
+        """
+        topo = self._data.get("topology", {})
+        parts = key.split(".")
+        val = topo
+        for p in parts:
+            if isinstance(val, dict) and p in val:
+                val = val[p]
+            else:
+                return None
+        return val

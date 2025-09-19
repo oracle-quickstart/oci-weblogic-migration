@@ -196,9 +196,13 @@ Before executing the migration script `migration_script.sh`, ensure the followin
    The WebLogic Migration Tool requires access to GitHub to download required libraries (WebLogic Deployment Tool) to discover the source WebLogic environment.
    - Alternatively, specific releases can be manually downloaded and placed in `$toolHome/deps/wdt`.
 
-2. **OCI-CLI Installation (Optional)**  
+2. **Manual Archive Transfer**
    If you plan to perform step 5 (upload stack) and step 7 (upload archives) manually, set `skip_transfer=true` in `on-prem.env`.
-   - If you want the script to handle uploads automatically, install the OCI-CLI on the AdminServer host of the source domain.
+   Transfer the archives manually by following the instructions in `$toolHome/logs/migration_script.log`.
+   The archives are available inside `$toolHome/out` on the **AdminServer host**, provided the **AdminServer host** has enough space to accommodate the archives from all the hosts.
+
+3. **OCI-CLI Installation (Optional)**  
+   - If you want the script to handle uploads automatically, install the OCI-CLI on the **AdminServer host**.
    - Installation and configuration details: [OCI CLI Documentation](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
    - To verify installation, run:
      ```bash
@@ -213,7 +217,7 @@ Before executing the migration script `migration_script.sh`, ensure the followin
       1. Allow group `Non-Admin` to manage object-family in the compartment specified in `on-prem.env` for storage bucket details.
       2. Allow group `Non-Admin` to read buckets in the tenancy.
 
-3. **SSH Authentication**  
+4. **SSH Authentication**  
    The AdminServer host of the source domain must have passwordless SSH authentication established to all WebLogic Managed Server Linux hosts. This allows seamless remote operations during migration.
 
 ### Step 3. Run the migration script from the $toolHome/bin directory.

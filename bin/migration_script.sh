@@ -177,10 +177,11 @@ if [[ "$skip_transfer" = "false" ]]; then
         log "info" "$stack_filename uploaded to bucket $bucket_name."
         if [[ -n "$PAR_URL" ]]; then
             log "info" "Generated PAR URL (valid 6 months): $PAR_URL"
+            update_migration_data_json "PAR URL" "$PAR_URL"
         fi
     fi
 else
-    log "info" "Skipping $stack_filename upload as skip_transfer=$skip_transfer."
+    log "info" "Skipping Stack upload as skip_transfer=$skip_transfer."
 fi
 
 

@@ -121,9 +121,23 @@ class SpacePrecheck:
             for env_var in ("ORACLE_HOME", "DOMAIN_HOME", "JAVA_HOME"):
                 # Attempt to resolve each environment variable path
                 path = self.retrieve_remote_env_var_path(host, env_var)
-                if not path or "not found" in path.lower():
-                    print(f"{env_var}: Not found.")
-                    # returning blank space json and admin returncode as 2 in case of any error
+
+                # Fallback: if not found via SSH, try from infra JSON
+                if not path or str(path).strip() == "" or "not found" in str(path).lower():
+                    print(f"{env_var}: Not found via SSH. Checking infra JSON...")
+                    if env_var == "ORACLE_HOME":
+                        path = self.loader.get_machine_property(host, "OraclePath") \
+                               or self.loader.get_topology_property("OraclePath")
+                    elif env_var == "DOMAIN_HOME":
+                        path = self.loader.get_machine_property(host, "DomainPath") \
+                               or self.loader.get_topology_property("DomainPath")
+                    elif env_var == "JAVA_HOME":
+                        path = self.loader.get_machine_property(host, "JavaPath") \
+                               or self.loader.get_topology_property("NMProperties.JavaHome")
+
+                # Final check: treat None or empty string as not found
+                if not path or str(path).strip() == "":
+                    print(f"{env_var}: Still not found. Skipping host {host}.")
                     return "", 2
 
                 # Get directory size in bytes and convert to MB
@@ -134,7 +148,7 @@ class SpacePrecheck:
                 total_size_mb += size_mb
 
             # Any extra paths defined in infra under “ExtraOSPaths”
-            extra_paths = self.loader.get_machine_property(host, "ExtraOSPaths")
+            extra_paths = self.loader.get_machine_property(host, "ExtraOSPaths") or []
             for extra in extra_paths:
                 size_bytes = self.get_remote_directory_size_bytes(host, extra)
                 size_mb = size_bytes / (1024 ** 2)

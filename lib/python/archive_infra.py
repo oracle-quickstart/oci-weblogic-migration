@@ -415,6 +415,7 @@ def __archive_directories(model, model_context, helper):
     """
     _method_name = '__archive_directories'
     __logger.entering(class_name=_class_name, method_name=_method_name)
+    per_machine_model_context = None
     topology = model.get_model_topology()
     wls_domain_name = topology['Name']
     machines = model.get_model_resources()
@@ -517,7 +518,8 @@ def __archive_directories(model, model_context, helper):
                         upload_to_bucket(os.path.join(admin_out, fname), log_file, on_prem_values)
                         delete_local(os.path.join(admin_out, fname))
                         # remote cleanup on per-host model context
-                        delete_remote_archives(per_machine_model_context, fname)
+                        if per_machine_model_context:
+                            delete_remote_archives(per_machine_model_context, fname)
 
     # Case 2: Admin has NO space and skip_transfer = true (Manual steps only)
     elif skip_transfer:
@@ -566,7 +568,8 @@ def __archive_directories(model, model_context, helper):
                         upload_to_bucket(path,log_file,on_prem_values)
                         delete_local(path)
                         # remote cleanup on per-host model context
-                        delete_remote_archives(per_machine_model_context, fname)
+                        if per_machine_model_context:
+                            delete_remote_archives(per_machine_model_context, fname)
 
     if len(hosts_details) == 0:
         return
