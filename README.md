@@ -18,15 +18,15 @@ Key features of the tool:
 
 Terminology
 ---------
-| Term | Description |
-|------|-------------|
-| **OCI** | Oracle Cloud Infrastructure. |
-| **On-Premise** | Refers to the source environment where the WebLogic domain currently resides. |
-| **OWM** | OCI WebLogic Migration Tool; the tool used to migrate on-premises WebLogic domains to OCI. |
-| **AdminServer host** | The VM hosting the AdminServer of the on-premises WebLogic domain. |
+| Term | Description                                                                                                                                                                                                                                                               |
+|------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **OCI** | Oracle Cloud Infrastructure.                                                                                                                                                                                                                                              |
+| **On-Premise** | Refers to the source environment where the WebLogic domain currently resides.                                                                                                                                                                                             |
+| **OWM** | OCI WebLogic Migration Tool; the tool used to migrate on-premises WebLogic domains to OCI.                                                                                                                                                                                |
+| **AdminServer host** | The VM hosting the AdminServer of the on-premises WebLogic domain.                                                                                                                                                                                                        |
 | **Custom directories** | File system paths referenced by the WebLogic domain configuration that are **outside** the standard three categories (Domain Home, Middleware Home, Java Home). <br>**Example:** External trust stores or keystores located outside the Domain or Middleware directories. |
-| **OS** | Operating System installed on a host, e.g., Oracle Linux. |
-| **Archives** | Compressed tarball files created from the WebLogic domain’s **Domain Home**, **Middleware Home**, and **Java Home** directories for migration purposes. |
+| **OS** | Operating System installed on a host, e.g., Oracle Linux.                                                                                                                                                                                                                 |
+| **Archives** | Compressed tarball files created from the WebLogic domain’s **Domain Home**, **Middleware Home**, and **Java Home** directories for migration to OCI.                                                                                                                     |
 
 
 ---
@@ -42,8 +42,7 @@ To use the tool, ensure the following prerequisites are met:
     - **For SSH Passwords:** Configure passwordless SSH between the AdminServer and Managed Servers.
     - **For SSH Key Authentication:** Use SSH agent to store your key and passphrase for seamless connectivity between the AdminServer and Managed Servers.
   > **Note:** Test SSH connectivity from the AdminServer to each Managed Server using `ssh <managed-server-host>` to ensure authentication works without prompting for a password or passphrase.
-- **Storage space:** Each host must have sufficient disk space to archive **Oracle Home**, **JDK Home**, **Domain Home**, and any **custom directories**.  
-  Example: external trust stores or keystores located outside the Domain or Middleware directories.
+- **Storage space:** Each host must have sufficient disk space to archive **Oracle Home**, **JDK Home**, **Domain Home**, and any **custom directories**.
 
 ### 2. Oracle Cloud Requirements
 - **Oracle Cloud Account (Tenancy):** Resources discovered on-premises will be recreated under an OCI Tenancy.
@@ -278,8 +277,7 @@ Workflow
 Logs and Error Handling
 ---------------
 Detailed execution logs are available under `$toolHome/logs`.
-The main log for this script is `migration_script.log`.
-
+The main log for this script is `migration_script.log`. Log is always appended to, so all previous execution attempts will remain in the log.
 To get the log for only the most recent script execution, either move the existing log to another location or delete it before re-running the script.
 
 If any step fails:
@@ -502,6 +500,8 @@ The following policies are required **only if specific features are enabled**:
 | `Allow group Non-Admin to manage virtual-network-family in compartment MyCompartment` | To create Security List in DB Subnet for access to WebLogic Subnet (required if **Add Rule for WLS to Access DB** checkbox is selected) | DB Network Compartment |
 
 
+---
+
 ### Dynamic Group Policies (for users who unselect **"Create Policies"** checkbox)
 
 When Compute instances are started, certain scripts make OCI API calls. These instances gain permissions through **dynamic groups** and associated **policies**.
@@ -517,8 +517,8 @@ If you want Terraform to create the dynamic groups and policies, and you are **n
 | `Allow group MyGroup to manage dynamic-groups in tenancy` | To create dynamic groups | Root Compartment |
 | `Allow group MyGroup to manage policies in tenancy` | To create policies in the root compartment | Root Compartment |
 
-### Policies Created When **"Create Policies"** Checkbox Is Selected
 
+### Policies Created When **"Create Policies"** Checkbox Is Selected
 The following **dynamic group and network policies** are **automatically created** if the **"Create Policies"** checkbox is selected.
 
 > **Important**  
@@ -530,8 +530,8 @@ The following **dynamic group and network policies** are **automatically created
 | `Allow dynamic-group <dynamic-group> to read objects in compartment MyCompartment`                                    | To upload archives or overwrite existing objects in Object Storage                                                                     | Bucket Compartment     |
 | `Allow dynamic-group <dynamic-group> to use autonomous-transaction-processing-family in compartment MyCompartment` | To download ATP/ADW database wallet                                                                                                    | Database Compartment   |
 
-#### VCN Peering Policies (Optional)
 
+#### VCN Peering Policies (Optional)
 If VCN Peering is required (i.e., when the WebLogic VCN is different from the DB VCN), the following policies are needed:
 
 | Policy Statement | Policy Location |
@@ -539,8 +539,8 @@ If VCN Peering is required (i.e., when the WebLogic VCN is different from the DB
 | `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyDBNetworkCompartment` | DB Network Compartment |
 | `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyNetworkCompartment` | WebLogic Network Compartment |
 
-#### WLS to DB Access Policy (Optional)
 
+#### WLS to DB Access Policy (Optional)
 The following policy is required only if the **"Add Rule for WLS to Access DB"** checkbox is selected:
 
 | Policy Statement                                                                                             | Policy Location        |
