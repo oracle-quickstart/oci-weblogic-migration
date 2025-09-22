@@ -18,7 +18,6 @@ Key features of the tool:
 
 Terminology
 ---------
-
 | Term | Description |
 |------|-------------|
 | **OCI** | Oracle Cloud Infrastructure. |
@@ -27,7 +26,7 @@ Terminology
 | **AdminServer host** | The VM hosting the AdminServer of the on-premises WebLogic domain. |
 | **Custom directories** | File system paths referenced by the WebLogic domain configuration that are **outside** the standard three categories (Domain Home, Middleware Home, Java Home). <br>**Example:** External trust stores or keystores located outside the Domain or Middleware directories. |
 | **OS** | Operating System installed on a host, e.g., Oracle Linux. |
-
+| **Archives** | Compressed tarball files created from the WebLogic domain’s **Domain Home**, **Middleware Home**, and **Java Home** directories for migration purposes. |
 
 
 ---
@@ -37,9 +36,12 @@ Requirements
 To use the tool, ensure the following prerequisites are met:
 
 ### 1. On-Premises Requirements
-- **Oracle Linux compatibility:** The operating system release must be within the supported range.
+- **Operating System:** Supports Linux environments, including Oracle Linux (OL) and RHEL-compatible distributions.
 - **File system permissions:** The tool must be installed on the **AdminServer host**. The user must have **read/write permissions** on WebLogic Domain, Oracle Middleware, and Java Home directories.
-- **Network configuration:** Passwordless **SSH authentication** must be established from the AdminServer host to all Managed Server hosts.
+- **SSH Connectivity:** Passwordless SSH must be established from the AdminServer host to all Managed Server hosts.
+    - **For SSH Passwords:** Configure passwordless SSH between the AdminServer and Managed Servers.
+    - **For SSH Key Authentication:** Use SSH agent to store your key and passphrase for seamless connectivity between the AdminServer and Managed Servers.
+  > **Note:** Test SSH connectivity from the AdminServer to each Managed Server using `ssh <managed-server-host>` to ensure authentication works without prompting for a password or passphrase.
 - **Storage space:** Each host must have sufficient disk space to archive **Oracle Home**, **JDK Home**, **Domain Home**, and any **custom directories**.  
   Example: external trust stores or keystores located outside the Domain or Middleware directories.
 
@@ -57,7 +59,7 @@ To use the tool, ensure the following prerequisites are met:
 
 ### 3. Optional IAM Policies
 If stack users need to create IAM policies in the **Default Identity Domain** under the **root compartment**, additional policy management permissions are required.  
-Refer to the detailed **IAM Permissions** section later in this document.
+Refer to the detailed [**Required IAM Policies**](#required-iam-policies) section later in this document.
 
 ---
 
@@ -475,31 +477,78 @@ Required IAM Policies
 -----------------------
 
 ### Non-Admin User Group Policies
-If the user applying the Resource Manager stack is **not an OCI administrator**, the following IAM policies must be created to allow proper provisioning and access:
+If the user applying the Resource Manager stack is **not an OCI administrator**, your OCI administrator must first grant the following **user group policies** to allow proper provisioning and access:
 
-| Policy Statement | Purpose |
-|-----------------|---------|
-| `Allow group MyGroup to inspect instance-image in compartment MyCompartment` | To use the WebLogic for OCI images in Marketplace |
-| `Allow group MyGroup to use app-catalog-listing in compartment MyCompartment` | To access Marketplace applications catalog |
-| `Allow group MyGroup to manage instance-family in compartment MyCompartment` | To create Compute Instances |
-| `Allow group MyGroup to manage volume-family in compartment MyCompartment` | To create Block Volumes |
-| `Allow group MyGroup to inspect limits in tenancy` | To determine if resources are available in various compartments |
-| `Allow group MyGroup to manage virtual-network-family in compartment MyNetworkCompartment` | To create VCNs and subnets |
-| `Allow group MyGroup to manage load-balancers in compartment MyNetworkCompartment` | To create a Load Balancer |
+| Policy Statement | Purpose | Policy Location |
+|------------------|---------|-----------------|
+| `Allow group Non-Admin to read buckets in tenancy` | To check if Object Storage bucket is pre-existing | Root Compartment |
+| `Allow group Non-Admin to inspect tenancies in tenancy` | To locate the home region for the tenancy | Root Compartment |
+| `Allow group Non-Admin to inspect limits in tenancy` | To determine if resources are available in various compartments | Root Compartment |
+| `Allow group Non-Admin to manage object-family in compartment MyCompartment` | To create Object Storage bucket and upload the archives | Bucket Compartment |
+| `Allow group Non-Admin to inspect instance-image in compartment MyCompartment` | To use the WebLogic custom images from Marketplace | Stack Compartment |
+| `Allow group Non-Admin to use app-catalog-listing in compartment MyCompartment` | To use the Marketplace applications | Stack Compartment |
+| `Allow group Non-Admin to manage instance-family in compartment MyCompartment` | To create Compute Instances | Stack Compartment |
+| `Allow group Non-Admin to manage volume-family in compartment MyCompartment` | To create Block Volumes | Stack Compartment |
+| `Allow group Non-Admin to manage orm-family in compartment MyCompartment` | To create Resource Manager stacks | Stack Compartment |
+| `Allow group Non-Admin to manage virtual-network-family in compartment MyCompartment` | To create networking resources (VCNs, Subnets, Gateways) | WebLogic Network Compartment |
+
+#### Optional Policies
+
+The following policies are required **only if specific features are enabled**:
+
+| Policy Statement | Purpose | Policy Location |
+|------------------|---------|----------------|
+| `Allow group Non-Admin to manage load-balancers in compartment MyCompartment` | To create and manage Load Balancers (required if **"Provision Load Balancer"** checkbox is selected) | Network Compartment |
+| `Allow group Non-Admin to manage virtual-network-family in compartment MyCompartment` | To create Security List in DB Subnet for access to WebLogic Subnet (required if **Add Rule for WLS to Access DB** checkbox is selected) | DB Network Compartment |
 
 
-### Dynamic Group Policies (for users who unselect "Create Policies" checkbox)
+### Dynamic Group Policies (for users who unselect **"Create Policies"** checkbox)
 
-| Policy Statement | Purpose |
-|-----------------|---------|
-| `Allow dynamic-group <dynamic-group> to manage buckets in compartment MyCompartment` | To create Object Storage buckets |
-| `Allow dynamic-group <dynamic-group> to manage objects in compartment MyCompartment` | To upload archives or overwrite existing objects in Object Storage |
-| `Allow dynamic-group <dynamic-group> to use autonomous-transaction-processing-family in compartment <compartment>` | To download ATP/ADW database wallet |
-| `Allow group MyGroup to manage virtual-network-family in compartment MyNetworkCompartment` | Required for VCN Peering when WLS VCN is not the same as DB VCN and also if `Add Rule for WLS to Access DB` checkbox is selected |
+When Compute instances are started, certain scripts make OCI API calls. These instances gain permissions through **dynamic groups** and associated **policies**.
 
+You have two options:
+- **Pre-create the policies** before stack creation.
+- **Let the Terraform scripts** create them automatically by selecting the **OCI Policies** option.
+
+If you want Terraform to create the dynamic groups and policies, and you are **not an OCI administrator**, your OCI administrator must first grant the following **user group policies**:
+
+| Policy Statement | Purpose | Policy Location |
+|------------------|---------|-----------------|
+| `Allow group MyGroup to manage dynamic-groups in tenancy` | To create dynamic groups | Root Compartment |
+| `Allow group MyGroup to manage policies in tenancy` | To create policies in the root compartment | Root Compartment |
+
+### Policies Created When **"Create Policies"** Checkbox Is Selected
+
+The following **dynamic group and network policies** are **automatically created** if the **"Create Policies"** checkbox is selected.
+
+> **Important**  
+> If the checkbox is **not selected**, these policies must be **added manually** by your OCI administrator.
+
+| Policy Statement                                                                                                   | Purpose                                                                                                                                | Policy Location        |
+|--------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|------------------------|
+| `Allow dynamic-group <dynamic-group> to read buckets in tenancy`                                                   | To find the compartment where Object Storage bucket exists                                                                             | Root Compartment       |
+| `Allow dynamic-group <dynamic-group> to read objects in compartment MyCompartment`                                    | To upload archives or overwrite existing objects in Object Storage                                                                     | Bucket Compartment     |
+| `Allow dynamic-group <dynamic-group> to use autonomous-transaction-processing-family in compartment MyCompartment` | To download ATP/ADW database wallet                                                                                                    | Database Compartment   |
+
+#### VCN Peering Policies (Optional)
+
+If VCN Peering is required (i.e., when the WebLogic VCN is different from the DB VCN), the following policies are needed:
+
+| Policy Statement | Policy Location |
+|------------------|----------------|
+| `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyDBNetworkCompartment` | DB Network Compartment |
+| `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyNetworkCompartment` | WebLogic Network Compartment |
+
+#### WLS to DB Access Policy (Optional)
+
+The following policy is required only if the **"Add Rule for WLS to Access DB"** checkbox is selected:
+
+| Policy Statement                                                                                             | Policy Location        |
+|--------------------------------------------------------------------------------------------------------------|------------------------|
+| `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyDBNetworkCompartment` | DB Network Compartment |
 
 > **Note:**
-> - Replace `MyGroup`, `MyCompartment`, `MyNetworkCompartment`, and `<dynamic-group>` with your actual group names, compartment OCIDs, and dynamic group definitions.
+> - Replace `MyGroup`, `MyCompartment`, `MyDBNetworkCompartment`, and `<dynamic-group>` with your actual group names, compartment OCIDs, and dynamic group definitions.
 > - These policies ensure the user has sufficient permissions to provision networking, compute, storage, and WebLogic resources required by the migration stack.
 
 ---

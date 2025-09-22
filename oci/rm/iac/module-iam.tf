@@ -75,7 +75,7 @@ module "iam" {
   providers = {
     oci.home = oci.home
   }
-  #TODO: JOI: Future release include multiple object storage compartment
+
   object_storage_compartments = []
   bucket_compartment          = local.bucket_compartment
   resource_name_prefix        = local.wls_domain_name
