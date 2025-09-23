@@ -23,8 +23,9 @@ data "oci_identity_tags" "wls" {
 locals {
   # Filtered value from data source (only 1 by name, or null)
   # Identified tag namespace ID when not created and used
-  tag_namespace_id_found = one(
-    one(data.oci_identity_tag_namespaces.wls[*].tag_namespaces)[*].id
+  tag_namespace_id_found = try(
+    data.oci_identity_tag_namespaces.wls[0].tag_namespaces[0].id,
+    null
   )
 
   create_iam_tag_namespace = alltrue([
