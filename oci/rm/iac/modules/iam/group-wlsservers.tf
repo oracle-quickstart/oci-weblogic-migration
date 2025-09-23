@@ -110,7 +110,7 @@ locals {
   wlsserver_policy_statements = var.create_iam_wlsserver_policy ? tolist(concat(
     local.wlsservers_object_storage_statements,
     local.wlsserver_kms_volume_statements,
-    local.migration_compartment_policy_statements,
+    #local.migration_compartment_policy_statements,
     local.network_compartment_policy_statements,
     local.mds_network_access_policy_statements,
     local.mds_atp_wallet_policy_statements
