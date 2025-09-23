@@ -38,7 +38,16 @@ locals {
   #    "Enabled" : true
   #  }
   ##
-  wls_admin_ssl_port = lookup(local.wls_adminserver_details["SSL"], "Enabled", false) ? lookup(local.wls_adminserver_details["SSL"], "ListenPort", local.ADMIN_DEFAULT_SSL_LISTEN_PORT) : null # Default 7002
+  #wls_admin_ssl_port = lookup(local.wls_adminserver_details["SSL"], "Enabled", false) ? lookup(local.wls_adminserver_details["SSL"], "ListenPort", local.ADMIN_DEFAULT_SSL_LISTEN_PORT) : null # Default 7002
+  wls_admin_ssl_port = lookup(
+    lookup(local.wls_adminserver_details, "SSL", {}),  # safely get SSL map or empty map
+    "Enabled",
+    false
+  ) ? lookup(
+    lookup(local.wls_adminserver_details, "SSL", {}),  # safely get ListenPort from SSL map
+    "ListenPort",
+    local.ADMIN_DEFAULT_SSL_LISTEN_PORT
+  ) : null
   #"adminserver" : {
   #  "ListenPort" : 8675,
   #  "AdministrationPortEnabled" : true,
