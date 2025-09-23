@@ -488,8 +488,8 @@ If the user applying the Resource Manager stack is **not an OCI administrator**,
 | `Allow group Non-Admin to manage instance-family in compartment MyCompartment` | To create Compute Instances                                     | Stack Compartment            |
 | `Allow group Non-Admin to manage volume-family in compartment MyCompartment` | To create Block Volumes                                         | Stack Compartment            |
 | `Allow group Non-Admin to manage orm-family in compartment MyCompartment` | To create Resource Manager stacks                               | Stack Compartment            |
-| `Allow group Non-Admin to manage virtual-network-family in compartment MyCompartment` | To create networking resources (VCNs, Subnets, Gateways)        | WebLogic Network Compartment |
-| `Allow group Non-Admin to manage dns-family in compartment MyCompartment` | To manage DNS resources(Zones and Private views)                | WebLogic Network Compartment |
+| `Allow group Non-Admin to manage virtual-network-family in compartment MyNetworkCompartment` | To create networking resources (VCNs, Subnets, Gateways)        | WebLogic Network Compartment |
+| `Allow group Non-Admin to manage dns-family in compartment MyNetworkCompartment` | To manage DNS resources(Zones and Private views)                | WebLogic Network Compartment |
 
 #### Optional Policies
 
@@ -497,9 +497,9 @@ The following policies are required **only if specific features are enabled**:
 
 | Policy Statement | Purpose | Policy Location              |
 |------------------|---------|------------------------------|
-| `Allow group Non-Admin to manage load-balancers in compartment MyCompartment` | To create and manage Load Balancers (required if **"Provision Load Balancer"** checkbox is selected) | WebLogic Network Compartment |
-| `Allow group Non-Admin to manage virtual-network-family in compartment MyCompartment` | To create Security List in DB Subnet for access to WebLogic Subnet (required if **Add Rule for WLS to Access DB** checkbox is selected) | DB Network Compartment       |
-| `Allow group Non-Admin to manage orm-private-endpoints in compartment MyCompartment` | To create Private Endpoints (required **only if "Provision Bastion Instance"** checkbox is **not** selected)                               | WebLogic Network Compartment |
+| `Allow group Non-Admin to manage load-balancers in compartment MyNetworkCompartment` | To create and manage Load Balancers (required if **"Provision Load Balancer"** checkbox is selected) | WebLogic Network Compartment |
+| `Allow group Non-Admin to manage virtual-network-family in compartment MyDBNetworkCompartment` | To create Security List in DB Subnet for access to WebLogic Subnet (required if **Add Rule for WLS to Access DB** checkbox is selected) | DB Network Compartment       |
+| `Allow group Non-Admin to manage orm-private-endpoints in compartment MyNetworkCompartment` | To create Private Endpoints (required **only if "Provision Bastion Instance"** checkbox is **not** selected)                               | WebLogic Network Compartment |
 
 > **Note:** These policies are conditional and should only be applied when the corresponding feature checkboxes are selected during Stack Apply.
 
