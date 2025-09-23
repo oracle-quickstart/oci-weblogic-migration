@@ -477,27 +477,31 @@ Required IAM Policies
 ### Non-Admin User Group Policies
 If the user applying the Resource Manager stack is **not an OCI administrator**, your OCI administrator must first grant the following **user group policies** to allow proper provisioning and access:
 
-| Policy Statement | Purpose | Policy Location |
-|------------------|---------|-----------------|
-| `Allow group Non-Admin to read buckets in tenancy` | To check if Object Storage bucket is pre-existing | Root Compartment |
-| `Allow group Non-Admin to inspect tenancies in tenancy` | To locate the home region for the tenancy | Root Compartment |
-| `Allow group Non-Admin to inspect limits in tenancy` | To determine if resources are available in various compartments | Root Compartment |
-| `Allow group Non-Admin to manage object-family in compartment MyCompartment` | To create Object Storage bucket and upload the archives | Bucket Compartment |
-| `Allow group Non-Admin to inspect instance-image in compartment MyCompartment` | To use the WebLogic custom images from Marketplace | Stack Compartment |
-| `Allow group Non-Admin to use app-catalog-listing in compartment MyCompartment` | To use the Marketplace applications | Stack Compartment |
-| `Allow group Non-Admin to manage instance-family in compartment MyCompartment` | To create Compute Instances | Stack Compartment |
-| `Allow group Non-Admin to manage volume-family in compartment MyCompartment` | To create Block Volumes | Stack Compartment |
-| `Allow group Non-Admin to manage orm-family in compartment MyCompartment` | To create Resource Manager stacks | Stack Compartment |
-| `Allow group Non-Admin to manage virtual-network-family in compartment MyCompartment` | To create networking resources (VCNs, Subnets, Gateways) | WebLogic Network Compartment |
+| Policy Statement | Purpose                                                         | Policy Location              |
+|------------------|-----------------------------------------------------------------|------------------------------|
+| `Allow group Non-Admin to read buckets in tenancy` | To check if Object Storage bucket is pre-existing               | Root Compartment             |
+| `Allow group Non-Admin to inspect tenancies in tenancy` | To locate the home region for the tenancy                       | Root Compartment             |
+| `Allow group Non-Admin to inspect limits in tenancy` | To determine if resources are available in various compartments | Root Compartment             |
+| `Allow group Non-Admin to manage object-family in compartment MyCompartment` | To create Object Storage bucket and upload the archives         | Bucket Compartment           |
+| `Allow group Non-Admin to inspect instance-image in compartment MyCompartment` | To use the WebLogic custom images from Marketplace              | Stack Compartment            |
+| `Allow group Non-Admin to use app-catalog-listing in compartment MyCompartment` | To use the Marketplace applications                             | Stack Compartment            |
+| `Allow group Non-Admin to manage instance-family in compartment MyCompartment` | To create Compute Instances                                     | Stack Compartment            |
+| `Allow group Non-Admin to manage volume-family in compartment MyCompartment` | To create Block Volumes                                         | Stack Compartment            |
+| `Allow group Non-Admin to manage orm-family in compartment MyCompartment` | To create Resource Manager stacks                               | Stack Compartment            |
+| `Allow group Non-Admin to manage virtual-network-family in compartment MyNetworkCompartment` | To create networking resources (VCNs, Subnets, Gateways)        | WebLogic Network Compartment |
+| `Allow group Non-Admin to manage dns-family in compartment MyNetworkCompartment` | To manage DNS resources(Zones and Private views)                | WebLogic Network Compartment |
 
 #### Optional Policies
 
 The following policies are required **only if specific features are enabled**:
 
-| Policy Statement | Purpose | Policy Location |
-|------------------|---------|----------------|
-| `Allow group Non-Admin to manage load-balancers in compartment MyCompartment` | To create and manage Load Balancers (required if **"Provision Load Balancer"** checkbox is selected) | Network Compartment |
-| `Allow group Non-Admin to manage virtual-network-family in compartment MyCompartment` | To create Security List in DB Subnet for access to WebLogic Subnet (required if **Add Rule for WLS to Access DB** checkbox is selected) | DB Network Compartment |
+| Policy Statement | Purpose | Policy Location              |
+|------------------|---------|------------------------------|
+| `Allow group Non-Admin to manage load-balancers in compartment MyNetworkCompartment` | To create and manage Load Balancers (required if **"Provision Load Balancer"** checkbox is selected) | WebLogic Network Compartment |
+| `Allow group Non-Admin to manage virtual-network-family in compartment MyDBNetworkCompartment` | To create Security List in DB Subnet for access to WebLogic Subnet (required if **Add Rule for WLS to Access DB** checkbox is selected) | DB Network Compartment       |
+| `Allow group Non-Admin to manage orm-private-endpoints in compartment MyNetworkCompartment` | To create Private Endpoints (required **only if "Provision Bastion Instance"** checkbox is **not** selected)                               | WebLogic Network Compartment |
+
+> **Note:** These policies are conditional and should only be applied when the corresponding feature checkboxes are selected during Stack Apply.
 
 
 ---
