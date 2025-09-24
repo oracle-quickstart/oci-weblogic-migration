@@ -112,7 +112,7 @@ runWlst() {
 
     # print the configuration, and run the script
 
-    echo "JAVA_HOME = ${JAVA_HOME}"
+    #echo "JAVA_HOME = ${JAVA_HOME}"
     echo "WLST_EXT_CLASSPATH = ${WLST_EXT_CLASSPATH}"
     echo "CLASSPATH = ${CLASSPATH}"
     echo "WLST_PROPERTIES = ${WLST_PROPERTIES}"

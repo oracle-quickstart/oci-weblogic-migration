@@ -23,7 +23,7 @@ discover(){
   EXEC_TYPE=$1
   SCRIPT_PATH=$2
   shift; shift
-  DISCOVER_BASE_FLAGS="-oracle_home $oracle_home  $*"
+  DISCOVER_BASE_FLAGS="-oracle_home $oracle_home -java_home $java_home $*"
   if [[ "$EXEC_TYPE" == "remote" ]]; then
       run_ssh_command "$SCRIPT_PATH" "$DISCOVER_BASE_FLAGS"
   else
@@ -241,7 +241,7 @@ fi
 
 case "$1" in
     "wls")
-        load_config "$ON_PREM_ENV_FILE"
+        w
         discover_local
         ;;
     "remote")

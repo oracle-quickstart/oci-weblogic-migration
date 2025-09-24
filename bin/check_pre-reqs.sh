@@ -178,7 +178,7 @@ else
     done < <(grep '=' "$env_file")
 
     # Always-required keys
-    required_keys=("ssh_user" "domain_home" "oracle_home" "skip_transfer")
+    required_keys=("ssh_user" "domain_home" "oracle_home" "java_home" "skip_transfer")
 
     # Track missing keys
     missing_keys=()
@@ -208,6 +208,11 @@ else
     # Check if the directory specified by oracle_home exists
     if [[ -n "${env_vars[oracle_home]:-}" && ! -d "${env_vars[oracle_home]}" ]]; then
         errors+=("The path specified for 'oracle_home' (${env_vars[oracle_home]}) does not exist or is not accessible by the current user ($(whoami)). Please check the permissions or update the path in $env_file.")
+    fi
+
+    # Check if the directory specified by java_home exists
+    if [[ -n "${env_vars[java_home]:-}" && ! -d "${env_vars[java_home]}" ]]; then
+        errors+=("The path specified for 'java_home' (${env_vars[java_home]}) does not exist or is not accessible by the current user ($(whoami)). Please check the permissions or update the path in $env_file.")
     fi
 
     # Ensure at least one SSH authentication method is set
