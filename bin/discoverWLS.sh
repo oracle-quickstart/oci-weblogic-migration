@@ -124,4 +124,6 @@ fi
 # required Java version is dependent on use of encryption
 javaSetup $minJdkVersion
 export PYTHONPATH=$PWD/lib
+echo "JAVA_HOME = $java_home"
+export JAVA_HOME=$java_home
 runWlst discover_wls.py "$@"

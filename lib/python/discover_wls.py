@@ -76,8 +76,7 @@ _store_result_environment_variable = '__WLSDEPLOY_STORE_RESULT__'
 
 __required_arguments = [
     CommandLineArgUtil.ORACLE_HOME_SWITCH,
-    CommandLineArgUtil.MODEL_FILE_SWITCH,
-    CommandLineArgUtil.JAVA_HOME_SWITCH
+    CommandLineArgUtil.MODEL_FILE_SWITCH
 ]
 
 __optional_arguments = [

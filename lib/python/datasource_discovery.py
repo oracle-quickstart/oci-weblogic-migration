@@ -121,8 +121,7 @@ TF_DATASOURCE_OCI_DB_RESOURCES_TEMPLATE_RESOURCE_PATH = os.path.join('templates'
 TF_VARIABLES_DB_CONNECTION_STRING_TEMPLATE_RESOURCE_PATH = os.path.join('templates',TF_VARIABLES_DB_CONNECTION_STRING_FILE_NAME + file_template_helper.MUSTACHE_SUFFIX)
 __required_arguments = [
     CommandLineArgUtil.ORACLE_HOME_SWITCH,
-    CommandLineArgUtil.MODEL_FILE_SWITCH,
-    CommandLineArgUtil.JAVA_HOME_SWITCH
+    CommandLineArgUtil.MODEL_FILE_SWITCH
 
 ]
 

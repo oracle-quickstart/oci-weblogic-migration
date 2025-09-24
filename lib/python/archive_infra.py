@@ -74,8 +74,7 @@ __required_arguments = [
     CommandLineArgUtil.ORACLE_HOME_SWITCH,
     CommandLineArgUtil.MODEL_FILE_SWITCH,
     CommandLineArgUtil.REMOTE_OUTPUT_DIR_SWITCH,
-    CommandLineArgUtil.LOCAL_OUTPUT_DIR_SWITCH,
-    CommandLineArgUtil.JAVA_HOME_SWITCH
+    CommandLineArgUtil.LOCAL_OUTPUT_DIR_SWITCH
     #-output_dir <path to store archives>
     #-remote_output_dir <path to generate it remotely>
     #-local_output_dir <path to store archives>

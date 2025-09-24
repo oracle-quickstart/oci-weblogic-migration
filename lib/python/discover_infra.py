@@ -106,8 +106,7 @@ init_argument_map= None
 __required_arguments = [
     CommandLineArgUtil.ORACLE_HOME_SWITCH,
     CommandLineArgUtil.MODEL_FILE_SWITCH,
-    CommandLineArgUtil.ARCHIVE_FILE_SWITCH,
-    CommandLineArgUtil.JAVA_HOME_SWITCH
+    CommandLineArgUtil.ARCHIVE_FILE_SWITCH
 ]
 
 __optional_arguments = [
