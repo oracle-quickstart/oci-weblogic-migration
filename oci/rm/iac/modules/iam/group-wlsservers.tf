@@ -21,7 +21,7 @@ locals {
 
   #TODO: JOI Future version narrow access to specific bucket target.bucket.name
   wlsservers_object_storage_templates = tolist([
-    "Allow dynamic-group ${local.wlsserver_group_name} to read buckets in tenancy",
+    "Allow dynamic-group ${local.wlsserver_group_name} to read buckets in compartment id %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to read objects in compartment id %v"
   ])
 
