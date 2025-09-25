@@ -441,7 +441,8 @@ Each datasource can be recreated in OCI using one of the following strategies:
 | `edit jdbc connection string discovered`    | Allows editing the JDBC connection string manually.                | Optional       |
 | `Database Strategy`                         | Select `Manual` to replace the JDBC string manually.               | —              |
 
-> **Note:** If the datasource is a Multi Data Source (MDS), only Manual JDBC String Replacement is supported.
+> **Note:** If the datasource is a Multi Data Source (MDS), only Manual JDBC String Replacement is supported.                                                
+
 > **Warning:** If VCN peering is required (when WebLogic VCN and Database VCN are different), it must be configured manually by following the [Manual VCN Peering guide](https://docs.oracle.com/en/cloud/paas/weblogic-cloud/user/configure-database-parameters.html#GUID-6A39A2A7-EF6C-408E-B5C7-C44089A9B134__MANUAL_VCN_PEERING).  
 > This must be done **before starting the servers**, otherwise the server start will fail.  
 
