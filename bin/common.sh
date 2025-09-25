@@ -133,6 +133,18 @@ runWlst() {
     exit ${RETURN_CODE}
 }
 
+getArg() {
+  key="$1"
+  shift
+  while [ $# -gt 0 ]; do
+    if [ "$1" = "$key" ]; then
+      echo "$2"
+      return 0
+    fi
+    shift
+  done
+  return 1
+}
 
 #
 #readonly OWLSMIG_NAME="OCI Weblogic Migration Tool"

@@ -121,8 +121,11 @@ if [ "$USE_ENCRYPTION" == "true" ]; then
   minJdkVersion=8
 fi
 
+JAVA_HOME=$(getArg -java_home "$@")
+
 # required Java version is dependent on use of encryption
 javaSetup $minJdkVersion
+
 export PYTHONPATH=$PWD/lib
-export JAVA_HOME=$java_home
+export JAVA_HOME
 runWlst discover_wls.py "$@"

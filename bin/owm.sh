@@ -35,7 +35,7 @@ discover_local(){
   log "info" "<discoverDomain><discover_local><entry> args: $*"
   file_timestamp=`date +%Y%m%d%H%M`
   SCRIPT_PATH="$toolHome/bin/discoverWLS.sh"
-  discover "local" "$SCRIPT_PATH" "-domain_home $domain_home" "-model_file $toolHome/out/Discovered_$file_timestamp.json" "-skip_archive"
+  discover "local" "$SCRIPT_PATH" "-domain_home $domain_home" "-java_home $java_home" "-model_file $toolHome/out/Discovered_$file_timestamp.json" "-skip_archive"
   exit_code=$?
   log "info" "Executed discover WebLogic with exit code [$exit_code]"
   if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
