@@ -121,12 +121,5 @@ umask 27
 
 checkArgs "$@"
 
-minJdkVersion=7
-if [ "$USE_ENCRYPTION" == "true" ]; then
-  minJdkVersion=8
-fi
-
-# required Java version is dependent on use of encryption
-javaSetup $minJdkVersion
 export PYTHONPATH=$PWD/lib
 runWlst archive_infra.py "$@"
