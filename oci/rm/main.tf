@@ -153,8 +153,8 @@ module "wls" {
 
   #Object Storage Archive Repository
   bucket_name          = var.bucket_name
-  restore_wls_archives = "none" #all
-  await_node_readiness = "none" #all
+  #restore_wls_archives = "none" #all
+  #await_node_readiness = "none" #all
 
   #Weblogic Domain Common  - LoadBalancer, labels
   add_load_balancer              = var.add_load_balancer
