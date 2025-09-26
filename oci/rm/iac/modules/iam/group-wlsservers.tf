@@ -96,7 +96,7 @@ locals {
     # tenancy-scoped policy
     [format("Allow dynamic-group %s to read buckets in tenancy", local.wlsserver_group_name)],
 
-    # compartment-scoped policie
+    # compartment-scoped policy
     [for comp in tolist([local.bucket_compartment]) :
       format("Allow dynamic-group %s to read objects in compartment id %s", local.wlsserver_group_name, comp)
     ]
