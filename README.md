@@ -684,3 +684,31 @@ Then you must apply the same setting manually for each managed server:
 
 ---
 
+### 3. Error when starting Managed Server in WebLogic 12.2.1.4 (secure mode)
+
+When starting a Managed Server with WebLogic 12.2.1.4 in secure mode, you may see errors such as:
+
+```bash
+<BEA-003111> <No channel exists for replication calls for cluster domainCcluster>
+<BEA-000386> <Server subsystem failed. Reason: No replication server channel for managedserver1>
+Server state changed to FAILED
+```
+
+#### Cause
+In secure mode, WebLogic expects replication channels for cluster communication.
+If no replication channel is configured, the Managed Server startup fails.
+
+#### Workaround
+Disable secure replication in the domain configuration (config.xml):
+
+```bash
+<secure-replication-enabled>false</secure-replication-enabled>
+```
+
+Then restart the servers in the following order:
+
+1. Restart the Admin Server.
+2. Start the Managed Server.
+
+---
+
