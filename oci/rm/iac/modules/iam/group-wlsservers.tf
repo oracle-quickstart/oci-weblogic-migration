@@ -21,7 +21,7 @@ locals {
 
   #TODO: JOI Future version narrow access to specific bucket target.bucket.name
   wlsservers_object_storage_templates = tolist([
-    "Allow dynamic-group ${local.wlsserver_group_name} to read buckets in compartment id %v",
+    "Allow dynamic-group ${local.wlsserver_group_name} to read buckets in tenancy %v",
     "Allow dynamic-group ${local.wlsserver_group_name} to read objects in compartment id %v"
   ])
 
@@ -91,11 +91,16 @@ locals {
     formatlist(statement, local.wlsserver_compartments, var.wlsserver_volume_kms_key_id)
   ])) : []
 
-  # Object Storage access  (OSS)
-  wlsservers_object_storage_statements = flatten(tolist([
-    for statement in local.wlsservers_object_storage_templates :
-    formatlist(statement, local.bucket_compartment)
-  ]))
+  # Object Storage access (OSS)
+  wlsservers_object_storage_statements = flatten([
+    # tenancy-scoped policy
+    [format("Allow dynamic-group %s to read buckets in tenancy", local.wlsserver_group_name)],
+
+    # compartment-scoped policy
+    [for comp in tolist([local.bucket_compartment]) :
+      format("Allow dynamic-group %s to read objects in compartment id %s", local.wlsserver_group_name, comp)
+    ]
+  ])
 
   migration_compartment_policy_statements = var.create_iam_wlsserver_policy ? flatten(tolist([
     for statement in local.migration_compartment_policy_templates :

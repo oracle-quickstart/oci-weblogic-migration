@@ -441,7 +441,10 @@ Each datasource can be recreated in OCI using one of the following strategies:
 | `edit jdbc connection string discovered`    | Allows editing the JDBC connection string manually.                | Optional       |
 | `Database Strategy`                         | Select `Manual` to replace the JDBC string manually.               | —              |
 
-> **Note:** If the datasource is a Multi Data Source (MDS), only Manual JDBC String Replacement is supported.
+> **Note:** If the datasource is a Multi Data Source (MDS), only Manual JDBC String Replacement is supported.                                                
+
+> **Warning:** If VCN peering is required (when WebLogic VCN and Database VCN are different), it must be configured manually by following the [Manual VCN Peering guide](https://docs.oracle.com/en/cloud/paas/weblogic-cloud/user/configure-database-parameters.html#GUID-6A39A2A7-EF6C-408E-B5C7-C44089A9B134__MANUAL_VCN_PEERING). This must be done **before starting the servers**, otherwise the server start will fail.  
+
 
 **B. Autonomous Database (ATP)**
 | Variable                                  | Description                                                                                      |
@@ -454,6 +457,7 @@ Each datasource can be recreated in OCI using one of the following strategies:
 | `Autonomous Database Network Compartment`  | Compartment for ATP networking.                                                                 |
 | `Autonomous Database Network`              | Existing VCN for ATP (required if using private endpoint).                                        |
 | `Add Rule for WLS to Access DB`            | Add rules to existing subnet security list for DB access (required if using private endpoint).   |
+
 
 **C. OCI Database System (DB System)**
 | Variable                         | Description                                               |
@@ -604,4 +608,107 @@ $admin-server> sudo su - <same username as on-premise>
 
 Once the cloud-init scripts have completed, SSH to the new AdminServer instance, change directory to the WebLogic Domain Home and bring up your AdminServer. Similarly, start all managed servers. Verify and Test your WebLogic domain to confirm that the migration was successful. 
 
+---
+
+Known Issues
+-------------
+
+### 1. Migration script fails during infrastructure discovery
+
+When running the migration script, you may encounter the following error:
+
+```bash
+bash migration_script.sh
+2025-09-24 06:03:46 [info] Installing dependencies...
+2025-09-24 06:03:47 [info] Checking prerequisites...
+2025-09-24 06:03:57 [info] Discovering WebLogic domain...
+2025-09-24 06:04:20 [info] Discovering infrastructure...
+2025-09-24 06:04:30 [error] "Discovering infrastructure" failed. Check /home/domain/mig/oci-weblogic-migration/logs/migration_script.log for details. Run migration_script.sh again after resolving the issue.
+2025-09-24 06:04:30 [error] Migration failed.
+```
+
+In the log file (/home/domain/mig/oci-weblogic-migration/logs/migration_script.log), you may see an error similar to:
+
+```bash
+<SEVERE> <discover_infra> <WLSDPLY-20035> <verifySSH encountered an unexpected runtime exception.
+Please file an issue on GitHub and attach the log file and stdout. Exception: exceptions.IndexError>
+```
+
+#### Cause
+This is an intermittent issue triggered during the infrastructure discovery phase by the verifySSH step.
+
+#### Workaround
+Re-run the migration script. Previous successful steps will be skipped automatically, and the script should proceed normally:
+
+```bash
+bash migration_script.sh
+2025-09-24 06:05:49  [info] "Installing dependencies" already completed successfully. Skipping.
+2025-09-24 06:05:49  [info] "Checking prerequisites" already completed successfully. Skipping.
+2025-09-24 06:05:49  [info] "Discovering WebLogic domain" already completed successfully. Skipping.
+2025-09-24 06:05:49  [info] Discovering infrastructure...
+...
+2025-09-24 06:08:16  [info] Migration script completed successfully!
+```
+
+---
+
+### 2. Error when starting Managed Servers (Hostname Verification Failure)
+
+You may encounter an error when attempting to start managed servers:
+
+```bash
+<Warning> <Security> <BEA-090504> <Certificate chain received from xxxx.example.com - 10.0.2.229 failed hostname verification check. Certificate contained CN=xxxx but check expected xxxx.example.com>
+```
+
+#### Cause
+This occurs because the SSL certificate presented by the server does not match the expected hostname.  
+For example, the certificate contains the common name **`CN=xxxx`**, while WebLogic expects **`xxxx.example.com`**.  
+This mismatch causes hostname verification to fail.
+
+#### Workaround
+If the source domain is configured with the following in `config.xml`:
+```bash
+weblogic.security.SSL.ignoreHostnameVerification=true
+```
+
+Then you must apply the same setting manually for each managed server:
+
+1. Start the **Admin Server**.
+2. Log in to the **WebLogic Administration Console**.
+    - Navigate to: **Environment** → **Servers** → *[Managed Server Name]* → **Server Start** tab.
+3. For each Managed Server, add the following JVM option in the **Arguments** field:   
+    ```bash
+    -Dweblogic.security.SSL.ignoreHostnameVerification=true
+    ```
+4. Use the `startManagedServer.sh` script to start the Managed Servers.
+
+---
+
+### 3. Error when starting Managed Server in WebLogic 12.2.1.4 (secure mode)
+
+When starting a Managed Server with WebLogic 12.2.1.4 in secure mode, you may see errors such as:
+
+```bash
+<BEA-003111> <No channel exists for replication calls for cluster domainCcluster>
+<BEA-000386> <Server subsystem failed. Reason: No replication server channel for managedserver1>
+Server state changed to FAILED
+```
+
+#### Cause
+In secure mode, WebLogic expects replication channels for cluster communication.
+If no replication channel is configured, the Managed Server startup fails.
+
+#### Workaround
+Disable secure replication in the domain configuration (config.xml):
+
+```bash
+<secure-replication-enabled>false</secure-replication-enabled>
+```
+
+Then restart the servers in the following order:
+
+1. Restart the Admin Server.
+2. Start the Managed Server.
+
+---
 
