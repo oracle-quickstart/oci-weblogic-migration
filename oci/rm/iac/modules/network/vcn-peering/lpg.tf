@@ -23,7 +23,7 @@ resource "oci_dns_resolver" "wls_oci_dns_resolver" {
   scope       = "PRIVATE"
 
   dynamic "attached_views" {
-    for_each = local.db_resolver_views
+    for_each = distinct(values(local.db_resolver_views))
     content {
       view_id = attached_views.value
     }
