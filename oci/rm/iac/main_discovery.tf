@@ -224,7 +224,7 @@ locals {
   ####################################################################
   # Merge All Ports found in Dynamic Server and Weblogic Managed Server found in configuration.
   ####################################################################
-  wls_domain_all_discovered_ports = distinct(concat(local.wls_managed_server_static_ports, local._wls_managed_server_network_channel_port_definition, local.__wls_dynamic_server_ports, local.nm_port))
+  wls_domain_all_discovered_ports = distinct(concat(local.wls_managed_server_static_ports, local._wls_managed_server_network_channel_port_definition, local.__wls_dynamic_server_ports, local.nm_ports))
 
 }
 
@@ -325,8 +325,11 @@ locals {
     element(split(local.DOT, lookup(local.__wls_machines_pivot, local.wls_servers[local.wls_adminserver_name].Machine).DETAILS.Hostname), 0))
   }
 
-  # Node Manager port
-  nm_port = tolist([try(local.wls_topology["NMProperties"].ListenPort, "5556")])
+  # Node Manager ports - extract from all machines, default 5556 if missing
+  nm_ports = [
+    for m_name, m_data in try(local.wls_topology["Machine"], {}) :
+    try(m_data["NodeManager"]["ListenPort"], "5556")
+  ]
 
   # rules for datasource changes.
   # on_prem != "" &&
