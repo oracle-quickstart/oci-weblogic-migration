@@ -357,7 +357,7 @@ module "network" {
   subnets              = var.subnets
   vcn_cidrs            = local.vcn_cidrs
   vcn_id               = local.vcn_id
-  nm_port              = local.nm_port
+  nm_ports             = local.nm_ports
   wlsserver_is_public  = var.wlsserver_is_public
   wlsserver_ports      = local.wls_domain_all_discovered_ports
   adminserver_ports    = local.wls_admin_server_ports
