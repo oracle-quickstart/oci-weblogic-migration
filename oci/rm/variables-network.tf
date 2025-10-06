@@ -97,7 +97,15 @@ variable "allow_adminserver_ssh_access" {default = false }
 variable "allow_bastion_adminserver_console_access" {default = true }
 
 variable "allow_rules_public_lb" {
-  default = {}
+  default = {
+    "Allow TCP ingress on port 443 from any source to Public LB" : {
+      protocol    = "6"
+      port        = 443
+      source      = "0.0.0.0/0"
+      source_type = "CIDR_BLOCK"
+    }
+  }
+  description = "Security rules to apply to the Public Load Balancer's NSG"
   type    = any
 }
 
