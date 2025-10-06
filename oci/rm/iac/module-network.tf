@@ -7,6 +7,11 @@ data "oci_core_vcn" "oke" {
 }
 
 data "oci_core_services" "all_services" {
+  filter {
+    name   = "cidr_block"
+    values = ["all-.*-services-in-oracle-services-network"]
+    regex  = true
+  }
 }
 
 # ──────────────────────────────────────────────────────────
@@ -61,7 +66,7 @@ locals {
   ig_route_table_id = var.create_vcn ? try(one(module.vcn[*].ig_route_id), var.ig_route_table_id) : try(oci_core_route_table.ig_rt[0].id, var.ig_route_table_id)
 
   # Created route table if enabled, else var.nat_route_table_id
-  nat_route_table_id = var.create_vcn ? try(one(module.vcn[*].nat_route_id), var.ig_route_table_id) : var.nat_route_table_id
+  nat_route_table_id = var.create_vcn ? try(one(module.vcn[*].nat_route_id), var.nat_route_table_id) : try(oci_core_route_table.nat_rt[0].id, var.nat_route_table_id)
 
   network_compartment_id = var.network_compartment_id == "" ? var.compartment_ocid : var.network_compartment_id
   # Map of configured subnets to specified/generated dns_label when enabled
