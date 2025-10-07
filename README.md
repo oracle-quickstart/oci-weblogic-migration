@@ -409,9 +409,9 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
 * Provides options to recreate the datasource connection strings in OCI for WebLogic domains with JDBC Datasources, using one of the following:
   * Autonomous Database (ADB)
   * OCI Database (DB System)
-  * Manual JDBC string replacement
+  * Edit JDBC string
 > **Note:**  
-> For Multi Data Source (MDS) configurations, only **manual JDBC string replacement** is supported.
+> For Multi Data Source (MDS) configurations for RAC DB, only **Edit JDBC string** option is supported.
 
 ---
 
@@ -477,7 +477,7 @@ Each datasource can be recreated in OCI using one of the following strategies:
 | `edit jdbc connection string discovered`    | Allows editing the JDBC connection string.                | Optional       |
 | `Database Strategy`                         | Select `Edit JDBC String` to replace the JDBC string directly.     | —              |
 
-> **Note:** If the datasource is a Multi Data Source (MDS), only JDBC String Replacement is supported.                                                
+> **Note:** If the datasource is a Multi Data Source (MDS) in case of RAC DB, only JDBC String Replacement is supported.                                                
 
 > **Warning:** If VCN peering is required (when WebLogic VCN and Database VCN are different), it must be configured manually by following the [Manual VCN Peering guide](https://docs.oracle.com/en/cloud/paas/weblogic-cloud/user/configure-database-parameters.html#GUID-6A39A2A7-EF6C-408E-B5C7-C44089A9B134__MANUAL_VCN_PEERING). This must be done **before starting the servers**, otherwise the server start will fail.  
 
