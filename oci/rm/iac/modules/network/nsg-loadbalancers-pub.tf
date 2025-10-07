@@ -16,15 +16,6 @@ locals {
   pub_lb_nsg_id = one(compact([try(var.nsgs.pub_lb.id, null), one(oci_core_network_security_group.pub_lb[*].id)]))
   pub_lb_rules = local.pub_lb_nsg_enabled ? merge(
     {
-      "Allow TCP egress from public load balancers to wlsservers nodes for HTTP traffic" : {
-        protocol = local.tcp_protocol, port_min = local.node_port_min, port_max = local.node_port_max, destination = local.wlsserver_nsg_id, destination_type = local.rule_type_nsg,
-      },
-      "Allow TCP egress from public load balancers to wlsserver nodes for health checks" : {
-        protocol = local.tcp_protocol, port = local.health_check_port, destination = local.wlsserver_nsg_id, destination_type = local.rule_type_nsg,
-      },
-      "Allow ICMP egress from public load balancers to wlsserver nodes for path discovery" : {
-        protocol = local.icmp_protocol, port = local.all_ports, destination = local.wlsserver_nsg_id, destination_type = local.rule_type_nsg,
-      },
       "Allow all egress traffic from public load balancer" : { protocol = local.all_protocols, destination = local.anywhere, destination_type = local.rule_type_cidr, port = 0,
       },
     },
