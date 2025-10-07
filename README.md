@@ -65,44 +65,47 @@ Refer to the detailed [**Required IAM Policies**](#required-iam-policies) sectio
 Installing Weblogic Migration Tool
 ----------------------------------------
 * Initiate a Secure Shell (SSH) connection to the **AdminServer host**, utilizing a user account with read and write file system permissions. This step enables secure remote access and interaction with the server.
-* Download the most recent release of GIT from  [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-* Get a local copy of the OWM Tool repository to a folder where the user has read and write permissions.
-* Folder will be referenced as $toolHome.
+* Obtain a local copy of the OWM Tool repository in a folder where the user has read and write permissions.
+  * If downloading manually, extract the repository contents to this folder.
+* If you plan to clone the repository using Git, ensure that the latest version of Git is installed on the host. 
+  * Download the most recent release of GIT from  [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+  * Clone the repository with the commands in a folder where the user has read and write permissions:
+ 
+    ```bash
+    git clone https://github.com/oracle-quickstart/oci-weblogic-migration
+    cd oci-weblogic-migration
+    ls
+    ```
 
-Clone the repository with the commands:
+    Example output:
+    
+    ```bash
+    $ git clone https://github.com/oracle-quickstart/oci-weblogic-migration
+    Cloning into 'oci-weblogic-migration'...
+    Username for 'https://github.com': mahuwa-barman
+    Password for 'https://mahuwa-barman@github.com': 
+    remote: Enumerating objects: 4391, done.
+    remote: Counting objects: 100% (962/962), done.
+    remote: Compressing objects: 100% (333/333), done.
+    remote: Total 4391 (delta 819), reused 629 (delta 629), pack-reused 3429 (from 2)
+    Receiving objects: 100% (4391/4391), 9.01 MiB | 40.84 MiB/s, done.
+    Resolving deltas: 100% (2822/2822), done.
+    
+    ls -lrth oci-weblogic-migration
+    total 40K
+    -rw-rw-r--. 1 oracle oracle 1.9K Sep 10 08:18 LICENSE
+    -rw-rw-r--. 1 oracle oracle  18K Sep 10 08:19 README.md
+    drwxrwxr-x. 2 oracle oracle   41 Sep 10 08:19 config
+    drwxrwxr-x. 4 oracle oracle   37 Sep 10 08:19 lib
+    drwxrwxr-x. 6 oracle oracle   58 Sep 10 08:19 oci
+    drwxrwxr-x. 3 oracle oracle   17 Sep 10 08:19 wdtconfig
+    drwxrwxr-x. 4 oracle oracle   28 Sep 10 08:19 deps
+    drwxrwxr-x. 2 oracle oracle 4.0K Sep 11 08:21 bin
+    drwxrwxr-x. 3 oracle oracle  113 Sep 11 14:48 out
+    drwxrwxr-x. 2 oracle oracle 4.0K Sep 11 18:02 logs
+    ```
 
-```bash
-git clone https://github.com/oracle-quickstart/oci-weblogic-migration
-cd oci-weblogic-migration
-ls
-```
-Example output:
-
-```bash
-$ git clone https://github.com/oracle-quickstart/oci-weblogic-migration
-Cloning into 'oci-weblogic-migration'...
-Username for 'https://github.com': mahuwa-barman
-Password for 'https://mahuwa-barman@github.com': 
-remote: Enumerating objects: 4391, done.
-remote: Counting objects: 100% (962/962), done.
-remote: Compressing objects: 100% (333/333), done.
-remote: Total 4391 (delta 819), reused 629 (delta 629), pack-reused 3429 (from 2)
-Receiving objects: 100% (4391/4391), 9.01 MiB | 40.84 MiB/s, done.
-Resolving deltas: 100% (2822/2822), done.
-
-ls -lrth oci-weblogic-migration
-total 40K
--rw-rw-r--. 1 oracle oracle 1.9K Sep 10 08:18 LICENSE
--rw-rw-r--. 1 oracle oracle  18K Sep 10 08:19 README.md
-drwxrwxr-x. 2 oracle oracle   41 Sep 10 08:19 config
-drwxrwxr-x. 4 oracle oracle   37 Sep 10 08:19 lib
-drwxrwxr-x. 6 oracle oracle   58 Sep 10 08:19 oci
-drwxrwxr-x. 3 oracle oracle   17 Sep 10 08:19 wdtconfig
-drwxrwxr-x. 4 oracle oracle   28 Sep 10 08:19 deps
-drwxrwxr-x. 2 oracle oracle 4.0K Sep 11 08:21 bin
-drwxrwxr-x. 3 oracle oracle  113 Sep 11 14:48 out
-drwxrwxr-x. 2 oracle oracle 4.0K Sep 11 18:02 logs
-```
+**Note** '$toolHome' refers to the folder where the OWM Tool repository contents are downloaded or cloned.
 
 ---
 
@@ -197,14 +200,33 @@ Before executing the migration script `migration_script.sh`, ensure the followin
    The WebLogic Migration Tool requires access to GitHub to download required libraries (WebLogic Deployment Tool) to discover the source WebLogic environment.
    - Alternatively, specific releases can be manually downloaded and placed in `$toolHome/deps/wdt`.
 
-2. **Manual Archive Transfer**
+2. **All Source domain Servers Must Be Up and Running (Required)**  
+    In the source environment, all WebLogic Server hosts (AdminServer and Managed Servers) are expected to be **up and running**. This is mandatory to ensure the migration script can successfully connect, discover, and archive domain configurations.
+
+3. **Manual Archive Transfer**
    If you plan to perform step 5 (upload stack) and step 7 (upload archives) manually, set `skip_transfer=true` in `on-prem.env`.
    Transfer the archives manually by following the instructions in `$toolHome/logs/migration_script.log`.
    The archives are available inside `$toolHome/out` on the **AdminServer host**, provided the **AdminServer host** has enough space to accommodate the archives from all the hosts.
 
-3. **OCI-CLI Installation (Optional)**  
+4. **OCI-CLI Installation (Optional)**  
    - If you want the script to handle uploads automatically, install the OCI-CLI on the **AdminServer host**.
    - Installation and configuration details: [OCI CLI Documentation](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
+     **Installation Steps:**
+
+    ```bash
+    # Enable the Oracle Linux Developer repository
+    sudo dnf -y install oraclelinux-developer-release-el8
+    
+    # Install OCI CLI package
+    sudo dnf install python36-oci-cli
+    
+    # Upgrade pip and required dependencies
+    pip3 install --user --upgrade pip
+    pip3 install --user six==1.15.0 --upgrade
+    pip3 install --user click==8.0.4
+    pip3 install --user oci==2.157.0 --upgrade
+    ``` 
+   
    - To verify installation, run:
      ```bash
      oci iam region list
@@ -218,8 +240,23 @@ Before executing the migration script `migration_script.sh`, ensure the followin
       1. Allow group `Non-Admin` to manage object-family in the compartment specified in `on-prem.env` for storage bucket details.
       2. Allow group `Non-Admin` to read buckets in the tenancy.
 
-4. **SSH Authentication**  
-   The AdminServer host of the source domain must have passwordless SSH authentication established to all WebLogic Managed Server Linux hosts. This allows seamless remote operations during migration.
+5. **SSH Authentication**  
+   The **AdminServer host** of the source domain must have **passwordless SSH authentication** established to all **WebLogic Managed Server** Linux hosts.  
+   This ensures seamless remote operations during migration.
+
+    **Example:**
+    On the AdminServer host, verify SSH connectivity to each Managed Server without a password prompt.
+
+    ```bash
+    # Get the full hostname of the AdminServer
+    hostname -f
+    mbnjrf-wls-0.wlsubnetfrjnbm.mbnjrfvcn.oraclevcn.com
+    
+    # Test SSH connection to each Managed Server host
+    [oracle@mbnjrf-wls-0 ~]$ ssh mbnjrf-wls-1.wlsubnetfrjnbm.mbnjrfvcn.oraclevcn.com
+    [oracle@mbnjrf-wls-1 ~]$ exit
+    ```
+    Repeat this process from the **AdminServer host** to all hosts in the WebLogic domain to confirm passwordless SSH access is properly configured.
 
 ### Step 3. Run the migration script from the $toolHome/bin directory.
  
@@ -266,9 +303,8 @@ Workflow
    <machine>-<domain>-java_home.tar.gz
    <machine>-<domain>-weblogic_home.tar.gz
    <machine>-<domain>-custom_home.tar.gz
-   ```
-    Note: It is highly recommended that the WebLogic Domain is in a stopped state before compressing directories, to avoid files being modified between read and write.
-
+   ``` 
+  
 8. Upload Archives to OCI (Optional) 
    By default, the script uploads all generated archives to a specified OCI Object Storage bucket.
    This behavior can be controlled using the `skip_transfer` option in `$toolHome/config/on-prem.env` file.
@@ -373,9 +409,9 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
 * Provides options to recreate the datasource connection strings in OCI for WebLogic domains with JDBC Datasources, using one of the following:
   * Autonomous Database (ADB)
   * OCI Database (DB System)
-  * Manual JDBC string replacement
+  * Edit JDBC string
 > **Note:**  
-> For Multi Data Source (MDS) configurations, only **manual JDBC string replacement** is supported.
+> For Multi Data Source (MDS) configurations for RAC DB, only **Edit JDBC string** option is supported.
 
 ---
 
@@ -434,14 +470,14 @@ User will have to provide the following as parameters to the Resource Manager:
 For each discovered JDBC datasource, Resource Manager generates a section titled: `DB Connection String #<datasourceName>`.  
 Each datasource can be recreated in OCI using one of the following strategies:
 
-**A. Manual String Replacement (Always Available)**
+**A. Edit JDBC String (Always Available)**
 | Variable                                    | Description                                                        | Default        |
 | ------------------------------------------- | ------------------------------------------------------------------ | -------------- |
 | `Unique jdbc connection string discovered`  | Original JDBC connection string discovered from on-premise domain. | Auto-populated |
-| `edit jdbc connection string discovered`    | Allows editing the JDBC connection string manually.                | Optional       |
-| `Database Strategy`                         | Select `Manual` to replace the JDBC string manually.               | —              |
+| `edit jdbc connection string discovered`    | Allows editing the JDBC connection string.                | Optional       |
+| `Database Strategy`                         | Select `Edit JDBC String` to replace the JDBC string directly.     | —              |
 
-> **Note:** If the datasource is a Multi Data Source (MDS), only Manual JDBC String Replacement is supported.                                                
+> **Note:** If the datasource is a Multi Data Source (MDS) in case of RAC DB, only JDBC String Replacement is supported.                                                
 
 > **Warning:** If VCN peering is required (when WebLogic VCN and Database VCN are different), it must be configured manually by following the [Manual VCN Peering guide](https://docs.oracle.com/en/cloud/paas/weblogic-cloud/user/configure-database-parameters.html#GUID-6A39A2A7-EF6C-408E-B5C7-C44089A9B134__MANUAL_VCN_PEERING). This must be done **before starting the servers**, otherwise the server start will fail.  
 
@@ -652,7 +688,49 @@ bash migration_script.sh
 
 ---
 
-### 2. Error when starting Managed Servers (Hostname Verification Failure)
+### 2. Migration script fails in Archive Domain Step 
+
+If the script fails during the **Archive Domain** step due to **insufficient disk space** on any of the nodes, the log file will display a **TODO** message.
+These TODO messages include the exact commands that must be executed **manually** on the affected host to complete the archive creation process.
+
+**Example:**
+If the migration_script.log shows:
+
+```bash
+
+WARNING Messages:
+
+        1. WLSDPLY-05027: Not enough space on mbnjrf_machine_1 to create the archives. Please run the commands manually mentioned in the TODO to create the archive, scp to the admin host and upload to bucket.
+        2. WLSDPLY-05027: Not enough space on mbnjrf_machine_2 to create the archives. Please run the commands manually mentioned in the TODO to create the archive, scp to the admin host and upload to bucket.
+
+TODO Messages:
+
+        1. WLSDPLY-06042: Please create the FILE_STORE in the archive file at /usr/bin/tar czf /tmp/mbnjrf_machine_1-mbnjrf_domain-java_home.tar.gz --exclude='.pid' --exclude='.state' --exclude='.core' --exclude='diag/ofm/*/*/lck/*.lck' --exclude='servers/*/logs/*.*' --exclude='*.log*[0-9]' --exclude='*.log' --exclude='*.out' --exclude='*.out*[0-9]' --exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*' /u01/app/oracle/jdk .
+        2. WLSDPLY-06042: Please create the FILE_STORE in the archive file at /usr/bin/tar czf /tmp/mbnjrf_machine_1-mbnjrf_domain-domain_home.tar.gz --exclude='.pid' --exclude='.state' --exclude='.core' --exclude='diag/ofm/*/*/lck/*.lck' --exclude='servers/*/logs/*.*' --exclude='*.log*[0-9]' --exclude='*.log' --exclude='*.out' --exclude='*.out*[0-9]' --exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*' /u01/data/domains/mbnjrf_domain .
+        3. WLSDPLY-06042: Please create the FILE_STORE in the archive file at /usr/bin/tar czf /tmp/mbnjrf_machine_1-mbnjrf_domain-weblogic_home.tar.gz --exclude='.pid' --exclude='.state' --exclude='.core' --exclude='diag/ofm/*/*/lck/*.lck' --exclude='servers/*/logs/*.*' --exclude='*.log*[0-9]' --exclude='*.log' --exclude='*.out' --exclude='*.out*[0-9]' --exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*' /u01/app/oracle/middleware .
+        4. WLSDPLY-06042: Please create the FILE_STORE in the archive file at /usr/bin/tar czf /tmp/mbnjrf_machine_1-mbnjrf_domain-custom_dirs.tar.gz --exclude='.pid' --exclude='.state' --exclude='.core' --exclude='diag/ofm/*/*/lck/*.lck' --exclude='servers/*/logs/*.*' --exclude='*.log*[0-9]' --exclude='*.log' --exclude='*.out' --exclude='*.out*[0-9]' --exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*' /u01/data/domains/mbnjrf_domain/wlsdeploy/applications .
+        5. WLSDPLY-06042: Please create the FILE_STORE in the archive file at /usr/bin/tar czf /tmp/mbnjrf_machine_2-mbnjrf_domain-java_home.tar.gz --exclude='.pid' --exclude='.state' --exclude='.core' --exclude='diag/ofm/*/*/lck/*.lck' --exclude='servers/*/logs/*.*' --exclude='*.log*[0-9]' --exclude='*.log' --exclude='*.out' --exclude='*.out*[0-9]' --exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*' /u01/app/oracle/jdk .
+        6. WLSDPLY-06042: Please create the FILE_STORE in the archive file at /usr/bin/tar czf /tmp/mbnjrf_machine_2-mbnjrf_domain-domain_home.tar.gz --exclude='.pid' --exclude='.state' --exclude='.core' --exclude='diag/ofm/*/*/lck/*.lck' --exclude='servers/*/logs/*.*' --exclude='*.log*[0-9]' --exclude='*.log' --exclude='*.out' --exclude='*.out*[0-9]' --exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*' /u01/data/domains/mbnjrf_domain .
+        7. WLSDPLY-06042: Please create the FILE_STORE in the archive file at /usr/bin/tar czf /tmp/mbnjrf_machine_2-mbnjrf_domain-weblogic_home.tar.gz --exclude='.pid' --exclude='.state' --exclude='.core' --exclude='diag/ofm/*/*/lck/*.lck' --exclude='servers/*/logs/*.*' --exclude='*.log*[0-9]' --exclude='*.log' --exclude='*.out' --exclude='*.out*[0-9]' --exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*' /u01/app/oracle/middleware .
+```
+
+#### Workaround
+Then, log in to that specific host and run the indicated command manually.
+
+After the archive is successfully created:
+1. Upload the generated archive file to the designated **Object Storage bucket** manually **or**
+2. Use the **OCI CLI** to upload the file if the OCI CLI is installed on the instance.
+
+**Example (OCI CLI upload):**
+```bash
+oci os object put --bucket-name <bucket_name> --file <archive_file_path> --force
+```
+
+Ensure that all required domain archives are uploaded before proceeding with stack creation.
+
+---
+
+### 3. Error when starting Managed Servers (Hostname Verification Failure)
 
 You may encounter an error when attempting to start managed servers:
 
@@ -684,7 +762,7 @@ Then you must apply the same setting manually for each managed server:
 
 ---
 
-### 3. Error when starting Managed Server in WebLogic 12.2.1.4 (secure mode)
+### 4. Error when starting Managed Server in WebLogic 12.2.1.4 (secure mode)
 
 When starting a Managed Server with WebLogic 12.2.1.4 in secure mode, you may see errors such as:
 
@@ -698,17 +776,14 @@ Server state changed to FAILED
 In secure mode, WebLogic expects replication channels for cluster communication.
 If no replication channel is configured, the Managed Server startup fails.
 
-#### Workaround
-Disable secure replication in the domain configuration (config.xml):
+#### Workaround 
+Disable secure replication in the domain configuration (config.xml) before starting the servers.
 
 ```bash
 <secure-replication-enabled>false</secure-replication-enabled>
 ```
 
-Then restart the servers in the following order:
-
-1. Restart the Admin Server.
-2. Start the Managed Server.
+**Note** This issue has been addressed in the latest code base, and the configuration is automatically handled by the migration tool. No manual action is required.
 
 ---
 
