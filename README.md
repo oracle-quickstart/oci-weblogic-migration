@@ -65,44 +65,47 @@ Refer to the detailed [**Required IAM Policies**](#required-iam-policies) sectio
 Installing Weblogic Migration Tool
 ----------------------------------------
 * Initiate a Secure Shell (SSH) connection to the **AdminServer host**, utilizing a user account with read and write file system permissions. This step enables secure remote access and interaction with the server.
-* Download the most recent release of GIT from  [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-* Get a local copy of the OWM Tool repository to a folder where the user has read and write permissions.
-* Folder will be referenced as $toolHome.
+* Obtain a local copy of the OWM Tool repository in a folder where the user has read and write permissions.
+  * If downloading manually, extract the repository contents to this folder.
+* If you plan to clone the repository using Git, ensure that the latest version of Git is installed on the host. 
+  * Download the most recent release of GIT from  [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+  * Clone the repository with the commands in a folder where the user has read and write permissions:
+ 
+    ```bash
+    git clone https://github.com/oracle-quickstart/oci-weblogic-migration
+    cd oci-weblogic-migration
+    ls
+    ```
 
-Alternatively, clone the repository with the commands:
+    Example output:
+    
+    ```bash
+    $ git clone https://github.com/oracle-quickstart/oci-weblogic-migration
+    Cloning into 'oci-weblogic-migration'...
+    Username for 'https://github.com': mahuwa-barman
+    Password for 'https://mahuwa-barman@github.com': 
+    remote: Enumerating objects: 4391, done.
+    remote: Counting objects: 100% (962/962), done.
+    remote: Compressing objects: 100% (333/333), done.
+    remote: Total 4391 (delta 819), reused 629 (delta 629), pack-reused 3429 (from 2)
+    Receiving objects: 100% (4391/4391), 9.01 MiB | 40.84 MiB/s, done.
+    Resolving deltas: 100% (2822/2822), done.
+    
+    ls -lrth oci-weblogic-migration
+    total 40K
+    -rw-rw-r--. 1 oracle oracle 1.9K Sep 10 08:18 LICENSE
+    -rw-rw-r--. 1 oracle oracle  18K Sep 10 08:19 README.md
+    drwxrwxr-x. 2 oracle oracle   41 Sep 10 08:19 config
+    drwxrwxr-x. 4 oracle oracle   37 Sep 10 08:19 lib
+    drwxrwxr-x. 6 oracle oracle   58 Sep 10 08:19 oci
+    drwxrwxr-x. 3 oracle oracle   17 Sep 10 08:19 wdtconfig
+    drwxrwxr-x. 4 oracle oracle   28 Sep 10 08:19 deps
+    drwxrwxr-x. 2 oracle oracle 4.0K Sep 11 08:21 bin
+    drwxrwxr-x. 3 oracle oracle  113 Sep 11 14:48 out
+    drwxrwxr-x. 2 oracle oracle 4.0K Sep 11 18:02 logs
+    ```
 
-```bash
-git clone https://github.com/oracle-quickstart/oci-weblogic-migration
-cd oci-weblogic-migration
-ls
-```
-Example output:
-
-```bash
-$ git clone https://github.com/oracle-quickstart/oci-weblogic-migration
-Cloning into 'oci-weblogic-migration'...
-Username for 'https://github.com': mahuwa-barman
-Password for 'https://mahuwa-barman@github.com': 
-remote: Enumerating objects: 4391, done.
-remote: Counting objects: 100% (962/962), done.
-remote: Compressing objects: 100% (333/333), done.
-remote: Total 4391 (delta 819), reused 629 (delta 629), pack-reused 3429 (from 2)
-Receiving objects: 100% (4391/4391), 9.01 MiB | 40.84 MiB/s, done.
-Resolving deltas: 100% (2822/2822), done.
-
-ls -lrth oci-weblogic-migration
-total 40K
--rw-rw-r--. 1 oracle oracle 1.9K Sep 10 08:18 LICENSE
--rw-rw-r--. 1 oracle oracle  18K Sep 10 08:19 README.md
-drwxrwxr-x. 2 oracle oracle   41 Sep 10 08:19 config
-drwxrwxr-x. 4 oracle oracle   37 Sep 10 08:19 lib
-drwxrwxr-x. 6 oracle oracle   58 Sep 10 08:19 oci
-drwxrwxr-x. 3 oracle oracle   17 Sep 10 08:19 wdtconfig
-drwxrwxr-x. 4 oracle oracle   28 Sep 10 08:19 deps
-drwxrwxr-x. 2 oracle oracle 4.0K Sep 11 08:21 bin
-drwxrwxr-x. 3 oracle oracle  113 Sep 11 14:48 out
-drwxrwxr-x. 2 oracle oracle 4.0K Sep 11 18:02 logs
-```
+**Note** '$toolHome' refers to the folder where the OWM Tool repository contents are downloaded or cloned.
 
 ---
 
