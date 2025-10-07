@@ -116,6 +116,9 @@ def add_route_rule_to_route_table(route_table_id, destination_cidr, target_id):
             print("Resource not found or access denied. Please check the IAM policies required for Network Access")
             print(f"{str(e)}")
             sys.exit(1)
+        elif e.status == 400 and e.target_service == 'virtual_network' and e.operation_name == 'update_route_table' and "Duplicate rule found" in str(e):
+            print(f"{e.message}")
+            pass    
         else:
             print(f"{str(e)}")
             sys.exit(1)
