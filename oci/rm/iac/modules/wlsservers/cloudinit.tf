@@ -213,6 +213,10 @@ data "cloudinit_config" "wlsservers" {
              path     = "/opt/scripts/open_db_port.py"
            },
            {
+             content  = file("${path.module}/templates/cleanup_resources.py")
+             path     = "/opt/scripts/cleanup_resources.py"
+           },
+           {
              content  = file("${path.module}/templates/atp_db_util.py")
              path     = "/opt/scripts/atp_db_util.py"
            },
