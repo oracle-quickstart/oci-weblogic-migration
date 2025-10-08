@@ -10,6 +10,7 @@ Cleanup script for custom OCI resources created by:
 import oci
 import sys
 import json
+import traceback
 from oci.exceptions import ServiceError
 
 from restore_archives import get_attribute
@@ -36,10 +37,12 @@ def get_seclist_details(seclist_id):
         return get_security_list_response.data
 
     except ServiceError as e:
-        raise Exception(f"ServiceError while fetching security list {seclist_id}: {e.message}")
+        print(f"ServiceError while fetching security list {seclist_id}: {e.message}")
+        sys.exit(1)
 
     except Exception as e:
-        raise Exception(f"Unexpected error while fetching security list {seclist_id}: {str(e)}")
+        print(f"Unexpected error while fetching security list {seclist_id}: {str(e)}")
+        sys.exit(1)
 
 def update_subnet_details(subnet_id, field_name, field_value):
     """
@@ -53,9 +56,11 @@ def update_subnet_details(subnet_id, field_name, field_value):
         )
         print(f"Updated subnet {subnet_id}: set {field_name} = {field_value}")
     except ServiceError as e:
-        raise Exception(f"Service error while updating subnet {subnet_id}: {e.message}")
+        print(f"Service error while updating subnet {subnet_id}: {e.message}")
+        sys.exit(1)
     except Exception as e:
-        raise Exception(f"Unexpected error while updating subnet {subnet_id}: {str(e)}")
+        print(f"Unexpected error while updating subnet {subnet_id}: {str(e)}")
+        sys.exit(1)
 
 def remove_route_rule(route_table_id, destination_cidr, target_id):
     """
@@ -74,6 +79,7 @@ def remove_route_rule(route_table_id, destination_cidr, target_id):
         print(f"Removed route to {destination_cidr} via {target_id} in route table {route_table_id}")
     except Exception as e:
         print(f"Failed to remove route rule in {route_table_id}: {str(e)}")
+        sys.exit(1)
 
 
 def cleanup_security_lists():
@@ -84,7 +90,7 @@ def cleanup_security_lists():
     print("Cleaning up security list...")
 
     # Loads DB subnet OCIDs from Terraform-generated metadata
-    db_subnet_ids = json.loads(get_db_subnet_map())[0]
+    db_subnet_ids = json.loads(get_db_subnet_map())
     wls_subnet = get_subnet_details(get_wls_subnet_id())
     wls_display_name = wls_subnet.display_name
     seclist_suffix=(wls_display_name.split('-')[1] if '-' in wls_display_name else "")
@@ -116,10 +122,14 @@ def cleanup_security_lists():
             try:
                 core_client.delete_security_list(security_list_id=seclist.id)
                 print(f"    Deleted Security List: {seclist.display_name}")
+
             except ServiceError as e:
                 print(f"    Failed to delete {seclist.display_name}: {e.message}")
+                sys.exit(1)
+
             except Exception as e:
                 print(f"Unexpected error while updating security list {seclist.display_name}: {str(e)}")
+                sys.exit(1)
 
 
 def cleanup_route_rules():
@@ -130,7 +140,7 @@ def cleanup_route_rules():
 
     wlsserver_lpg_ids = json.loads(get_wls_lpg_map())[0]
     db_lpg_ids = json.loads(get_db_lpg_map())[0]
-    db_subnet_ids = json.loads(get_db_subnet_map())[0]
+    db_subnet_ids = json.loads(get_db_subnet_map())
 
     wls_subnet = get_subnet_details(get_wls_subnet_id())
     wls_rt_id = wls_subnet.route_table_id
@@ -159,4 +169,5 @@ if __name__ == "__main__":
         print("Cleanup complete. You can now safely run 'terraform destroy'.")
     except Exception as e:
         print(f"Cleanup failed: {str(e)}")
+        traceback.print_exc()
         sys.exit(1)
