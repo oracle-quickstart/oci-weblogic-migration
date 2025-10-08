@@ -129,6 +129,33 @@ __optional_arguments = [
     CommandLineArgUtil.OUTPUT_DIR_SWITCH
 ]
 
+def _get_bucket_name():
+    bucket = ""
+    skip = False
+
+    tool_home=env_helper.getenv("toolHome", None)
+    if not tool_home:
+        return bucket
+
+    env_file = os.path.join(tool_home, "config", "on-prem.env")
+    if not os.path.exists(env_file):
+        return bucket
+
+    f = open(env_file, "r")
+    for l in f:
+        line = l.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = [x.strip().strip('"').strip("'") for x in line.split("=", 1)]
+        if k == "skip_transfer" and v.lower() in ["true", "1", "yes"]:
+            skip = True
+        elif k == "bucket_name":
+            bucket = v
+    f.close()
+
+    if skip:
+        return ""
+    return bucket
 
 def __process_args(args, is_encryption_supported):
     """
@@ -284,6 +311,8 @@ def __discover_datasources(model, model_context, helper):
     datasource_map = {}
     template_hash = dict()
     template_hash['is_mds']="false"
+    bucket_name = _get_bucket_name()
+    template_hash["oci_bucket_name"] = bucket_name
     jdbc_system_resources = dictionary_utils.get_dictionary_element(resources, JDBC_SYSTEM_RESOURCE)
     for jdbc_name in jdbc_system_resources:
         named = dictionary_utils.get_dictionary_element(jdbc_system_resources, jdbc_name)
