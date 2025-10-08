@@ -129,12 +129,11 @@ __optional_arguments = [
     CommandLineArgUtil.OUTPUT_DIR_SWITCH
 ]
 
-def get_bucket_name():
+def _get_bucket_name():
     bucket = ""
     skip = False
 
-    # Dynamically read toolHome from env variable
-    tool_home = os.environ.get("TOOL_HOME")
+    tool_home=env_helper.getenv("toolHome", None)
     if not tool_home:
         return bucket
 
@@ -312,7 +311,7 @@ def __discover_datasources(model, model_context, helper):
     datasource_map = {}
     template_hash = dict()
     template_hash['is_mds']="false"
-    bucket_name = get_bucket_name()
+    bucket_name = _get_bucket_name()
     template_hash["oci_bucket_name"] = bucket_name
     jdbc_system_resources = dictionary_utils.get_dictionary_element(resources, JDBC_SYSTEM_RESOURCE)
     for jdbc_name in jdbc_system_resources:
