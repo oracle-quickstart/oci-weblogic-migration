@@ -64,5 +64,4 @@ umask 27
 checkArgs "$@"
 
 export PYTHONPATH=$PWD/lib
-
 runWlst datasource_discovery.py "$@"
