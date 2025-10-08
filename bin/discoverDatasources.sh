@@ -64,4 +64,6 @@ umask 27
 checkArgs "$@"
 
 export PYTHONPATH=$PWD/lib
+# Ensure TOOL_HOME is set
+export TOOL_HOME="$toolHome"
 runWlst datasource_discovery.py "$@"

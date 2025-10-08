@@ -119,9 +119,6 @@ ORM_SCHEMA_TEMPLATE_RESOURCE_PATH = os.path.join('templates',TF_ORM_SCHEMA_FILE_
 TF_LOCALS_TEMPLATE_RESOURCE_PATH = os.path.join('templates',TF_LOCALS_DB_CONNECTION_STRING_FILE_NAME + file_template_helper.MUSTACHE_SUFFIX)
 TF_DATASOURCE_OCI_DB_RESOURCES_TEMPLATE_RESOURCE_PATH = os.path.join('templates',TF_DATASOURCE_OCI_DB_RESOURCES_FILE_NAME + file_template_helper.MUSTACHE_SUFFIX)
 TF_VARIABLES_DB_CONNECTION_STRING_TEMPLATE_RESOURCE_PATH = os.path.join('templates',TF_VARIABLES_DB_CONNECTION_STRING_FILE_NAME + file_template_helper.MUSTACHE_SUFFIX)
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-TOOL_HOME = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
-ENV_FILE_PATH = os.path.join(TOOL_HOME, "config", "on-prem.env")
 __required_arguments = [
     CommandLineArgUtil.ORACLE_HOME_SWITCH,
     CommandLineArgUtil.MODEL_FILE_SWITCH
@@ -133,34 +130,33 @@ __optional_arguments = [
 ]
 
 def get_bucket_name():
-    """
-    Reads $tool_home/config/on-prem.env to determine the bucket_name.
-    Returns an empty string if skip_transfer=true or file not found.
-    """
-    if not os.path.exists(ENV_FILE_PATH):
+    bucket = ""
+    skip = False
+
+    # Dynamically read toolHome from env variable
+    tool_home = os.environ.get("TOOL_HOME")
+    if not tool_home:
+        return bucket
+
+    env_file = os.path.join(tool_home, "config", "on-prem.env")
+    if not os.path.exists(env_file):
+        return bucket
+
+    f = open(env_file, "r")
+    for l in f:
+        line = l.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = [x.strip().strip('"').strip("'") for x in line.split("=", 1)]
+        if k == "skip_transfer" and v.lower() in ["true", "1", "yes"]:
+            skip = True
+        elif k == "bucket_name":
+            bucket = v
+    f.close()
+
+    if skip:
         return ""
-
-    skip_transfer = False
-    bucket_name = ""
-
-    with open(ENV_FILE_PATH, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-
-            key, value = [x.strip() for x in line.split("=", 1)]
-            key = key.lower()
-
-            if key == "skip_transfer":
-                skip_transfer = value.lower() in ["true", "1", "yes"]
-            elif key == "bucket_name":
-                bucket_name = value
-
-    if skip_transfer:
-        return ""
-    return bucket_name
-
+    return bucket
 
 def __process_args(args, is_encryption_supported):
     """
@@ -317,7 +313,7 @@ def __discover_datasources(model, model_context, helper):
     template_hash = dict()
     template_hash['is_mds']="false"
     bucket_name = get_bucket_name()
-    template_hash["bucket_name"] = bucket_name
+    template_hash["oci_bucket_name"] = bucket_name
     jdbc_system_resources = dictionary_utils.get_dictionary_element(resources, JDBC_SYSTEM_RESOURCE)
     for jdbc_name in jdbc_system_resources:
         named = dictionary_utils.get_dictionary_element(jdbc_system_resources, jdbc_name)
