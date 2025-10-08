@@ -138,8 +138,8 @@ def cleanup_route_rules():
 
     for key in sorted(wlsserver_lpg_ids):
         wls_lpg_id = wlsserver_lpg_ids[key]
-        db_lpg_id = db_lpg_map.get(key)
-        db_subnet_id = db_subnet_map.get(key)
+        db_lpg_id = db_lpg_ids.get(key)
+        db_subnet_id = db_subnet_ids.get(key)
 
         if not all([wls_lpg_id, db_lpg_id, db_subnet_id]):
             continue
