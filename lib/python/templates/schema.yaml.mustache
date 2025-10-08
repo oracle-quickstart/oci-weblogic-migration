@@ -570,7 +570,7 @@ variables:
     description: The selected image is used for Weblogic instances.
     type: enum
     default: "Oracle WebLogic Server Enterprise Edition UCM Image"
-    enum: ["Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Suite UCM Image", "Oracle WebLogic Server Enterprise Edition BYOL Image", "Oracle Weblogic Suite BYOL Image", "Platform Image"]
+    enum: ["Oracle WebLogic Server Enterprise Edition UCM Image", "Oracle Weblogic Suite UCM Image", "Oracle WebLogic Server Enterprise Edition BYOL Image", "Oracle Weblogic Suite BYOL Image"]
     required: true
 
   wlsserver_image_id:
@@ -634,6 +634,7 @@ variables:
     type: string
     title: Object Storage Bucket name
     required: true
+    default: ""
     description: OCI Object Storage Bucket name where on-premise Weblogic archives are stored.
 
 
