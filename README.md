@@ -522,8 +522,6 @@ If the user applying the Resource Manager stack is **not an OCI administrator**,
 | `Allow group Non-Admin to inspect tenancies in tenancy` | To locate the home region for the tenancy                       | Root Compartment             |
 | `Allow group Non-Admin to inspect limits in tenancy` | To determine if resources are available in various compartments | Root Compartment             |
 | `Allow group Non-Admin to manage object-family in compartment MyCompartment` | To create Object Storage bucket and upload the archives         | Bucket Compartment           |
-| `Allow group Non-Admin to inspect instance-image in compartment MyCompartment` | To use the WebLogic custom images from Marketplace              | Stack Compartment            |
-| `Allow group Non-Admin to use app-catalog-listing in compartment MyCompartment` | To use the Marketplace applications                             | Stack Compartment            |
 | `Allow group Non-Admin to manage instance-family in compartment MyCompartment` | To create Compute Instances                                     | Stack Compartment            |
 | `Allow group Non-Admin to manage volume-family in compartment MyCompartment` | To create Block Volumes                                         | Stack Compartment            |
 | `Allow group Non-Admin to manage orm-family in compartment MyCompartment` | To create Resource Manager stacks                               | Stack Compartment            |
@@ -566,11 +564,20 @@ The following **dynamic group and network policies** are **automatically created
 > **Important**  
 > If the checkbox is **not selected**, these policies must be **added manually** by your OCI administrator.
 
-| Policy Statement                                                                                                   | Purpose                                                                                                                                | Policy Location        |
-|--------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|------------------------|
-| `Allow dynamic-group <dynamic-group> to read buckets in tenancy`                                                   | To find the compartment where Object Storage bucket exists                                                                             | Root Compartment       |
-| `Allow dynamic-group <dynamic-group> to read objects in compartment MyCompartment`                                    | To upload archives or overwrite existing objects in Object Storage                                                                     | Bucket Compartment     |
-| `Allow dynamic-group <dynamic-group> to use autonomous-transaction-processing-family in compartment MyCompartment` | To download ATP/ADW database wallet                                                                                                    | Database Compartment   |
+| Policy Statement | Purpose | Policy Location |
+|------------------|----------|-----------------|
+| `Allow dynamic-group <dynamic-group> to read buckets in tenancy` | To find the compartment where Object Storage buckets exist | Root Compartment |
+| `Allow dynamic-group <dynamic-group> to read objects in compartment <BucketCompartment>` | To upload archives or overwrite existing objects in Object Storage | Bucket Compartment |
+| `Allow dynamic-group <dynamic-group> to use instance-family in compartment <ComputeCompartment>` | Required for instance-level operations such as starting or stopping compute instances during migration | Stack Compartment |
+| `Allow dynamic-group <dynamic-group> to manage volume-family in compartment <ComputeCompartment>` | Required to attach or detach block volumes and manage storage used by migrated servers | Stack Compartment |
+| `Allow dynamic-group <dynamic-group> to inspect virtual-network-family in compartment <NetworkCompartment>` | Required to inspect VCN and subnet information for network configuration validation | Weblogic Network Compartment |
+
+
+#### ATP-DB Policy (Optional)
+If the migrated domain uses an Autonomous Database (ATP/ADW), The following policy is required to download the ATP or ADW database wallet: 
+
+| Policy Statement | Policy Location |
+| `Allow dynamic-group <dynamic-group> to use autonomous-transaction-processing-family in compartment MyCompartment` | Database Compartment   |
 
 
 #### VCN Peering Policies (Optional)
