@@ -728,6 +728,13 @@ Ensure that all required domain archives are uploaded before proceeding with sta
 
 ---
 
+## Limitations
+
+- Domains created with WebLogic Server 12.2.1.3 are not supported for migration or automation with this tool.
+
+
+---
+
 ### 3. Error when starting Managed Servers (Hostname Verification Failure)
 
 You may encounter an error when attempting to start managed servers:
@@ -784,4 +791,11 @@ Disable secure replication in the domain configuration (config.xml) before start
 **Note** This issue has been addressed in the latest code base, and the configuration is automatically handled by the migration tool. No manual action is required.
 
 ---
+
+Limitations
+------------
+
+- Domains created with WebLogic Server 12.2.1.3 are not supported for migration with this tool.
+- For domains with multiple managed servers using different listen ports, the load balancer configuration must be performed manually, and the backend targets must be adjusted accordingly.
+
 
