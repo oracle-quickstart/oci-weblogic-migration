@@ -405,7 +405,6 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
   * Oracle Weblogic Suite UCM Image
   * Oracle WebLogic Server Enterprise Edition BYOL Image
   * Oracle Weblogic Suite BYOL Image
-  * Platform Image(Oracle-Linux-8.10-2025.06.17-0)
 * Provides options to recreate the datasource connection strings in OCI for WebLogic domains with JDBC Datasources, using one of the following:
   * Autonomous Database (ADB)
   * OCI Database (DB System)
