@@ -76,7 +76,6 @@ def update_secure_replication(config_path):
               f.write(xml_str)
         print(f"[SUCCESS] Updated: {config_path}")
         print(f"[INFO] Backup at: {backup_path}")
-        print("[INFO] Restart the servers for changes to take effect")
     except Exception as e:
         print(f"[ERROR] Failed to process {config_path}: {e}")
         if backup_path and os.path.exists(backup_path):
