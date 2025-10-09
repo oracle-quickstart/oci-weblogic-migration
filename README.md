@@ -162,15 +162,12 @@ ssh_password_file=
 # domain_home:  Weblogic Domain's path. Domain to migrate to OCI.
 # oracle_home:  Home directory of the Oracle WebLogic installation.
 #               Set to ORACLE_HOME in local Linux Server.
+# java_home  :  The location of the JDK that WebLogic Server uses for execution 
+                and was used during its installation.
 ######################################################################
 domain_home=/u01/data/domains/test_domain
 oracle_home=/u01/app/oracle/middleware
-
-######################################################################
-# CLEAR VALUE (leave blank) if Weblogic Deployment Type is not Node Manager per Machine.
-# node_manager_home: Path where the Node Manager is installed and configured.
-######################################################################
-node_manager_home=
+java_home=/u01/jdk
 
 ######################################################################
 # skip_transfer:  Defaults to false.
