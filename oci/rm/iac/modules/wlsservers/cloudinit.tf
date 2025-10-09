@@ -182,6 +182,10 @@ data "cloudinit_config" "wlsservers" {
             })
             path    = "/opt/scripts/restore_archives.py"
           },
+          {
+            content  = file("${path.module}/templates/set_secure_replication_false.py")
+            path     = "/opt/scripts/set_secure_replication_false.py"
+          },
         ]
       })
       filename   = "71-wls-restore-archives.yml"
@@ -268,6 +272,7 @@ data "cloudinit_config" "wlsservers" {
     content {
       content_type = "text/x-shellscript"
       content      = templatefile("${path.module}/templates/cloudinit-wls-restore-archives.tpl.sh", {
+        wls_domain_home = var.wls_domain_home
         user = var.user
         jdk_device_id =local.block_volume_jdk_device_id
         mw_device_id = local.block_volume_mw_device_id

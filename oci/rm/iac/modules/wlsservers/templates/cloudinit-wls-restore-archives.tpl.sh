@@ -220,3 +220,20 @@ create_java_symlinks | log >> $log_file
 set_java_home | log >> $log_file
 echo "<cloud-init><restore_archives> Restore completed" | log >> $log_file
 
+# Update secure replication setting
+echo "<cloud-init><secure-replication> Starting secure replication update" | log >> $log_file
+
+CONFIG_PATH="${wls_domain_home}/config/config.xml"
+
+if [ -f "$CONFIG_PATH" ]; then
+  python /opt/scripts/set_secure_replication_false.py "$CONFIG_PATH" 2>&1 | log >> $log_file
+  exit_code=$?
+  if [[ $exit_code -ne 0 ]]; then
+    echo "<cloud-init><secure-replication><ERROR> Failed to update secure replication setting with exit code [$exit_code]" | log | tee -a $log_file >> $error_log_file
+    exit 1
+  fi
+  echo "<cloud-init><secure-replication> Secure replication update completed with exit code [$exit_code]" | log >> $log_file
+else
+  echo "<cloud-init><secure-replication><WARN> Config file not found at $CONFIG_PATH - skipping secure replication update" | log >> $log_file
+fi
+
