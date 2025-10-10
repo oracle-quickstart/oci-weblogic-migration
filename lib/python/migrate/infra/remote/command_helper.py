@@ -18,6 +18,7 @@ from java.lang import System
 
 
 from java.io import BufferedReader
+from oracle.weblogic.deploy.util import PyOrderedDict as OrderedDict
 from oracle.weblogic.deploy.create import CreateException
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))),
@@ -262,13 +263,17 @@ class CommandHelper(object):
                 _logger.exiting(class_name=_class_name, method_name=_method_name, result="script is None")
                 return
             timer = time.time()
-            runner = os.popen("python " + cmd + " " + args)
+            runner = os.popen(cmd + " " + args)
             output = runner.read()
             status = runner.close()
             # If the command fails, close() returns the child process's exit status
             # (shifted left by 8 bits on Unix-like systems).
             # To get the real exit code, right-shift by 8 bits (exit_status >> 8).
-            exit_code = 0 if status is None else status >> 8
+            if status is None:
+                exit_code = 0
+            else:
+                exit_code = status >> 8
+
             if output is None or output.strip() == "":
                 exit_code=1
             _logger.exiting(class_name=_class_name, method_name=_method_name, result=timer)
