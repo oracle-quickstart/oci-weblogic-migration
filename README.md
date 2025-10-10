@@ -533,6 +533,7 @@ The following policies are required **only if specific features are enabled**:
 |------------------|---------|------------------------------|
 | `Allow group Non-Admin to manage load-balancers in compartment MyNetworkCompartment` | To create and manage Load Balancers (required if **"Provision Load Balancer"** checkbox is selected) | WebLogic Network Compartment |
 | `Allow group Non-Admin to manage orm-private-endpoints in compartment MyNetworkCompartment` | To create Private Endpoints (required **only if "Provision Bastion Instance"** checkbox is **not** selected)                               | WebLogic Network Compartment |
+| `Allow group Non-Admin to read orm-work-requests in compartment MyNetworkCompartment` | Required for Private Endpoint creation when **"Provision Bastion Instance"** checkbox is **not** selected  | WebLogic Network Compartment |
 
 > **Note:** These policies are conditional and should only be applied when the corresponding feature checkboxes are selected during Stack Apply.
 

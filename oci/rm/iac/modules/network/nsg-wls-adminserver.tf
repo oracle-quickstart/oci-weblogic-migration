@@ -54,7 +54,11 @@ locals {
             "Allow TCP ingress to AdminServer from Bastion on port ${var.wls_admin_console_port} " : {
             protocol = local.tcp_protocol, port = var.wls_admin_console_port, source = local.bastion_nsg_id, source_type = local.rule_type_nsg,
           }
-        } : {},
+        } : {
+             "Allow SSH Access from ResourceManager private Endpoint to AdminServer" :{
+               protocol = local.tcp_protocol, port = local.ssh_port, source = local.adminserver_nsg_id, source_type = local.rule_type_nsg,
+             }
+        },
         var.allow_adminserver_internet_access ? {
           "Allow ALL egress from adminservers to internet" : {
             protocol = local.all_protocols, port = local.all_ports, destination = local.anywhere, destination_type = local.rule_type_cidr,
