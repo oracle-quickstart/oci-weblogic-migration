@@ -628,24 +628,51 @@ All restore logs are available under `/var/log/owm/` in the compute instances.
   -rw-r--r--. 1 root   root   1.4K Jul 31 09:42 os-users.log
   -rw-r--r--. 1 root   root   1.8K Jul 31 09:43 wls-restore.log
   -rw-r--r--. 1 root   root   3.4K Jul 31 09:44 datasource_update.log
-```  
+```
 
----
+### Post-Restore Validation
 
-Start OCI WebLogic Domain and Verify Services
-------------------------------------------------
+After the ORM stack apply completes and all compute instances have initialized, **SSH to each instance** and perform the following validation steps before starting any WebLogic processes.
 All OCI Instances (Servers hosting AdminServers and Managed Servers) will be created in a Private Subnet in OCI Virtual Cloud Network. 
 To access them, an SSH session should be established via a Bastion Host.
 To find the commands to ssh, click on Stack - Application Details Tab and copy the SSH command example given.
-The complete ssh command to access the AdminServer should follow this format:
+The complete ssh command to access the servers should follow this format:
 
+Example:
 ```bash 
 ssh -i <private ssh key file> -o 'UserKnownHostsFile /dev/null' -o 'StrictHostKeyChecking no' -o 'ProxyCommand ssh -W %h:%p -i <private ssh key file> -l opc <Bastion Public IP>' -l opc <AdminServer Private IP>
 
 $admin-server> sudo su - <same username as on-premise> 
 ```
 
-Once the cloud-init scripts have completed, SSH to the new AdminServer instance, change directory to the WebLogic Domain Home and bring up your AdminServer. Similarly, start all managed servers. Verify and Test your WebLogic domain to confirm that the migration was successful. 
+> **Note:**  
+> 1. **Verify Restore Completion**  
+>    To confirm that the restore process has finished successfully, run the following command:  
+>    ```bash
+>    cloud-init status
+>    status: done
+>    ```  
+>    Proceed to the next step only if the status is reported as `done`.
+>
+> 2. **Check Restore Logs**  
+>    Ensure that **no errors** are reported in any of the log files located under:  
+>    ```
+>    /var/log/owm/
+>    ```  
+>    Review the contents of these logs to confirm that all migration steps have completed successfully.  
+>
+> 3. **Proceed with Startup**  
+>    Only after confirming that the restore process is complete and no errors are present in the logs should you proceed to start the **WebLogic Server** and **Node Manager** processes.
+
+
+---
+
+Start OCI WebLogic Domain and Verify Services
+------------------------------------------------
+
+After completing all post-restore verification steps, connect to the new **AdminServer** instance using SSH.  
+Navigate to the WebLogic **Domain Home** directory and start the **AdminServer**, followed by all **Managed Servers**.  
+Verify and test the WebLogic domain to ensure that the migration has completed successfully.
 
 ---
 
