@@ -661,6 +661,10 @@ $admin-server> sudo su - <same username as on-premise>
 >    ```  
 >    Review the contents of these logs to confirm that all migration steps have completed successfully.  
 >
+>    > **JRF Domain Note:**  
+>    > For **JRF domains**, if VCN peering fails and `/var/log/owm/datasource_update.log` indicates the failure, VCN peering must be performed manually.  
+>    > Follow the instructions in the Oracle documentation: [Manual VCN Peering](https://docs.oracle.com/en/cloud/paas/weblogic-cloud/user/configure-database-parameters.html#GUID-6A39A2A7-EF6C-408E-B5C7-C44089A9B134__MANUAL_VCN_PEERING)
+>
 > 3. **Proceed with Startup**  
 >    Only after confirming that the restore process is complete and no errors are present in the logs should you proceed to start the **WebLogic Server** and **Node Manager** processes.
 
@@ -760,13 +764,6 @@ Ensure that all required domain archives are uploaded before proceeding with sta
 
 ---
 
-## Limitations
-
-- Domains created with WebLogic Server 12.2.1.3 are not supported for migration or automation with this tool.
-
-
----
-
 ### 3. Error when starting Managed Servers (Hostname Verification Failure)
 
 You may encounter an error when attempting to start managed servers:
@@ -820,7 +817,11 @@ Disable secure replication in the domain configuration (config.xml) before start
 <secure-replication-enabled>false</secure-replication-enabled>
 ```
 
-**Note** This issue has been addressed in the latest code base, and the configuration is automatically handled by the migration tool. No manual action is required.
+> **Note:**  
+> This issue has been addressed in the latest code base, and the configuration is automatically handled by the migration tool. No manual action is required.  
+>  
+> However, if the `/var/log/owm/wls-restore.log` file indicates that this configuration step has failed, perform the above workaround manually **before starting the servers**, following the instructions provided in this section.
+
 
 ---
 
