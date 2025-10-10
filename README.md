@@ -575,6 +575,7 @@ The following **dynamic group and network policies** are **automatically created
 If the migrated domain uses an Autonomous Database (ATP/ADW), The following policy is required to download the ATP or ADW database wallet: 
 
 | Policy Statement | Policy Location |
+|------------------|----------------|
 | `Allow dynamic-group <dynamic-group> to use autonomous-transaction-processing-family in compartment MyCompartment` | Database Compartment   |
 
 
