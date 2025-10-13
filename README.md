@@ -689,7 +689,10 @@ However, before running the destroy operation, specific cleanup steps are requir
 
 ### For JRF Domains 
 
-If the migrated stack includes VCN peering and the “Add Rule for WLS to Access DB” option was selected during stack creation, you must first execute the cleanup script to remove temporary networking configurations before destroying the stack.
+If the migrated stack includes **VCN peering** and the **“Add Rule for WLS to Access DB”** option was selected during stack creation, you must first execute the cleanup script to remove some networking configurations before destroying the stack.  
+
+These resources are created dynamically through **API calls** during migration and are **not managed by Terraform**, so Terraform cannot automatically identify or remove them. Running the cleanup script ensures these configurations are deleted before executing `terraform destroy`.
+
 
 Example:
 ```bash
