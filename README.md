@@ -353,7 +353,7 @@ OCI Resource Manager requires the compressed stack file created in the **Generat
 Before launching the stack, ensure the following are completed:
 
 1. **Database Migration (for JRF WebLogic-enabled domains)**  
-   Complete the on-premise database migration to OCI-DB or ATP-DB as appropriate before running the Resource Manager **Apply** action.**.
+   Complete the on-premise database migration to OCI-DB or ATP-DB as appropriate before running the Resource Manager **Apply** action.
 
 2. **JDBC Connection Strings (for JRF WebLogic-enabled domains)**  
    JDBC connection strings of the OCI Database must be known before running the Resource Manager **Apply** action.
