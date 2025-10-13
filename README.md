@@ -657,7 +657,7 @@ $admin-server> sudo su - <same username as on-premise>
 >
 > 2. **Check Restore Logs**  
 >    Ensure that **no errors** are reported in any of the log files located under:  
->    ```
+>    ```bash
 >    /var/log/owm/
 >    ```  
 >    Review the contents of these logs to confirm that all migration steps have completed successfully.  
@@ -678,6 +678,44 @@ Start OCI WebLogic Domain and Verify Services
 After completing all post-restore verification steps, connect to the new **AdminServer** instance using SSH.  
 Navigate to the WebLogic **Domain Home** directory and start the **AdminServer**, followed by all **Managed Servers**.  
 Verify and test the WebLogic domain to ensure that the migration has completed successfully.
+
+---
+
+Destroying the Migrated Stack
+-------------------------------
+
+If you need to remove the migrated environment, you can destroy the ORM stack.
+However, before running the destroy operation, specific cleanup steps are required depending on your domain type.
+
+### For JRF Domains 
+
+If the migrated stack includes VCN peering and the “Add Rule for WLS to Access DB” option was selected during stack creation, you must first execute the cleanup script to remove temporary networking configurations before destroying the stack.
+
+Example:
+```bash
+cd /opt/scripts
+python3 cleanup_resources.py
+```
+
+Sample output:
+```bash
+Cleaning up security list...
+Updated subnet ocid1.subnet.oc1.phx.aaaaaaaa2xizawllipxxxxxxxxxxxxmhjceonlwppb553hq: set security_list_ids = [...]
+Removed security list: wls-to-db-seclist-ynaxab-0 from subnet: db-wls-subnet
+Deleted Security List: wls-to-db-seclist-ynaxab-0
+Cleaning up Route Rules...
+Removed route to 9.1.1.0/24 via ocid1.localpeeringgateway.oc1.phx.aaaxxxxxxx7ukj57x3wxk2zj4xgtednkoxvxzkpif52x6lmyvoyzcmq
+Removed route to 7.0.2.0/24 via ocid1.localpeeringgateway.oc1.phx.aaaxxxxxxxxxxtdidsi7pvts4qa6h6u2wy2kewink2cekejbc7wifxeaa
+Cleanup complete. You can now safely run 'terraform destroy'.
+``` 
+
+### For Non-JRF Domains
+
+If your stack is non-JRF, you can directly run the terraform destroy command to remove all resources — no additional cleanup is required.
+
+> **Note:**  
+> - For **non-JRF domains**, you can directly run `terraform destroy` on the stack — no additional cleanup is required.  
+> - For **JRF domains**, ensure the cleanup script is executed first if **VCN peering** or the **“Add Rule for WLS to Access DB”** option was selected; otherwise, residual networking configurations may remain in your tenancy.
 
 ---
 
