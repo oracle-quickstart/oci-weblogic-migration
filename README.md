@@ -314,7 +314,7 @@ Workflow
 
 
 Logs and Error Handling
----------------
+---------------------
 
 Detailed execution logs are available under `$toolHome/logs`.
 The main log for this script is `migration_script.log`. Log is always appended to, so all previous execution attempts will remain in the log.
@@ -351,7 +351,7 @@ bash migration_script.sh
 > **For additional troubleshooting:**  
 > Refer to the following sections for detailed checks and resolutions:  
 >
-> - [Step 2. Pre-requisite Steps for Executing the Migration Script](#step-2-pre-requisite-steps-for-executing-the-migration-script)  
+> - [Pre-requisite Steps for Executing the Migration Script](#step-2-pre-requisite-steps-for-executing-the-migration-script)  
 > - [Known Issues](#known-issues)
 
 
