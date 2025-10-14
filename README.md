@@ -124,6 +124,7 @@ The script combines all required tasks into a single workflow:
 
 Usage
 ----------------------------------------
+
 ### Step 1.  Declare WebLogic source domain details in $toolHome/config/on-prem.env
 
 Example:
@@ -314,6 +315,7 @@ Workflow
 
 Logs and Error Handling
 ---------------
+
 Detailed execution logs are available under `$toolHome/logs`.
 The main log for this script is `migration_script.log`. Log is always appended to, so all previous execution attempts will remain in the log.
 To get the log for only the most recent script execution, either move the existing log to another location or delete it before re-running the script.
@@ -346,10 +348,17 @@ bash migration_script.sh
 2025-09-11 14:11:13  [info] Migration script completed successfully!
  ```
 
+> **For additional troubleshooting:**  
+> Refer to the following sections for detailed checks and resolutions:  
+>
+> - [Step 2. Pre-requisite Steps for Executing the Migration Script](#step-2-pre-requisite-steps-for-executing-the-migration-script)  
+> - [Known Issues](#known-issues)
+
+
 ---
 
-Migrate WLS Domain to OCI Cloud
----------------------------------
+Migrate WLS Domain to OCI
+--------------------------
 
 ### Resource Manager
 OCI Resource Manager requires the compressed stack file created in the **Generate OCI Resource Manager Stack** step by `migration_script.sh`.
