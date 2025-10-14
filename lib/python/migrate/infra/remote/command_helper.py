@@ -277,7 +277,7 @@ class CommandHelper(object):
             if output is None or output.strip() == "":
                 exit_code=1
             _logger.exiting(class_name=_class_name, method_name=_method_name, result=timer)
-            output = output.strip("\n")
+            output = output.split("\n")
             return exit_code,output
         except CreateException, ce:
             ex = exception_helper.create_discover_exception(ExitCode.ERROR,
