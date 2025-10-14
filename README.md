@@ -238,20 +238,25 @@ Before executing the migration script `migration_script.sh`, ensure the followin
       2. Allow group `Non-Admin` to read buckets in the tenancy.
 
 5. **SSH Authentication**  
-   The **AdminServer host** of the source domain must have **passwordless SSH authentication** established to all **WebLogic Managed Server** Linux hosts.  
+   The **AdminServer host** of the source domain must have **passwordless SSH authentication** established to all **WebLogic Managed Server** Linux hosts **and to itself**.  
    This ensures seamless remote operations during migration.
 
     **Example:**
-    On the AdminServer host, verify SSH connectivity to each Managed Server without a password prompt.
+    On the AdminServer host, verify SSH connectivity to itself and to each Managed Server host without a password prompt.
 
     ```bash
     # Get the full hostname of the AdminServer
     hostname -f
     mbnjrf-wls-0.wlsubnetfrjnbm.mbnjrfvcn.oraclevcn.com
     
+    # Test SSH connection to the AdminServer itself
+    [oracle@mbnjrf-wls-0 ~]$ ssh mbnjrf-wls-0.wlsubnetfrjnbm.mbnjrfvcn.oraclevcn.com
+    [oracle@mbnjrf-wls-0 ~]$ exit
+    
     # Test SSH connection to each Managed Server host
     [oracle@mbnjrf-wls-0 ~]$ ssh mbnjrf-wls-1.wlsubnetfrjnbm.mbnjrfvcn.oraclevcn.com
     [oracle@mbnjrf-wls-1 ~]$ exit
+
     ```
     Repeat this process from the **AdminServer host** to all hosts in the WebLogic domain to confirm passwordless SSH access is properly configured.
 
@@ -689,9 +694,9 @@ However, before running the destroy operation, specific cleanup steps are requir
 
 ### For JRF Domains 
 
-If the migrated stack includes **VCN peering** and the **“Add Rule for WLS to Access DB”** option was selected during stack creation, you must first execute the cleanup script to remove some networking configurations before destroying the stack.  
+If the migrated stack includes **VCN peering** and the **Add Rule for WLS to Access DB** option was selected during stack creation, you must first execute the cleanup script to remove some networking configurations before destroying the stack.  
 
-These resources are created dynamically through **API calls** during migration and are **not managed by Terraform**, so Terraform cannot automatically identify or remove them. Running the cleanup script ensures these configurations are deleted before executing `terraform destroy`.
+These resources are created dynamically through **API calls** during migration and are **not managed by Terraform**, so Terraform cannot automatically identify or remove them. Running the cleanup script ensures these configurations are deleted before executing `terraform destroy` otherwise, residual networking configurations may remain in your tenancy and `terraform destroy` may fail.
 
 
 Example:
@@ -716,10 +721,18 @@ Cleanup complete. You can now safely run 'terraform destroy'.
 
 If your stack is non-JRF, you can directly run the terraform destroy command to remove all resources — no additional cleanup is required.
 
-> **Note:**  
-> - For **non-JRF domains**, you can directly run `terraform destroy` on the stack — no additional cleanup is required.  
-> - For **JRF domains**, ensure the cleanup script is executed first if **VCN peering** or the **“Add Rule for WLS to Access DB”** option was selected; otherwise, residual networking configurations may remain in your tenancy.
+> **Note**  
+> The cleanup script performs operations such as deleting security lists and modifying route tables and subnets.  
+> To allow these actions, ensure the **dynamic group** used for migration has the following IAM policies in place:
+>
+> | Policy Statement | Policy Location |
+> |------------------|----------------|
+> | `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyDBNetworkCompartment` | DB Network Compartment |
+> | `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyNetworkCompartment` | WebLogic Network Compartment |
+>
+> These permissions enable the cleanup script to manage network resources that were created outside of Terraform before running the `terraform destroy` operation.
 
+ 
 ---
 
 Known Issues
