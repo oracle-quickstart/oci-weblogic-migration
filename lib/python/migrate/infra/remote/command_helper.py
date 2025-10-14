@@ -277,6 +277,8 @@ class CommandHelper(object):
             if output is None or output.strip() == "":
                 exit_code=1
             _logger.exiting(class_name=_class_name, method_name=_method_name, result=timer)
+            # The caller _run_command() method invokes ssh_context._run_exec_command(full_command) which returns a list
+            # splitting the string to return list here to be consistent with the return type
             output = output.split("\n")
             return exit_code,output
         except CreateException, ce:
