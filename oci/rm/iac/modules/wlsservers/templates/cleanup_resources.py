@@ -37,8 +37,13 @@ def get_seclist_details(seclist_id):
         return get_security_list_response.data
 
     except ServiceError as e:
-        print(f"ServiceError while fetching security list {seclist_id}: {e.message}")
-        sys.exit(1)
+        if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print(f"{str(e)}")
+            sys.exit(1)
+        else:
+            print(f"Service error while getting Security List details. Security List {seclist_id}: {str(e)}")
+            sys.exit(1)
 
     except Exception as e:
         print(f"Unexpected error while fetching security list {seclist_id}: {str(e)}")
@@ -56,15 +61,24 @@ def update_subnet_details(subnet_id, field_name, field_value):
         )
         print(f"Updated subnet {subnet_id}: set {field_name} = {field_value}")
     except ServiceError as e:
-        print(f"Service error while updating subnet {subnet_id}: {e.message}")
-        sys.exit(1)
+        if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print(f"{str(e)}")
+            sys.exit(1)
+        else:
+            print(f"Service error while updating subnet {subnet_id}: {str(e)}")
+            sys.exit(1)
     except Exception as e:
         print(f"Unexpected error while updating subnet {subnet_id}: {str(e)}")
         sys.exit(1)
 
 def remove_route_rule(route_table_id, destination_cidr, target_id):
     """
-    Remove route rule if exists.
+    Removes a specific route rule from the route table if it exists.
+
+    Internally, this function retrieves the existing route rules and rebuilds
+    the list excluding the rule that matches the given destination CIDR and
+    target network entity (i.e., keeps all other rules intact).
     """
     try:
         get_route_table_response = core_client.get_route_table(rt_id=route_table_id)
@@ -72,11 +86,26 @@ def remove_route_rule(route_table_id, destination_cidr, target_id):
             rule for rule in get_route_table_response.data.route_rules
             if not (rule.destination == destination_cidr and rule.network_entity_id == target_id)
         ]
+
+        if len(route_rules) == len(get_route_table_response.data.route_rules):
+            print(f"No matching route rule found for destination {destination_cidr} via {target_id} in route table {route_table_id}")
+            return
+
         core_client.update_route_table(
             rt_id=route_table_id,
             update_route_table_details=oci.core.models.UpdateRouteTableDetails(route_rules=route_rules)
         )
         print(f"Removed route to {destination_cidr} via {target_id} in route table {route_table_id}")
+
+    except ServiceError as e:
+        if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print(f"{str(e)}")
+            sys.exit(1)
+        else:
+            print(f"Service error while removing route rule from the route table {route_table_id}: {str(e)}")
+            sys.exit(1)
+
     except Exception as e:
         print(f"Failed to remove route rule in {route_table_id}: {str(e)}")
         sys.exit(1)
@@ -109,6 +138,7 @@ def cleanup_security_lists():
                 seclists_to_delete.append(seclist)
 
         if not seclists_to_delete:
+            print(f"No security lists to delete in db subnet: {db_subnet_id}")
             continue
 
         #Removing the targeted Security List(s) from the list of Security Lists of the subnet.
@@ -124,8 +154,13 @@ def cleanup_security_lists():
                 print(f"    Deleted Security List: {seclist.display_name}")
 
             except ServiceError as e:
-                print(f"    Failed to delete {seclist.display_name}: {e.message}")
-                sys.exit(1)
+                if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
+                    print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+                    print(f"{str(e)}")
+                    sys.exit(1)
+                else:
+                    print(f"Service error while deleting Security list {seclist.id}: {str(e)}")
+                    sys.exit(1)
 
             except Exception as e:
                 print(f"Unexpected error while updating security list {seclist.display_name}: {str(e)}")
