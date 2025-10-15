@@ -8,10 +8,6 @@ Builds command based on host OS
 
 import os
 import sys
-# import shutil
-# import io
-import re
-# import platform
 
 import infra_constants
 
@@ -39,7 +35,7 @@ class RemoteUnixCommandLineHelper(SSHUnixCommandLineHelper):
     def get_user_details(self, directory_path):
         path = self._get_directory_path(directory_path)
         command = '/usr/bin/stat'
-        args= '-c "%%u:%%U,%%g:%%G" %s' % path
+        args= '-c "%u:%U,%g:%G" ' +  path
         # command = 'stat -c "%%u,username:%%U,group_id:%%g,group:%%G" %s' %path
         return command, args
 

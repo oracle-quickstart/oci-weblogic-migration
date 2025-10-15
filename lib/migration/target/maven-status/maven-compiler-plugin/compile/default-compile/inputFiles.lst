@@ -1,7 +1,0 @@
-/Users/jortizi/Documents/code/Weblogic/Migration/oci_wls_migration/branches/issue-14/lib/migration/src/main/java/oracle/weblogic/migration/archive/WeblogicDomainArchiverCommand.java
-/Users/jortizi/Documents/code/Weblogic/Migration/oci_wls_migration/branches/issue-14/lib/migration/src/main/java/oracle/weblogic/migration/archive/add/AddWLSHomeCommand.java
-/Users/jortizi/Documents/code/Weblogic/Migration/oci_wls_migration/branches/issue-14/lib/migration/src/main/java/oracle/weblogic/migration/archive/OCIArchiveHelper.java
-/Users/jortizi/Documents/code/Weblogic/Migration/oci_wls_migration/branches/issue-14/lib/migration/src/main/java/oracle/weblogic/migration/archive/WLSMigrationArchive.java
-/Users/jortizi/Documents/code/Weblogic/Migration/oci_wls_migration/branches/issue-14/lib/migration/src/main/java/oracle/weblogic/migration/archive/AddCommand.java
-/Users/jortizi/Documents/code/Weblogic/Migration/oci_wls_migration/branches/issue-14/lib/migration/src/main/java/oracle/weblogic/migration/archive/WLSMigrationZipFile.java
-/Users/jortizi/Documents/code/Weblogic/Migration/oci_wls_migration/branches/issue-14/lib/migration/src/main/java/oracle/weblogic/migration/discover/InfraCommandRunner.java

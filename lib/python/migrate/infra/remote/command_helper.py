@@ -8,7 +8,6 @@ import os
 import sys
 import time
 import re
-from datetime import datetime
 import exceptions
 
 from java.io import File
@@ -19,20 +18,8 @@ from java.lang import System
 
 
 from java.io import BufferedReader
-from java.io import InputStreamReader
-import java.io.IOException as IOException
-import java.lang.Exception as JException
-import java.lang.String as JString
-import java.lang.System as JSystem
-
-from oracle.weblogic.deploy.exception import BundleAwareException
-from oracle.weblogic.deploy.create import CreateException
-from oracle.weblogic.deploy.util import SSHException
 from oracle.weblogic.deploy.util import PyOrderedDict as OrderedDict
-from oracle.weblogic.deploy.util import StringUtils
-from oracle.weblogic.deploy.util import FileUtils
-from oracle.weblogic.deploy.util import ScriptRunner
-from oracle.weblogic.migration.discover import InfraCommandRunner
+from oracle.weblogic.deploy.create import CreateException
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))),
                                 'lib', 'python', 'migrate', 'infra'))
@@ -276,12 +263,23 @@ class CommandHelper(object):
                 _logger.exiting(class_name=_class_name, method_name=_method_name, result="script is None")
                 return
             timer = time.time()
-            runner =InfraCommandRunner("python","localRunLog",cmd,args)
-            exit_code=runner.runScript()
-            output=runner.getOutput()
-            if len(output) == 0:
+            runner = os.popen(cmd + " " + args)
+            output = runner.read()
+            status = runner.close()
+            # If the command fails, close() returns the child process's exit status
+            # (shifted left by 8 bits on Unix-like systems).
+            # To get the real exit code, right-shift by 8 bits (exit_status >> 8).
+            if status is None:
+                exit_code = 0
+            else:
+                exit_code = status >> 8
+
+            if output is None or output.strip() == "":
                 exit_code=1
             _logger.exiting(class_name=_class_name, method_name=_method_name, result=timer)
+            # The caller _run_command() method invokes ssh_context._run_exec_command(full_command) which returns a list
+            # splitting the string to return list here to be consistent with the return type
+            output = output.split("\n")
             return exit_code,output
         except CreateException, ce:
             ex = exception_helper.create_discover_exception(ExitCode.ERROR,
