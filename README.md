@@ -1,5 +1,5 @@
-Purpose
--------
+# OCI WebLogic Migration(OWM) Tool
+
 The **OCI WebLogic Migration(OWM) Tool** enables lift-and-shift migration of single or multi-node WebLogic domains from on-premises environments to **Oracle Cloud Infrastructure (OCI)**, optionally fronted by a load balancer.  
 
 Key features of the tool:
@@ -15,8 +15,9 @@ Key features of the tool:
 > This tool does **not** migrate on-premises databases to OCI.
 
 ---
+## Installation
+### Terminology
 
-Terminology
 ---------
 | Term | Description                                                                                                                                                                                                                                                               |
 |------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -30,12 +31,12 @@ Terminology
 
 
 ---
+### Requirements
 
-Requirements
 ----------------------------
 To use the tool, ensure the following prerequisites are met:
 
-### 1. On-Premises Requirements
+#### 1. On-Premises Requirements
 - **Operating System:** Supports Linux environments, including Oracle Linux (OL) and RHEL-compatible distributions.
 - **File system permissions:** The tool must be installed on the **AdminServer host**. The user must have **read/write permissions** on WebLogic Domain, Oracle Middleware, and Java Home directories.
 - **SSH Connectivity:** Passwordless SSH must be established from the AdminServer host to all Managed Server hosts.
@@ -44,7 +45,7 @@ To use the tool, ensure the following prerequisites are met:
   > **Note:** Test SSH connectivity from the AdminServer to each Managed Server using `ssh <managed-server-host>` to ensure authentication works without prompting for a password or passphrase.
 - **Storage space:** Each host must have sufficient disk space to archive **Oracle Home**, **JDK Home**, **Domain Home**, and any **custom directories**.
 
-### 2. Oracle Cloud Requirements
+#### 2. Oracle Cloud Requirements
 - **Oracle Cloud Account (Tenancy):** Resources discovered on-premises will be recreated under an OCI Tenancy.
 - **OCI Compartment:** Required to logically group all resources created by the OWM tool.
 - **OCI Resource Manager:** Permissions to create, plan, and apply stacks.
@@ -54,15 +55,15 @@ To use the tool, ensure the following prerequisites are met:
     - Block Storage
     - Load Balancers (Optional)
 
-> Refer to [Required IAM Policies for Non-Admin Users](#Non-Admin-User-Group-Policies) for detailed IAM policy requirements.
+> Refer to **Required IAM Policies for Non-Admin Users** for detailed IAM policy requirements.
 
-### 3. Optional IAM Policies
+#### 3. Optional IAM Policies
 If stack users need to create IAM policies in the **Default Identity Domain** under the **root compartment**, additional policy management permissions are required.  
-Refer to the detailed [**Required IAM Policies**](#required-iam-policies) section later in this document.
+Refer to the detailed **Required IAM Policies** section later in this document.
 
 ---
+### Installing WebLogic Migration Tool
 
-Installing Weblogic Migration Tool
 ----------------------------------------
 * Initiate a Secure Shell (SSH) connection to the **AdminServer host**, utilizing a user account with read and write file system permissions. This step enables secure remote access and interaction with the server.
 * Obtain a local copy of the OWM Tool repository in a folder where the user has read and write permissions.
@@ -108,8 +109,9 @@ Installing Weblogic Migration Tool
 **Note** '$toolHome' refers to the folder where the OWM Tool repository contents are downloaded or cloned.
 
 ---
+## Documentation
+### WebLogic Migration Script
 
-WebLogic Migration Script
 -----------------------
 This repository contains a consolidated script migration_script.sh that automates the complete migration of an on-premise WebLogic domain to Oracle Cloud Infrastructure (OCI).
 The script combines all required tasks into a single workflow:
@@ -122,10 +124,11 @@ The script combines all required tasks into a single workflow:
 6. Archive WebLogic domain
 7. Upload archives to OCI Object Storage Bucket(Optional)
 
-Usage
+### Usage
+
 ----------------------------------------
 
-### Step 1.  Declare WebLogic source domain details in $toolHome/config/on-prem.env
+#### Step 1.  Declare WebLogic source domain details in $toolHome/config/on-prem.env
 
 Example:
 
@@ -190,7 +193,7 @@ compartment_ocid=ocid1.compartment.oc1..aaaaxxxxxxxxxxxxxxhiyqarxuguncyfwnroeppa
 tenancy_namespace=abcxxxyyyzzz  
 ```
 
-### Step 2. Pre-requisite Steps for executing the Migration Script
+#### Step 2. Pre-requisite Steps for executing the Migration Script
 
 Before executing the migration script `migration_script.sh`, ensure the following pre-requisites are completed:
 
@@ -261,7 +264,7 @@ Before executing the migration script `migration_script.sh`, ensure the followin
     ```
     Repeat this process from the **AdminServer host** to all hosts in the WebLogic domain to confirm passwordless SSH access is properly configured.
 
-### Step 3. Run the migration script from the $toolHome/bin directory.
+#### Step 3. Run the migration script from the $toolHome/bin directory.
  
 ```bash
 $ bash migration_script.sh
@@ -269,8 +272,8 @@ $ bash migration_script.sh
 The script is idempotent:
 If a step has already completed successfully in a previous run, it will be skipped automatically.
 
+### Workflow
 
-Workflow
 ---------
 1. Install Dependencies
    Installs WebLogic Deploy Tooling (WDT) if not already available and places in `$toolHome/deps/wdt`
@@ -312,8 +315,8 @@ Workflow
    By default, the script uploads all generated archives to a specified OCI Object Storage bucket.
    This behavior can be controlled using the `skip_transfer` option in `$toolHome/config/on-prem.env` file.
 
+### Logs and Error Handling
 
-Logs and Error Handling
 ---------------------
 
 Detailed execution logs are available under `$toolHome/logs`.
@@ -351,19 +354,19 @@ bash migration_script.sh
 > **For additional troubleshooting:**  
 > Refer to the following sections for detailed checks and resolutions:  
 >
-> - [Pre-requisite Steps for Executing the Migration Script](#step-2-pre-requisite-steps-for-executing-the-migration-script)  
-> - [Known Issues](#known-issues)
+> - **Pre-requisite Steps for Executing the Migration Script** step 2.
+> - **Known Issues**
 
 
 ---
+### Migrate WLS Domain to OCI
 
-Migrate WLS Domain to OCI
 --------------------------
 
-### Resource Manager
+#### Resource Manager
 OCI Resource Manager requires the compressed stack file created in the **Generate OCI Resource Manager Stack** step by `migration_script.sh`.
 
-#### Step 1: Pre-requisites for Resource Manager
+##### Step 1: Pre-requisites for Resource Manager
 Before launching the stack, ensure the following are completed:
 
 1. **Database Migration (for JRF WebLogic-enabled domains)**  
@@ -373,16 +376,16 @@ Before launching the stack, ensure the following are completed:
    JDBC connection strings of the OCI Database must be known before running the Resource Manager **Apply** action.
 
 3. **IAM Policies for Non-Admin Users**  
-   Ensure you have the correct IAM permissions. For Non-Admin users, see [Required IAM Policies for Non-Admin Users](#non-admin-user-group-policies).
+   Ensure you have the correct IAM permissions. For Non-Admin users, see **Required IAM Policies for Non-Admin Users**.
 
 4. **Dynamic Group Policies**  
-   If you unselect the **"Create Policies"** checkbox during stack creation, ensure appropriate dynamic group policies are already in place. See [Dynamic Group Policies](#dynamic-group-policies-for-users-who-unselect-create-policies-checkbox) for details.
+   If you unselect the **"Create Policies"** checkbox during stack creation, ensure appropriate dynamic group policies are already in place. See **Dynamic Group Policies** for details.
 
 5. **Marketplace Terms (if using UCM images)**  
    If you plan to use an Oracle WebLogic for OCI UCM image from the Marketplace, you must **accept the terms** for that listing in advance.
     - If you do not accept the terms and select a UCM image during stack creation, the Resource Manager **Apply job will fail**.
     
-#### Step 2: Collect the Stack File
+##### Step 2: Collect the Stack File
 - **If `migration_script.sh` was executed with `skip_transfer=true`:**  
   Transfer the stack file to a workstation that has access to Oracle Cloud via a browser.
 
@@ -390,17 +393,17 @@ Before launching the stack, ensure the following are completed:
    - **Windows:** Use the PAR URL generated by the script to access the stack directly.
    - **Linux:** Download the `stack.zip` locally using the PAR URL.
 
-#### Step 3: Launch the Stack
+##### Step 3: Launch the Stack
 1. Open a browser and log in to your OCI Tenancy.
 2. From the top-left corner, select **Developer Services**.
 3. In the dropdown, click **Stacks**, then click **Create Stack**.
 4. In the **Create Stack** wizard, under **Stack Configuration**, select **.Zip file** and upload the collected stack file.
 5. Click **Next**.
-6. Customize any stack variables required for your environment (see [Inputs to Resource Manager](#inputs-to-resource-manager)), or leave them as default.
+6. Customize any stack variables required for your environment (see **Inputs to Resource Manager**), or leave them as default.
 7. Click **Create**.
 8. From the **Stack Details** page, click **Apply** to launch the stack and provision the OCI resources.
 
-### Resource Manager Provisioning Behavior
+#### Resource Manager Provisioning Behavior
 
 Based on the values selected in the ORM Stack variables, Resource Manager will:
 * Provision the required number of OCI Compute Instances for WebLogic Servers, along with all associated networking resources (VCN, subnets, gateways, Network Security Gateways, and load balancer).
@@ -424,13 +427,13 @@ Based on the values selected in the ORM Stack variables, Resource Manager will:
 > For Multi Data Source (MDS) configurations for RAC DB, only **Edit JDBC string** option is supported.
 
 ---
+#### Inputs to Resource Manager
 
-Inputs to Resource Manager
 ---------------------------
 
 User will have to provide the following as parameters to the Resource Manager:
 
-#### 1. Stack Configuration
+##### 1. Stack Configuration
 | Variable                          | Description                                                                  | Default |
 | --------------------------------- | ---------------------------------------------------------------------------- | ------- |
 | `OCI Policies`                    | Create IAM policies for Object Storage and ATP DB access. Optional.          | `true`  |
@@ -439,44 +442,44 @@ User will have to provide the following as parameters to the Resource Manager:
 | `Provision Bastion Instance`      | Provision a Bastion host for SSH access. Optional.                           | `true`  |
 | `SSH Public Key`                  | SSH public key for compute instance access. Required.                        | —       |
 
-#### 2. OCI Object Storage Archive Repository
+##### 2. OCI Object Storage Archive Repository
 | Variable                     | Description                                                 | Default |
 | ---------------------------- | ----------------------------------------------------------- | ------- |
 | `Object Storage Bucket name` | Bucket name where on-premise WebLogic archives are stored. | —       |
 
-#### 3. Virtual Cloud Networking
+##### 3. Virtual Cloud Networking
 | Variable                          | Description                                                  | Default                    |
 | --------------------------------- | ------------------------------------------------------------ | -------------------------- |
 | `Existing Virtual Cloud Network`  | OCID of the existing VCN. Required if `create_vcn=false`.    | —                          |
 | `Virtual Cloud Network Name`      | Name of the new VCN if Use an Existing VCN is not selected   | `wls-<terraform state id>` |
 | `Virtual Cloud Network CIDR`      | CIDR for the new VCN if Use an Existing VCN is not selected. | `10.0.0.0/16`              |
 
-#### 4. WebLogic Server Compute
+##### 4. WebLogic Server Compute
 | Variable                      | Description                         | Default                                 |
 | ----------------------------- | ----------------------------------- | --------------------------------------- |
 | `Compute Shape`               | Compute shape for WebLogic servers. | VM.Standard.E4.Flex (1 OCPU, 16 GB RAM) |
 | `WebLogic Server Subnet CIDR` | Subnet CIDR for WebLogic instances. | `10.0.2.0/24`                           |
 
-#### 5. Operating System Image
+##### 5. Operating System Image
 | Variable               | Description                                   | Default                                             |
 | ---------------------- | --------------------------------------------- | --------------------------------------------------- |
 | `wlsserver_image_type` | Image license type (Marketplace, Platform).  | Oracle WebLogic Server Enterprise Edition UCM Image |
 | `terms_and_conditions` | Accept terms if using Marketplace UCM images. | `false`                                             |
 
-#### 6. Load Balancer (Optional)
+##### 6. Load Balancer (Optional)
 | Variable             | Description                                             | Default       |
 | -------------------- | ------------------------------------------------------- | ------------- |
 | `LB Subnet CIDR`     | Subnet CIDR for load balancer.                          | `10.0.3.0/24` |
 | `LB MIN Bandwidth`   | Minimum bandwidth (Mbps). Options: 10/100/400/1000/8000 | `10`          |
 | `LB Max Bandwidth`   | Maximum bandwidth (Mbps). Options: 10/100/400/1000/8000 | `100`         |
 
-#### 7. Bastion (Optional)
+##### 7. Bastion (Optional)
 | Variable              | Description                   | Default                                 |
 | --------------------- | ----------------------------- | --------------------------------------- |
 | `Bastion Subnet CIDR` | Subnet CIDR for bastion host. | `10.0.1.0/24`                           |
 | `Bastion shape`       | Compute shape for bastion.    | VM.Standard.E4.Flex (1 OCPU, 16 GB RAM) |
 
-#### 8. Datasource Options
+##### 8. Datasource Options
 For each discovered JDBC datasource, Resource Manager generates a section titled: `DB Connection String #<datasourceName>`.  
 Each datasource can be recreated in OCI using one of the following strategies:
 
@@ -520,11 +523,11 @@ Each datasource can be recreated in OCI using one of the following strategies:
 | `Add Rule for WLS to Access DB`   | Add rules to existing subnet security list for DB access. |
 | `Database Listener Port`          | Port for DB connection (default: 1521).                   |
 
+#### Required IAM Policies
 
-Required IAM Policies
 -----------------------
 
-### Non-Admin User Group Policies
+##### Non-Admin User Group Policies
 If the user applying the Resource Manager stack is **not an OCI administrator**, your OCI administrator must first grant the following **user group policies** to allow proper provisioning and access:
 
 | Policy Statement | Purpose                                                         | Policy Location              |
@@ -539,7 +542,7 @@ If the user applying the Resource Manager stack is **not an OCI administrator**,
 | `Allow group Non-Admin to manage virtual-network-family in compartment MyNetworkCompartment` | To create networking resources (VCNs, Subnets, Gateways)        | WebLogic Network Compartment |
 | `Allow group Non-Admin to manage dns-family in compartment MyNetworkCompartment` | To manage DNS resources(Zones and Private views)                | WebLogic Network Compartment |
 
-#### Optional Policies
+##### Optional User Group Policies
 
 The following policies are required **only if specific features are enabled**:
 
@@ -554,7 +557,7 @@ The following policies are required **only if specific features are enabled**:
 
 ---
 
-### Dynamic Group Policies (for users who unselect **"Create Policies"** checkbox)
+##### Dynamic Group Policies (for users who unselect **"Create Policies"** checkbox)
 
 When Compute instances are started, certain scripts make OCI API calls. These instances gain permissions through **dynamic groups** and associated **policies**.
 
@@ -570,7 +573,7 @@ If you want Terraform to create the dynamic groups and policies, and you are **n
 | `Allow group MyGroup to manage policies in tenancy` | To create policies in the root compartment | Root Compartment |
 
 
-### Policies Created When **"Create Policies"** Checkbox Is Selected
+##### Dynamic Group Policies Created When **"Create Policies"** Checkbox Is Selected
 The following **dynamic group and network policies** are **automatically created** if the **"Create Policies"** checkbox is selected.
 
 > **Important**  
@@ -585,7 +588,7 @@ The following **dynamic group and network policies** are **automatically created
 | `Allow dynamic-group <dynamic-group> to inspect virtual-network-family in compartment <NetworkCompartment>` | Required to inspect VCN and subnet information for network configuration validation | Weblogic Network Compartment |
 
 
-#### ATP-DB Policy (Optional)
+##### ATP-DB Dynamic Group Policy (Optional)
 If the migrated domain uses an Autonomous Database (ATP/ADW), The following policy is required to download the ATP or ADW database wallet: 
 
 | Policy Statement | Policy Location |
@@ -593,7 +596,7 @@ If the migrated domain uses an Autonomous Database (ATP/ADW), The following poli
 | `Allow dynamic-group <dynamic-group> to use autonomous-transaction-processing-family in compartment MyCompartment` | Database Compartment   |
 
 
-#### VCN Peering Policies (Optional)
+##### VCN Peering Dynamic Group Policies (Optional)
 If VCN Peering is required (i.e., when the WebLogic VCN is different from the DB VCN), the following policies are needed:
 
 | Policy Statement | Policy Location |
@@ -602,7 +605,7 @@ If VCN Peering is required (i.e., when the WebLogic VCN is different from the DB
 | `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyNetworkCompartment` | WebLogic Network Compartment |
 
 
-#### WLS to DB Access Policy (Optional)
+##### WLS to DB Access Dynamic Group Policy (Optional)
 The following policy is required only if the **"Add Rule for WLS to Access DB"** checkbox is selected:
 
 | Policy Statement                                                                                             | Policy Location        |
@@ -614,15 +617,15 @@ The following policy is required only if the **"Add Rule for WLS to Access DB"**
 > - These policies ensure the user has sufficient permissions to provision networking, compute, storage, and WebLogic resources required by the migration stack.
 
 ---
+#### Restore Process after Stack Apply
 
-Restore Process after Stack Apply
 -------------------------------------------
 Once the ORM stack is applied, the restore process ensures that the cloud environment mirrors the on-premise WebLogic domain.  
 During the OCI Compute Instances boot process, `cloud-init` is initiated which completes the migration of the on-premise domain to OCI.
 
 **Important:** No WebLogic Server domain servers or Node Manager processes are started automatically after the restore.  
 You should first review the migrated contents before starting services.  
-See [Start OCI WebLogic Domain and Verify Services](#start-oci-weblogic-domain-and-verify-services) for the next steps.
+See **Start OCI WebLogic Domain and Verify Services** for the next steps.
 
 ### Troubleshooting
 
@@ -685,8 +688,8 @@ $admin-server> sudo su - <same username as on-premise>
 
 
 ---
+### Start OCI WebLogic Domain and Verify Services
 
-Start OCI WebLogic Domain and Verify Services
 ------------------------------------------------
 
 After completing all post-restore verification steps, connect to the new **AdminServer** instance using SSH.  
@@ -694,14 +697,14 @@ Navigate to the WebLogic **Domain Home** directory and start the **AdminServer**
 Verify and test the WebLogic domain to ensure that the migration has completed successfully.
 
 ---
+### Destroying the Migrated Stack
 
-Destroying the Migrated Stack
 -------------------------------
 
 If you need to remove the migrated environment, you can destroy the ORM stack.
 However, before running the destroy operation, specific cleanup steps are required depending on your domain type.
 
-### For JRF Domains 
+#### For JRF Domains 
 
 If the migrated stack includes **VCN peering** and the **Add Rule for WLS to Access DB** option was selected during stack creation, you must first execute the cleanup script to remove some networking configurations before destroying the stack.  
 
@@ -726,7 +729,7 @@ Removed route to 7.0.2.0/24 via ocid1.localpeeringgateway.oc1.phx.aaaxxxxxxxxxxt
 Cleanup complete. You can now safely run 'terraform destroy'.
 ``` 
 
-### For Non-JRF Domains
+#### For Non-JRF Domains
 
 If your stack is non-JRF, you can directly run the terraform destroy command to remove all resources — no additional cleanup is required.
 
@@ -743,11 +746,11 @@ If your stack is non-JRF, you can directly run the terraform destroy command to 
 
  
 ---
+### Known Issues
 
-Known Issues
 -------------
 
-### 1. Migration script fails during infrastructure discovery
+#### 1. Migration script fails during infrastructure discovery
 
 When running the migration script, you may encounter the following error:
 
@@ -768,10 +771,10 @@ In the log file (/home/domain/mig/oci-weblogic-migration/logs/migration_script.l
 Please file an issue on GitHub and attach the log file and stdout. Exception: exceptions.IndexError>
 ```
 
-#### Cause
+##### Cause
 This is an intermittent issue triggered during the infrastructure discovery phase by the verifySSH step.
 
-#### Workaround
+##### Workaround
 Re-run the migration script. Previous successful steps will be skipped automatically, and the script should proceed normally:
 
 ```bash
@@ -786,7 +789,7 @@ bash migration_script.sh
 
 ---
 
-### 2. Migration script fails in Archive Domain Step 
+#### 2. Migration script fails in Archive Domain Step 
 
 If the script fails during the **Archive Domain** step due to **insufficient disk space** on any of the nodes, the log file will display a **TODO** message.
 These TODO messages include the exact commands that must be executed **manually** on the affected host to complete the archive creation process.
@@ -812,7 +815,7 @@ TODO Messages:
         7. WLSDPLY-06042: Please create the FILE_STORE in the archive file at /usr/bin/tar czf /tmp/mbnjrf_machine_2-mbnjrf_domain-weblogic_home.tar.gz --exclude='.pid' --exclude='.state' --exclude='.core' --exclude='diag/ofm/*/*/lck/*.lck' --exclude='servers/*/logs/*.*' --exclude='*.log*[0-9]' --exclude='*.log' --exclude='*.out' --exclude='*.out*[0-9]' --exclude='servers/*/data/store/diagnostics/*' --exclude='oracle-dfw-*/sampling/jvm_threads*' /u01/app/oracle/middleware .
 ```
 
-#### Workaround
+##### Workaround
 Then, log in to that specific host and run the indicated command manually.
 
 After the archive is successfully created:
@@ -828,7 +831,7 @@ Ensure that all required domain archives are uploaded before proceeding with sta
 
 ---
 
-### 3. Error when starting Managed Servers (Hostname Verification Failure)
+#### 3. Error when starting Managed Servers (Hostname Verification Failure)
 
 You may encounter an error when attempting to start managed servers:
 
@@ -836,12 +839,12 @@ You may encounter an error when attempting to start managed servers:
 <Warning> <Security> <BEA-090504> <Certificate chain received from xxxx.example.com - 10.0.2.229 failed hostname verification check. Certificate contained CN=xxxx but check expected xxxx.example.com>
 ```
 
-#### Cause
+##### Cause
 This occurs because the SSL certificate presented by the server does not match the expected hostname.  
 For example, the certificate contains the common name **`CN=xxxx`**, while WebLogic expects **`xxxx.example.com`**.  
 This mismatch causes hostname verification to fail.
 
-#### Workaround
+##### Workaround
 If the source domain is configured with the following in `config.xml`:
 ```bash
 weblogic.security.SSL.ignoreHostnameVerification=true
@@ -888,11 +891,32 @@ Disable secure replication in the domain configuration (config.xml) before start
 
 
 ---
+### Limitations
 
-Limitations
 ------------
 
 - Domains created with WebLogic Server 12.2.1.3 are not supported for migration with this tool.
 - For domains with multiple managed servers using different listen ports, the load balancer configuration must be performed manually, and the backend targets must be adjusted accordingly.
 
+## Examples
 
+Example inputs are described in the **Documentation** section of this README.
+
+## Help
+
+For any issues encountered please contact [Oracle Support](https://www.oracle.com/support/contact/index.html).
+
+## Contributing
+
+This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](./CONTRIBUTING.md)
+
+## Security
+
+Please consult the [security guide](./SECURITY.md) for our responsible security vulnerability disclosure process.
+
+## License
+
+Copyright (c) 2025 Oracle and/or its affiliates.
+
+Released under the Universal Permissive License v1.0 as shown at
+<https://oss.oracle.com/licenses/upl/>.
