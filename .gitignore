@@ -12,3 +12,4 @@
 
 # Local .terraform lock files
 *.lock.*
+.idea/
