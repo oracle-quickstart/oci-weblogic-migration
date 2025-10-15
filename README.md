@@ -895,7 +895,7 @@ Disable secure replication in the domain configuration (config.xml) before start
 
 ------------
 
-- Domains created with WebLogic Server 12.2.1.3 are not supported for migration with this tool.
+- Only WebLogic domains created with **version 12.2.1.4 or later** are supported for migration with this tool.  
 - For domains with multiple managed servers using different listen ports, the load balancer configuration must be performed manually, and the backend targets must be adjusted accordingly.
 
 ## Examples
