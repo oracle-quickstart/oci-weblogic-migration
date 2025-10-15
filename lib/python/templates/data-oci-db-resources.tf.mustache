@@ -1,0 +1,36 @@
+# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
+# shellcheck disable=SC1091
+# This is an auto-generated file.
+
+{{#datasources}}
+# DB Connection String #{{{datasourceName}}}
+data "oci_database_autonomous_database" "atp_db_{{{datasourceName}}}" {
+  count                  = local.is_atp_db_{{{datasourceName}}} ? 1 : 0
+  autonomous_database_id = var.atp_db_id_{{{datasourceName}}}
+}
+
+data "oci_database_db_systems" "ocidb_db_systems_{{{datasourceName}}}" {
+  count          = local.is_oci_db_{{{datasourceName}}} ? 1 : 0
+  compartment_id = var.oci_db_compartment_id_{{{datasourceName}}}
+  filter {
+    name   = "id"
+    values = [var.oci_db_dbsystem_id_{{{datasourceName}}}]
+  }
+}
+
+
+data "oci_database_database" "ocidb_database_{{{datasourceName}}}" {
+  count       = local.is_ocidb_system_id_available_{{{datasourceName}}} ? 1 : 0
+  database_id = var.oci_db_database_id_{{{datasourceName}}}
+}
+
+
+data "oci_database_db_home" "ocidb_db_home_{{{datasourceName}}}" {
+  #  count      = local.is_ocidb_system_id_available_{{{datasourceName}}} && !local.is_db_deleted ? 1 : 0
+  count      = local.is_ocidb_system_id_available_{{{datasourceName}}} ? 1 : 0
+  #  db_home_id = data.oci_database_database.ocidb_database[0].db_home_id
+  db_home_id = data.oci_database_database.ocidb_database_{{{datasourceName}}}[0].db_home_id
+}
+/////////////////////# Datasource #{{{datasourceName}}}
+{{/datasources}}

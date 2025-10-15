@@ -1,0 +1,84 @@
+# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
+
+
+#variable "create_policies" {
+#  type        = bool
+#  description = "Set to true to create OCI IAM policies and dynamic groups required by the WebLogic for OCI stack. If this is set to false, the policies and dynamic groups need to be created manually"
+#  default     = true
+#}
+
+#variable "generate_dg_tag" {
+#  type        = bool
+#  description = "Set to true to generate defined tags for dynamic group definition."
+#  default     = true
+#}
+
+## Variable used in UI only
+#variable "create_service_tag" {
+#  type        = bool
+#  description = "Set to true if you want to add tags to all resources that support tag created by the WebLogic for OCI stack"
+#  default     = false
+#}
+
+#variable "service_tags" {
+#  type = object({
+#    freeformTags = map(any)
+#    definedTags  = map(any)
+#  })
+#  description = "Tags to be applied to all resources that support tag created by the WebLogic for OCI stack"
+#  default     = { freeformTags = {}, definedTags = {} }
+#}
+
+### TODO: delete these two vars when UI uses control with flex shape
+#variable "instance_shape" {
+#  type        = string
+#  description = "The OCI VM shape for WebLogic VM instances"
+#  default     = "VM.Standard.E4.Flex"
+#}
+#
+#variable "wls_ocpu_count" {
+#  type        = number
+#  description = "OCPU count for Weblogic instance"
+#  default     = 1
+#}
+
+
+
+# TODO: uncomment this when UI uses control with flex shape
+#variable "instance_shape" {
+#  type        = map(string)
+#  description = "The OCI VM shape for WebLogic VM instances"
+#  default = {
+#    "instanceShape" = "VM.Standard.E4.Flex",
+#    "ocpus"         = "1",
+#    "memory"        = "16"
+#  }
+#}
+
+variable "wls_inventory_data" {
+  type =  any
+  description = "Weblogic Domain Inventory Data.JSON formated "
+}
+
+variable "terms_and_conditions" {
+  type        = bool
+  description = "Terms and conditions for user to accept Oracle WebLogic Server Enterprise Edition UCM or Oracle WebLogic Suite UCM license agreement"
+  default     = false
+}
+
+variable "release" {
+  type        = string
+  description = "Select mode for development(DEV) or production(PROD). In development mode, local VM scripts zip is seeded on WLS VMs "
+  default     = "PROD"
+  validation {
+    condition     = contains(["DEV", "PROD"], var.release)
+    error_message = "OWM-ERROR: Allowed values for mode are DEV and PROD."
+  }
+}
+
+variable "vm_script_path" {
+  default = "/u01/zips/TF/wlsoci-vmscripts.zip"
+  nullable = false
+}
+

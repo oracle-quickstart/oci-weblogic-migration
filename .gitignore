@@ -1,0 +1,15 @@
+# Idea
+**/.idea/
+.idea
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+*.zip*
+*.tfvars
+
+# Local .terraform lock files
+*.lock.*
+.idea/
