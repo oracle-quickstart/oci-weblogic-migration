@@ -74,7 +74,7 @@ locals {
 
   wls_admin_t3_port                     = local.ADMIN_DEFAULT_T3_PORT
   wls_admin_t3_ssl_port                 = local.ADMIN_DEFAULT_T3_SSL_PORT
-  wls_admin_server_non_unique_ports     = [local.wls_admin_administrative_port, local.wls_admin_listen_port, local.wls_admin_ssl_port, local.wls_admin_t3_port, local.wls_admin_t3_ssl_port]
+  wls_admin_server_non_unique_ports     = [local.wls_admin_administrative_port, local.wls_admin_listen_port, local.wls_admin_ssl_port, local.wls_admin_t3_port, local.wls_admin_t3_ssl_port, try(local.wls_adminserver_details["AdminConsolePort"], null)]
   _wls_admin_network_channel_port_definition = distinct(compact(flatten([
   for name, channel in try(lookup(local.wls_adminserver_details, "NetworkAccessPoint", {}), {}) :
   [
