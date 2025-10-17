@@ -725,10 +725,6 @@ python3 cleanup_resources.py
 > ```
 >  In that case, you will need to manually delete the Local Peering Gateway (LPG) and any related route rules or security lists before retrying the destroy operation.
 
-
-
-
-
 Sample output:
 ```bash
 Cleaning up security list...
