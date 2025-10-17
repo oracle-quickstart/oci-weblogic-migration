@@ -252,6 +252,7 @@ def __discover(model, model_context, helper):
     base_location = LocationContext()
     machine_nodes = dictionary_utils.get_dictionary_element(topology, MACHINE)
     unix_machine_nodes = dictionary_utils.get_dictionary_element(topology, UNIX_MACHINE)
+    nodes={}
     if len(machine_nodes) > 0:
         # self._create_named_mbeans(MACHINE, machine_nodes, location, log_created=True, delete_now=delete_now)
         # print("machines"+machine_nodes)
@@ -264,6 +265,13 @@ def __discover(model, model_context, helper):
         # __logger.info("WLSDPLY-09005", machine_nodes, unix_machine_nodes, method_name=_method_name, class_name=_class_name)
         nodes=unix_machine_nodes
 
+    if not nodes:
+        message = (
+            "No machine configuration found in the domain model. "
+            "The migration tool requires at least one machine configuration to perform infrastructure discovery."
+        )
+        print(message)
+        sys.exit(2)
 
     admin_server_name = topology['AdminServerName']
     if 'Machine' in topology['Server'][admin_server_name]:
