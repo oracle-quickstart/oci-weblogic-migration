@@ -115,15 +115,13 @@ discover_infra_remote(){
 process_datasources(){
   local wls_inventory_file=$1
   SCRIPT_PATH="$toolHome/bin/discoverDatasources.sh"
-#  ./discoverDatasources.sh -oracle_home /home/opc/mw/ -model_file Discovered_RAC.json
-#  discover "remote" "$SCRIPT_PATH" "-model_file $wdt_home/out/$wls_inventory_file" "-archive_file $wdt_home/out/infra_output_$file_timestamp.json"
-#  discover "local" "$SCRIPT_PATH" "-model_file $toolHome/out/$wls_inventory_file"
   discover "local" "$SCRIPT_PATH" "-model_file $wls_inventory_file"
-#  cp "$toolHome/oci/generated/schema.yaml" "$toolHome/oci/generated/"
-#  cp "$toolHome/oci/generated/db-connection-string.auto.tfvars" "$toolHome/oci/generated/"
-#  cp "$toolHome/oci/generated/locals-db-connection-string.tf" "$toolHome/oci/generated/"
-#  cp "$toolHome/oci/generated/data-oci-db-resources.tf" "$toolHome/oci/generated/"
-#  cp "$toolHome/oci/generated/variables-db-connection-string.tf" "$toolHome/oci/generated/"
+  exit_code=$?
+  log "info" "Executed discoverDatasources.sh with exit code [$exit_code]"
+  if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
+      log "error" "<discoverDomain><process_datasources><error> Error executing datasource discovery"
+      exit $exit_code
+  fi
   log "info" "<discoverDomain><process_datasources><exit>"
 }
 
