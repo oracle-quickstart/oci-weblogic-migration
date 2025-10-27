@@ -717,6 +717,14 @@ cd /opt/scripts
 python3 cleanup_resources.py
 ```
 
+> **Warning**
+> 
+> If you run **terraform destroy** without first executing the cleanup script, the destroy operation may fail with errors such as:
+> ```
+> Error: 409-IncorrectState, Local Peering Gateway ocid1.localpeeringgateway.oc1... is associated with one or more entities that are in use
+> ```
+>  In that case, you will need to manually delete the Local Peering Gateway (LPG) and any related route rules or security lists before retrying the destroy operation.
+
 Sample output:
 ```bash
 Cleaning up security list...
