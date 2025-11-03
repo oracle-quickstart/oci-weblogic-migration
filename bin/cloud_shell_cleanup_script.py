@@ -425,7 +425,7 @@ def cleanup_security_lists(db_subnet, wls_subnet):
     Deletes any security list created by open_db_port.py
     and detaches them from subnets.
     """
-    print("Cleaning up security lists...")
+    print(f"Cleaning up security lists from db_subnet : {db_subnet}")
 
     wls_display_name = wls_subnet.display_name
     seclist_suffix=(wls_display_name.split('-')[1] if '-' in wls_display_name else "")
