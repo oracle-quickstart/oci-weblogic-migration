@@ -70,44 +70,46 @@ def get_latest_successful_job(stack_id):
         print(f"Unexpected error while fetching latest successful Jobs details in stack id {stack_id}: {str(e)}")
         sys.exit(1)
 
-def get_wls_instance_id_by_job_id(job_id):
+def get_tf_output_value(job_id):
     """
-    Returns the first WebLogic instance OCID from the job outputs of the given job_id.
-    This function:
-    1. Calls the Resource Manager API to list all output variables from the given job.
-    2. Searches for the output named 'weblogic_instances'.
-    3. Parses the JSON string in that output to extract the first instance OCID.
-    """
+    Fetches the 'resource_identifier_value' output from a Resource Manager job's Terraform state.
+
+    Args:
+       job_id (str): The OCID of the Resource Manager job.
+
+    Returns:
+       str: The value of 'resource_identifier_value' if found, otherwise None.
+   """
+
     try:
-        response = resource_manager_client.list_job_outputs(job_id=job_id)
-        job_outputs = response.data.items
+        #Fetch Terraform state JSON for the given job
+        response = resource_manager_client.get_job_tf_state(job_id=job_id)
+        state_json = json.loads(response.data.text)
 
-        for job_item in job_outputs:
-            if job_item.output_name == "weblogic_instances":
-                # job_item.output_value is a JSON string
-                weblogic_instance_data = json.loads(job_item.output_value)
-                domain_vms = next(iter(weblogic_instance_data.values()))
-                wls_instance_id = next(iter(domain_vms.keys()))   # get first OCID key
-                return wls_instance_id
+        #Extract the output value
+        outputs = state_json.get("outputs", {})
+        identifier_output = outputs.get("resource_identifier_value")
 
-        return None
+        if not identifier_output:
+            print(f"'resource_identifier_value' not found in job {job_id}")
+            return None
+
+        value = identifier_output.get("value")
+        return value
 
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Error: The specified resource could not be found or you do not have permission to access it.")
-            print("Please verify that your IAM policies allow access to OCI Resource Manager and Compute resources.")
+            print("Resource not found or access denied. Please check IAM permissions for Resource Manager.")
             print(f"Details: {str(e)}")
-            sys.exit(1)
         else:
-            print(f"Service error while listing job outputs for job {job_id}: {str(e)}")
-            sys.exit(1)
-
-    except Exception as e:
-        print(f"Unexpected error while parsing weblogic_instances for job {job_id}: {str(e)}")
-        traceback.print_exc()
+            print(f"Service error while fetching Terraform output for job {job_id}: {str(e)}")
         sys.exit(1)
 
-def get_db_ids_from_stack(stack_id):
+    except Exception as e:
+        print(f"Unexpected error while reading job Terraform state for {job_id}: {str(e)}")
+        sys.exit(1)
+
+def get_stack_data_variables(stack_id):
     """
     Fetches all database OCIDs (ATP and OCI DB Systems) from a given stack's variables.
 
@@ -119,17 +121,14 @@ def get_db_ids_from_stack(stack_id):
         response = resource_manager_client.get_stack(stack_id=stack_id)
         data_variables = response.data.variables
 
-        db_ocids = []
-
-        # Collect all database IDs dynamically
-        for key, value in data_variables.items():
-            if key.startswith("atp_db_id_") or key.startswith("oci_db_dbsystem_id_"):
-                db_ocids.append(value)
-        return db_ocids
+        if data_variables:
+            return data_variables
+        else:
+            return None
 
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Resource not found or access denied. Please verify your IAM permissions for Resource Manager.")
+            print("Resource not found or access denied. Error occurred while while fetching stack data variables. Please verify your IAM permissions for Resource Manager.")
             print(f"Details: {str(e)}")
             sys.exit(1)
         else:
@@ -137,8 +136,24 @@ def get_db_ids_from_stack(stack_id):
             sys.exit(1)
 
     except Exception as e:
-        print(f"Unexpected error while parsing database OCIDs for stack {stack_id}: {str(e)}")
+        print(f"Unexpected error while fetching stack data variables for stack {stack_id}: {str(e)}")
         sys.exit(1)
+
+def get_db_ids_from_stack(data_variables):
+    """
+    Fetches all database OCIDs (ATP and OCI DB Systems) from a given stack's variables.
+
+    Returns:
+        list: A combined list of database OCIDs.
+    """
+    # Get stack details
+    db_ocids = []
+
+    # Collect all database IDs dynamically
+    for key, value in data_variables.items():
+        if key.startswith("atp_db_id_") or key.startswith("oci_db_dbsystem_id_"):
+            db_ocids.append(value)
+    return db_ocids
 
 def get_atp_subnet_id(atp_id):
     """
@@ -190,6 +205,10 @@ def get_dbsystem_subnet_id(db_id):
         sys.exit(1)
 
 def get_db_subnet_ids(db_ids):
+    '''
+        Calls get_atp_subnet_id() if the db_id contains ".autonomousdatabase", i.e, a ATP DB.
+        Calls get_atp_subnet_id() if the db_id contains ".dbsystem", i.e, a OCI DB.
+    '''
     db_subnet_ids = []
 
     for db_id in db_ids:
@@ -205,67 +224,49 @@ def get_db_subnet_ids(db_ids):
 
     return db_subnet_ids
 
-def get_subnet_from_instance_id(instance_id):
+def get_route_table_ids(compartment_id, vcn_id):
     """
-     Fetches the subnet OCID for a given Compute instance.
-        - First checks instance metadata for 'wlsserver_subnet_id' (used in WebLogic stacks).
-        - Falls back to checking the instance's primary VNIC attachment if not found.
+    Fetches and returns a list of all Route Table OCIDs within the specified VCN.
 
-     Returns:
-       str: Subnet OCID if found, otherwise None.
-   """
+    Parameters:
+        compartment_id (str): The OCID of the compartment
+        vcn_id (str): The OCID of the VCN
+
+    Returns:
+        list: A list of route table OCIDs found in the VCN. Otherwise, None.
+    """
     try:
-        instance = compute_client.get_instance(instance_id).data
-        metadata = instance.metadata
+        response = core_client.list_route_tables(
+            compartment_id=compartment_id,
+            vcn_id=vcn_id
+        )
+        route_tables = response.data
 
-        # Step 2: Try to fetch from metadata (WLS case)
-        subnet_id = metadata.get("wlsserver_subnet_id")
-        if subnet_id:
-            return subnet_id
-
-        print(f"No 'wlsserver_subnet_id' found for instance {instance_id}. Falling back to VNIC lookup...")
-
-        # Step 3: Fallback – fetch via VNIC attachment
-        vnics = oci.pagination.list_call_get_all_results(
-            compute_client.list_vnic_attachments,
-            compartment_id=instance.compartment_id,
-            instance_id=instance_id
-        ).data
-
-        if not vnics:
-            print(f"No VNIC attachments found for instance {instance_id}.")
+        if not route_tables:
+            print(f"No route tables found in VCN {vcn_id}")
             return None
 
-        # Step 4: Pick first (primary) VNIC
-        primary_vnic = vnics[0]
-        subnet_id = getattr(primary_vnic, "subnet_id", None)
-
-        if subnet_id:
-            return subnet_id
-        else:
-            print(f"No subnet OCID found for instance {instance_id}.")
-            return None
+        route_table_ids = [rt.id for rt in route_tables]
+        return route_table_ids
 
     except ServiceError as e:
-        if e.status == 404 and e.code == "NotAuthorizedOrNotFound":
-            print("Resource not found or access denied while fetching subnet from instance.")
-            print(f"Details: {str(e)}")
+        if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
+            print("Resource not found or access denied while fetching Route Table details. Please check the IAM policies required for Network Access.")
+            print(f"{str(e)}")
             sys.exit(1)
         else:
-            print(f"Service error while fetching subnet for instance {instance_id}: {str(e)}")
+            print(f"Service error while fetching Route Tables for VCN {vcn_id}: {str(e)}")
             sys.exit(1)
 
     except Exception as e:
-        print(f"Unexpected error while retrieving subnet for instance {instance_id}: {str(e)}")
+        print(f"Unexpected error while fetching Route Tables for VCN {vcn_id}: {str(e)}")
         sys.exit(1)
 
-def get_lpg_ids(subnet, suffix):
+def get_lpg_ids(compartment_id, vcn_id, suffix):
     """
     Fetch a list of Local Peering Gateways (LPGs) in the same VCN as the given subnet
     whose display name contains the specified suffix.
     """
-    compartment_id = subnet.compartment_id
-    vcn_id = subnet.vcn_id
 
     try:
         response = core_client.list_local_peering_gateways(compartment_id=compartment_id,vcn_id=vcn_id)
@@ -311,6 +312,33 @@ def get_seclist_details(seclist_id):
 
     except Exception as e:
         print(f"Unexpected error while fetching security list {seclist_id}: {str(e)}")
+        sys.exit(1)
+
+def get_vcn_id_by_name(compartment_id, vcn_name):
+    """
+    Fetches the VCN OCID by matching its display name in the given compartment.
+    Returns the VCN OCID if found, or None if not found.
+    """
+    try:
+        response = core_client.list_vcns(compartment_id=compartment_id)
+        for vcn in response.data:
+            if vcn.display_name == vcn_name:
+                return vcn.id
+
+        print(f"No VCN found with name '{vcn_name}' in compartment {compartment_id}")
+        return None
+
+    except ServiceError as e:
+        if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
+            print("Resource not found or access denied while listing VCNs. Please check the IAM policies required for Network Access.")
+            print(f"{str(e)}")
+            sys.exit(1)
+        else:
+            print(f"Service error while fetching VCN ID for '{vcn_name}': {str(e)}")
+            sys.exit(1)
+
+    except Exception as e:
+        print(f"Failed to get VCN ID for '{vcn_name}': {str(e)}")
         sys.exit(1)
 
 def get_subnet_details(subnet_id):
@@ -395,40 +423,35 @@ def remove_route_rule(route_table_id, destination_cidr, target_id):
         print(f"Failed to remove route rule in {route_table_id}: {str(e)}")
         sys.exit(1)
 
-def cleanup_route_rules(db_subnet, wls_subnet):
+def cleanup_route_rules(db_subnet, wls_compartment_id, wls_vcn_id, wls_cidr, suffix):
     """
      Cleans up route table rules.
     """
     print("Cleaning up Route Rules...")
 
-    wls_rt_id = wls_subnet.route_table_id
-    wls_cidr = wls_subnet.cidr_block
-
     db_rt_id = db_subnet.route_table_id
     db_cidr = db_subnet.cidr_block
 
-    wls_display_name = wls_subnet.display_name
-    suffix=(wls_display_name.split('-')[1] if '-' in wls_display_name else "")
+    wls_rt_ids = get_route_table_ids(compartment_id=wls_compartment_id,vcn_id=wls_vcn_id);
 
-    wls_lpg_ids = get_lpg_ids(subnet=wls_subnet, suffix=suffix)
-    db_lpg_ids = get_lpg_ids(subnet=db_subnet, suffix=suffix)
+    wls_lpg_ids = get_lpg_ids(compartment_id=wls_compartment_id, vcn_id=wls_vcn_id,  suffix=suffix)
+    db_lpg_ids = get_lpg_ids(compartment_id=db_subnet.compartment_id, vcn_id=db_subnet.vcn_id, suffix=suffix)
 
     # Remove route rules
-    for wls_lpg_id in wls_lpg_ids:
-        remove_route_rule(wls_rt_id, db_cidr, wls_lpg_id)
+    for wls_rt_id in wls_rt_ids:
+        for wls_lpg_id in wls_lpg_ids:
+            remove_route_rule(wls_rt_id, db_cidr, wls_lpg_id)
 
     for db_lpg_id in db_lpg_ids:
         remove_route_rule(db_rt_id, wls_cidr, db_lpg_id)
 
-def cleanup_security_lists(db_subnet, wls_subnet):
+def cleanup_security_lists(db_subnet, seclist_suffix):
     """
     Deletes any security list created by open_db_port.py
     and detaches them from subnets.
     """
-    print(f"Cleaning up security lists from db_subnet : {db_subnet}")
+    print(f"Cleaning up security lists from db_subnet : {db_subnet.id}")
 
-    wls_display_name = wls_subnet.display_name
-    seclist_suffix=(wls_display_name.split('-')[1] if '-' in wls_display_name else "")
     seclist_ids = db_subnet.security_list_ids
 
     # Identify all security lists to remove for this subnet
@@ -480,19 +503,21 @@ def main():
         sys.exit(1)
 
     latest_successful_job_id = latest_successful_job.id
-
-    wls_instance_id = get_wls_instance_id_by_job_id(latest_successful_job_id)
-    if not wls_instance_id:
-        print(f"No WLS instance found in the provided stack id; {stack_id}")
+    suffix= get_tf_output_value(latest_successful_job_id)
+    if not suffix:
         sys.exit(1)
 
-    wls_subnet_id = get_subnet_from_instance_id(wls_instance_id)
-    if not wls_subnet_id:
+    stack_variables = get_stack_data_variables(stack_id)
+    if not stack_variables:
+        print(f"No stack found with stack_id : {stack_id}")
         sys.exit(1)
 
-    wls_subnet = get_subnet_details(wls_subnet_id)
+    compartment_id = stack_variables["network_compartment_id"]
+    vcn_name = stack_variables["vcn_name"]
+    wlsserver_subnet_cidr = stack_variables["wlsserver_subnet_cidr"]
+    vcn_id = get_vcn_id_by_name(compartment_id, vcn_name)
 
-    db_ids = get_db_ids_from_stack(stack_id)
+    db_ids = get_db_ids_from_stack(stack_variables)
     if not db_ids:
         print(f"No database OCIDs found in stack {stack_id}.")
         sys.exit(1)
@@ -501,8 +526,8 @@ def main():
 
     for db_subnet_id in db_subnet_ids:
         db_subnet = get_subnet_details(db_subnet_id)
-        cleanup_security_lists(db_subnet, wls_subnet)
-        cleanup_route_rules(db_subnet, wls_subnet)
+        cleanup_security_lists(db_subnet, seclist_suffix=suffix)
+        cleanup_route_rules(db_subnet, wls_compartment_id=compartment_id, wls_vcn_id=vcn_id, wls_cidr=wlsserver_subnet_cidr, suffix=suffix)
 
 if __name__ == "__main__":
     try:
