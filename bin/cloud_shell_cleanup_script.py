@@ -111,10 +111,7 @@ def get_tf_output_value(job_id):
 
 def get_stack_data_variables(stack_id):
     """
-    Fetches all database OCIDs (ATP and OCI DB Systems) from a given stack's variables.
-
-    Returns:
-        list: A combined list of database OCIDs.
+    Fetches stack's data variables.
     """
     try:
         # Get stack details
