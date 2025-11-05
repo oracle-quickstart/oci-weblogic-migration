@@ -42,32 +42,39 @@ resource_manager_client = oci.resource_manager.ResourceManagerClient(config)
 compute_client = oci.core.ComputeClient(config)
 db_client = oci.database.DatabaseClient(config)
 
-
-def get_latest_successful_job(stack_id):
+def get_latest_apply_job(stack_id):
     """
-    Returns the most recent SUCCESSFUL job for the given stack_id.
+    Returns the most recent APPLY job for the given stack_id.
     """
     try:
-        response = resource_manager_client.list_jobs(stack_id=stack_id, sort_by="TIMECREATED", sort_order="DESC", lifecycle_state="SUCCEEDED")
-        successful_jobs = response.data
+        # List jobs sorted by creation time (newest first)
+        response = resource_manager_client.list_jobs(stack_id=stack_id, sort_by="TIMECREATED", sort_order="DESC")
 
-        if not successful_jobs:
-            print(f"No successful jobs found for stack {stack_id}")
+        jobs = response.data
+        if not jobs:
+            print(f"No jobs found for stack {stack_id}")
             return None
 
-        return successful_jobs[0]
+        # Filter for APPLY jobs
+        apply_jobs = [job for job in jobs if job.operation == "APPLY"]
+        if not apply_jobs:
+            print(f"No APPLY jobs found for stack {stack_id}")
+            return None
+
+        latest_apply_job = apply_jobs[0]
+        return latest_apply_job
 
     except ServiceError as e:
-        if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+        if e.status == 404 and e.code == "NotAuthorizedOrNotFound":
+            print("Resource not found or access denied. Please check the IAM policies required for Resource Manager access.")
             print(f"{str(e)}")
             sys.exit(1)
         else:
-            print(f"Service error while getting latest successful Jobs details in stack id {stack_id}: {str(e)}")
+            print(f"Service error while getting latest APPLY job details for stack id {stack_id}: {str(e)}")
             sys.exit(1)
 
     except Exception as e:
-        print(f"Unexpected error while fetching latest successful Jobs details in stack id {stack_id}: {str(e)}")
+        print(f"Unexpected error while fetching latest APPLY job for stack id {stack_id}: {str(e)}")
         sys.exit(1)
 
 def get_tf_output_value(job_id):
@@ -494,13 +501,12 @@ def main():
 
     stack_id = args.stack_id
 
-    latest_successful_job = get_latest_successful_job(stack_id)
-    if not latest_successful_job:
-        print(f"No latest successful job found in the provided stack id; {stack_id}")
+    latest_apply_job = get_latest_apply_job(stack_id)
+    if not latest_apply_job:
         sys.exit(1)
 
-    latest_successful_job_id = latest_successful_job.id
-    suffix= get_tf_output_value(latest_successful_job_id)
+    latest_apply_job_id = latest_apply_job.id
+    suffix = get_tf_output_value(latest_apply_job_id)
     if not suffix:
         sys.exit(1)
 
