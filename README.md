@@ -748,13 +748,13 @@ This script requires proper execution permissions in Cloud Shell and specific IA
 > ```
 > The following IAM policies must be granted at the compartment level (for both the WebLogic and Database compartments):
 > ```
-> Allow group Non-Admin to manage orm-family in compartment MyNetworkCompartment
-> Allow group Non-Admin to manage virtual-network-family in compartment MyNetworkCompartment
-> Allow group Non-Admin to read database-family in compartment MyNetworkCompartment
-> Allow group Non-Admin to read autonomous-database-family in compartment MyNetworkCompartment
+> Allow group Non-Admin to manage orm-family in compartment MyCompartment
+> Allow group Non-Admin to manage virtual-network-family in compartment MyCompartment
+> Allow group Non-Admin to read database-family in compartment MyCompartment
+> Allow group Non-Admin to read autonomous-database-family in compartment MyCompartment
 > ```
 > **Note:**  
-> Replace <compartment_ocid> with the OCID of your WebLogic and Database compartments.
+> Replace MyCompartment with the OCID of your WebLogic and Database compartments.
 > These permissions are required for the script to successfully read and modify networking and database-related resources during cleanup.
 
 
