@@ -24,7 +24,7 @@ Example
 -------
 Run the following command inside Cloud Shell:
 
-    python3 test_cleanup_with_stack_id.py --stack-id ocid1.ormstack.oc1.iad.amaa...xyz
+    python3 cloud_shell_cleanup_script.py --stack-id ocid1.ormstack.oc1.iad.amaa...xyz
 
 '''
 
@@ -67,6 +67,7 @@ def get_latest_apply_job(stack_id):
     except ServiceError as e:
         if e.status == 404 and e.code == "NotAuthorizedOrNotFound":
             print("Resource not found or access denied. Please check the IAM policies required for Resource Manager access.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"{str(e)}")
             sys.exit(1)
         else:
@@ -77,15 +78,15 @@ def get_latest_apply_job(stack_id):
         print(f"Unexpected error while fetching latest APPLY job for stack id {stack_id}: {str(e)}")
         sys.exit(1)
 
-def get_tf_output_value(job_id):
+def get_tf_output_value(job_id, output_name):
     """
-    Fetches the 'resource_identifier_value' output from a Resource Manager job's Terraform state.
+    Fetches the output from a Resource Manager job's Terraform state.
 
     Args:
        job_id (str): The OCID of the Resource Manager job.
 
     Returns:
-       str: The value of 'resource_identifier_value' if found, otherwise None.
+       str: The value of output if found, otherwise None.
    """
 
     try:
@@ -95,10 +96,10 @@ def get_tf_output_value(job_id):
 
         #Extract the output value
         outputs = state_json.get("outputs", {})
-        identifier_output = outputs.get("resource_identifier_value")
+        identifier_output = outputs.get(output_name)
 
         if not identifier_output:
-            print(f"'resource_identifier_value' not found in job {job_id}")
+            print(f"{output_name} not found in job {job_id}")
             return None
 
         value = identifier_output.get("value")
@@ -107,10 +108,12 @@ def get_tf_output_value(job_id):
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
             print("Resource not found or access denied. Please check IAM permissions for Resource Manager.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"Details: {str(e)}")
+            sys.exit(1)
         else:
             print(f"Service error while fetching Terraform output for job {job_id}: {str(e)}")
-        sys.exit(1)
+            sys.exit(1)
 
     except Exception as e:
         print(f"Unexpected error while reading job Terraform state for {job_id}: {str(e)}")
@@ -133,6 +136,7 @@ def get_stack_data_variables(stack_id):
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
             print("Resource not found or access denied. Error occurred while while fetching stack data variables. Please verify your IAM permissions for Resource Manager.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"Details: {str(e)}")
             sys.exit(1)
         else:
@@ -173,6 +177,7 @@ def get_atp_subnet_id(atp_id):
     except ServiceError as e:
         if e.status == 404 and e.code == "NotAuthorizedOrNotFound":
             print("Resource not found or access denied while fetching ATP subnet.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"Details: {str(e)}")
             sys.exit(1)
         else:
@@ -198,6 +203,7 @@ def get_dbsystem_subnet_id(db_id):
     except ServiceError as e:
         if e.status == 404 and e.code == "NotAuthorizedOrNotFound":
             print("Resource not found or access denied while fetching OCI DB System subnet.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"Details: {str(e)}")
             sys.exit(1)
         else:
@@ -238,6 +244,10 @@ def get_route_table_ids(compartment_id, vcn_id):
 
     Returns:
         list: A list of route table OCIDs found in the VCN. Otherwise, None.
+
+    Note:
+         - Currently, this function is only used for the WebLogic (WLS) VCN,
+           where all subnets are created in the same compartment as the VCN.
     """
     try:
         response = core_client.list_route_tables(
@@ -255,7 +265,8 @@ def get_route_table_ids(compartment_id, vcn_id):
 
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Resource not found or access denied while fetching Route Table details. Please check the IAM policies required for Network Access.")
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"{str(e)}")
             sys.exit(1)
         else:
@@ -270,6 +281,20 @@ def get_lpg_ids(compartment_id, vcn_id, suffix):
     """
     Fetch a list of Local Peering Gateways (LPGs) in the same VCN as the given subnet
     whose display name contains the specified suffix.
+
+    Parameters:
+        compartment_id (str): The OCID of the compartment where the VCN resides.
+        vcn_id (str): The OCID of the VCN to search for LPGs.
+        suffix (str): The string to match in the LPG display name.
+
+    Returns:
+        list: A list of matching LPG OCIDs.
+
+    Notes:
+        - This method currently assumes the LPGs exist in the same compartment as the given VCN.
+          This is true for both the WebLogic (WLS) VCN and the DB VCN in the current setup.
+        - If, in future, LPGs or VCNs are created in different compartments, this method should be
+          updated to explicitly handle that case (for example, by determining the LPG compartment dynamically).
     """
 
     try:
@@ -286,7 +311,8 @@ def get_lpg_ids(compartment_id, vcn_id, suffix):
 
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"{str(e)}")
             sys.exit(1)
         else:
@@ -307,7 +333,8 @@ def get_seclist_details(seclist_id):
 
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"{str(e)}")
             sys.exit(1)
         else:
@@ -324,17 +351,17 @@ def get_vcn_id_by_name(compartment_id, vcn_name):
     Returns the VCN OCID if found, or None if not found.
     """
     try:
-        response = core_client.list_vcns(compartment_id=compartment_id)
-        for vcn in response.data:
-            if vcn.display_name == vcn_name:
-                return vcn.id
+        response = core_client.list_vcns(compartment_id=compartment_id, display_name=vcn_name)
+        if not response.data:
+            print(f"No VCN found with name '{vcn_name}' in compartment {compartment_id}")
+            return None
 
-        print(f"No VCN found with name '{vcn_name}' in compartment {compartment_id}")
-        return None
+        return response.data[0].id
 
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Resource not found or access denied while listing VCNs. Please check the IAM policies required for Network Access.")
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"{str(e)}")
             sys.exit(1)
         else:
@@ -355,7 +382,8 @@ def get_subnet_details(subnet_id):
 
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Policy missing for the following request. Please check the IAM Network policies required. Add the missing policy and then run the script again.")
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"{str(e)}")
             sys.exit(1)
         else:
@@ -379,7 +407,8 @@ def update_subnet_details(subnet_id, field_name, field_value):
         print(f"Updated subnet {subnet_id}: set {field_name} = {field_value}")
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"{str(e)}")
             sys.exit(1)
         else:
@@ -416,7 +445,8 @@ def remove_route_rule(route_table_id, destination_cidr, target_id):
 
     except ServiceError as e:
         if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-            print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+            print("Resource not found or access denied. Please check the IAM policies required for Network Access.")
+            print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
             print(f"{str(e)}")
             sys.exit(1)
         else:
@@ -483,7 +513,8 @@ def cleanup_security_lists(db_subnet, seclist_suffix):
 
         except ServiceError as e:
             if e.status == 404 and e.code == 'NotAuthorizedOrNotFound':
-                print("Resource not found or access denied. Please check the IAM policies required for Network Access")
+                print("Resource not found or access denied. Please check the IAM policies required for Network Access.")
+                print("Run 'cloud_shell_cleanup.py --help' to see all required IAM policies.")
                 print(f"{str(e)}")
                 sys.exit(1)
             else:
@@ -495,7 +526,18 @@ def cleanup_security_lists(db_subnet, seclist_suffix):
             sys.exit(1)
 
 def main():
-    parser = argparse.ArgumentParser(description="Cleanup OCI network resources")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Cleanup temporary OCI network resources created by WebLogic migration utilities.\n\n"
+            "Required IAM Policies:\n"
+            "  - Allow group <your-group> to manage orm-family in compartment id <stack_compartment_id>\n"
+            "  - Allow group <your-group> to manage virtual-network-family in compartment id <stack_network_compartment_id>\n"
+            "  - Allow group <your-group> to read database-family in compartment id <database_compartment_id>\n"
+            "  - Allow group <your-group> to read autonomous-database-family in compartment id <database_compartment_id>\n"
+            "These policies must be granted in the relevant compartments (WebLogic and DB)."
+        ),
+        formatter_class=argparse.RawTextHelpFormatter
+    )
     parser.add_argument("--stack-id", required=True, help="OCID of the Stack")
     args = parser.parse_args()
 
@@ -506,7 +548,7 @@ def main():
         sys.exit(1)
 
     latest_apply_job_id = latest_apply_job.id
-    suffix = get_tf_output_value(latest_apply_job_id)
+    suffix = get_tf_output_value(latest_apply_job_id, output_name='resource_identifier_value')
     if not suffix:
         sys.exit(1)
 
