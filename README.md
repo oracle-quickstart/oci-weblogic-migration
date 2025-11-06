@@ -716,15 +716,6 @@ Example:
 cd /opt/scripts
 python3 cleanup_resources.py
 ```
-
-> **Warning**
-> 
-> If you run **terraform destroy** without first executing the cleanup script, the destroy operation may fail with errors such as:
-> ```
-> Error: 409-IncorrectState, Local Peering Gateway ocid1.localpeeringgateway.oc1... is associated with one or more entities that are in use
-> ```
->  In that case, you will need to manually delete the Local Peering Gateway (LPG) and any related route rules or security lists before retrying the destroy operation.
-
 Sample output:
 ```bash
 Cleaning up security list...
@@ -736,6 +727,36 @@ Removed route to 9.1.1.0/24 via ocid1.localpeeringgateway.oc1.phx.aaaxxxxxxx7ukj
 Removed route to 7.0.2.0/24 via ocid1.localpeeringgateway.oc1.phx.aaaxxxxxxxxxxtdidsi7pvts4qa6h6u2wy2kewink2cekejbc7wifxeaa
 Cleanup complete. You can now safely run 'terraform destroy'.
 ``` 
+> **Warning**
+> 
+> If you run **terraform destroy** without first executing the cleanup script, the destroy operation may fail with errors such as:
+> ```
+> Error: 409-IncorrectState, Local Peering Gateway ocid1.localpeeringgateway.oc1... is associated with one or more entities that are in use
+> ```
+>  In that case, the destroy process will not remove certain dynamically created networking resources (for example, route rules or security lists).
+> 
+> If this issue occurs, run the cleanup script before retrying the destroy operation.
+This script requires proper execution permissions in Cloud Shell and specific IAM policies to be granted to your user group.
+> 
+> Before running the script, ensure it has execution permission:
+> ```bash
+> chmod +x cloud_shell_cleanup.py
+> ```
+> Run the following commands in OCI Cloud Shell:
+>  ```bash
+> python3 cloud_shell_cleanup.py --stack-id <your_stack_ocid>
+> ```
+> The following IAM policies must be granted at the compartment level (for both the WebLogic and Database compartments):
+> ```
+> Allow group Non-Admin to manage orm-family in compartment MyNetworkCompartment
+> Allow group Non-Admin to manage virtual-network-family in compartment MyNetworkCompartment
+> Allow group Non-Admin to read database-family in compartment MyNetworkCompartment
+> Allow group Non-Admin to read autonomous-database-family in compartment MyNetworkCompartment
+> ```
+> **Note:**  
+> Replace <compartment_ocid> with the OCID of your WebLogic and Database compartments.
+> These permissions are required for the script to successfully read and modify networking and database-related resources during cleanup.
+
 
 #### For Non-JRF Domains
 

@@ -24,11 +24,11 @@ Example
 -------
 Run the following command inside Cloud Shell:
 
-    python3 cloud_shell_cleanup_script.py --stack-id ocid1.ormstack.oc1.iad.amaa...xyz
+    python3 cloud_shell_cleanup.py --stack-id ocid1.ormstack.oc1.iad.amaa...xyz
 
 For more information about required IAM policies and usage details, run:
 
-    python3 cloud_shell_cleanup_script.py --help
+    python3 cloud_shell_cleanup.py --help
 
 '''
 
