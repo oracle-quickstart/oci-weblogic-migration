@@ -738,6 +738,10 @@ Cleanup complete. You can now safely run 'terraform destroy'.
 > If this issue occurs, run the cleanup script before retrying the destroy operation.
 This script requires proper execution permissions in Cloud Shell and specific IAM policies to be granted to your user group.
 > 
+> The cleanup script is located at:
+>  ```
+>  $toolHome/bin/cloud_shell_cleanup.py
+> ```
 > Before running the script, ensure it has execution permission:
 > ```bash
 > chmod +x cloud_shell_cleanup.py
