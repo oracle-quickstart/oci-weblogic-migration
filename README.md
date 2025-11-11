@@ -742,6 +742,8 @@ This script requires proper execution permissions in Cloud Shell and specific IA
 >  ```
 >  $toolHome/bin/cloud_shell_cleanup.py
 > ```
+> Copy the following script in Cloud Shell and save the file, for example, as "cloud_shell_cleanup.py".
+> 
 > Before running the script, ensure it has execution permission:
 > ```bash
 > chmod +x cloud_shell_cleanup.py
@@ -751,12 +753,15 @@ This script requires proper execution permissions in Cloud Shell and specific IA
 > python3 cloud_shell_cleanup.py --stack-id <your_stack_ocid>
 > ```
 > The following IAM policies must be granted at the compartment level (for both the WebLogic and Database compartments):
-> ```
-> Allow group Non-Admin to manage orm-family in compartment MyCompartment
-> Allow group Non-Admin to manage virtual-network-family in compartment MyNetworkCompartment
-> Allow group Non-Admin to read database-family in compartment MyDBNetworkCompartment
-> Allow group Non-Admin to read autonomous-database-family in compartment MyDBNetworkCompartment
-> ```
+> 
+>| Policy Statement                                                                                     | Purpose                                                       | Policy Location       |
+>|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|-----------------------|
+>| `Allow group Non-Admin to read orm-family in compartment MyCompartment`                              | To read stack, job, and Terraform state data.                 | Stack Compartment     |
+>| `Allow group Non-Admin to manage virtual-network-family in compartment MyNetworkCompartment`         | To delete networking resources (Route rules).                 | WebLogic Network Compartment | 
+>| `Allow group Non-Admin to manage virtual-network-family in compartment MyDatabaseNetworkCompartment` | To delete networking resources (Security Lists, Route rules). | Database Network Compartment |
+>| `Allow group Non-Admin to read database-family in compartment MyDBNetworkCompartment`                | Allows the script to fetch details for DB Systems.            | Database Compartment |
+>| `Allow group Non-Admin to read autonomous-database-family in compartment MyDBNetworkCompartment`     | Allows the script to fetch details for Autonomous Databases.  | Autonomous Database Compartment     |
+>
 > **Note:**
 > 
 > These permissions are required for the script to successfully read and modify networking and database-related resources during cleanup.
