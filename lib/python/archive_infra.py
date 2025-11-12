@@ -454,6 +454,7 @@ def __archive_directories(model, model_context, helper):
 
     # Read admin-level precheck return code (0=OK,1=not enough space)
     space_admin_rc = int(os.environ.get('SPACE_ADMIN_RETURNCODE', '0'))
+    space_per_archive_rc = int(os.environ.get("SPACE_PER_ARCHIVE_RETURNCODE", "0"))
 
     # Read per-node JSON map {host:0/1}
     json_space_input = os.environ.get('SPACE_STATUS_JSON', '{}')
