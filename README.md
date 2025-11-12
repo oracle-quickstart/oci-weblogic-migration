@@ -761,7 +761,7 @@ Cleanup complete. You can now safely run 'terraform destroy'.
 > ```bash
 > chmod +x cloud_shell_cleanup.py
 > ```
-> Run the following commands in OCI Cloud Shell:
+> Run the following command in OCI Cloud Shell:
 >  ```bash
 > python3 cloud_shell_cleanup.py --stack-id <your_stack_ocid>
 > ```
