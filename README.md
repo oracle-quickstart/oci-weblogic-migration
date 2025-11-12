@@ -727,6 +727,19 @@ Removed route to 9.1.1.0/24 via ocid1.localpeeringgateway.oc1.phx.aaaxxxxxxx7ukj
 Removed route to 7.0.2.0/24 via ocid1.localpeeringgateway.oc1.phx.aaaxxxxxxxxxxtdidsi7pvts4qa6h6u2wy2kewink2cekejbc7wifxeaa
 Cleanup complete. You can now safely run 'terraform destroy'.
 ``` 
+> **Note**  
+> The cleanup script performs operations such as deleting security lists and modifying route tables and subnets.  
+> To allow these actions, ensure the **dynamic group** used for migration has the following IAM policies in place:
+>
+> | Policy Statement | Policy Location |
+> |------------------|----------------|
+> | `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyDBNetworkCompartment` | DB Network Compartment |
+> | `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyNetworkCompartment` | WebLogic Network Compartment |
+>
+> These permissions enable the cleanup script to manage network resources that were created outside of Terraform before running the `terraform destroy` operation.
+
+
+
 > **Warning**
 > 
 > If you run **terraform destroy** without first executing the cleanup script, the destroy operation may fail with errors such as:
@@ -735,16 +748,16 @@ Cleanup complete. You can now safely run 'terraform destroy'.
 > ```
 >  In that case, the destroy process will not remove certain dynamically created networking resources (for example, route rules or security lists).
 > 
-> If this issue occurs, run the cleanup script before retrying the destroy operation.
-This script requires proper execution permissions in Cloud Shell and specific IAM policies to be granted to your user group.
+> If this issue occurs, run the cleanup script in the **Cloud Shell** before retrying the destroy operation.
+>This script requires proper execution permissions in Cloud Shell and specific IAM policies to be granted to your user group.
 > 
-> The cleanup script is located at:
+> The cleanup script is located in the tool repository at:
 >  ```
 >  $toolHome/bin/cloud_shell_cleanup.py
 > ```
-> Copy the following script in Cloud Shell and save the file, for example, as "cloud_shell_cleanup.py".
+> Copy the following script and save the file in **Cloud Shell**, for example, as "cloud_shell_cleanup.py".
 > 
-> Before running the script, ensure it has execution permission:
+> Before executing the script, ensure it has execution permission:
 > ```bash
 > chmod +x cloud_shell_cleanup.py
 > ```
@@ -764,23 +777,13 @@ This script requires proper execution permissions in Cloud Shell and specific IA
 >
 > **Note:**
 > 
-> These permissions are required for the script to successfully read and modify networking and database-related resources during cleanup.
+> These permissions enables the script to successfully read and modify networking and database-related resources during cleanup.
 
 
 #### For Non-JRF Domains
 
 If your stack is non-JRF, you can directly run the terraform destroy command to remove all resources — no additional cleanup is required.
 
-> **Note**  
-> The cleanup script performs operations such as deleting security lists and modifying route tables and subnets.  
-> To allow these actions, ensure the **dynamic group** used for migration has the following IAM policies in place:
->
-> | Policy Statement | Policy Location |
-> |------------------|----------------|
-> | `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyDBNetworkCompartment` | DB Network Compartment |
-> | `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyNetworkCompartment` | WebLogic Network Compartment |
->
-> These permissions enable the cleanup script to manage network resources that were created outside of Terraform before running the `terraform destroy` operation.
 
  
 ---
