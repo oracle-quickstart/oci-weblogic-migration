@@ -755,7 +755,7 @@ Cleanup complete. You can now safely run 'terraform destroy'.
 >  ```
 >  $toolHome/bin/cloud_shell_cleanup.py
 > ```
-> Copy the following script and save the file in **Cloud Shell**, for example, as "cloud_shell_cleanup.py".
+> Copy the script and save the file in **Cloud Shell**, for example, as "cloud_shell_cleanup.py".
 > 
 > Before executing the script, ensure it has execution permission:
 > ```bash
@@ -765,7 +765,7 @@ Cleanup complete. You can now safely run 'terraform destroy'.
 >  ```bash
 > python3 cloud_shell_cleanup.py --stack-id <your_stack_ocid>
 > ```
-> The following IAM policies must be granted at the compartment level (for both the WebLogic and Database compartments):
+> The following IAM policies must be granted at the compartment level:
 > 
 >| Policy Statement                                                                                     | Purpose                                                       | Policy Location       |
 >|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|-----------------------|
