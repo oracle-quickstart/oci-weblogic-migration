@@ -3,7 +3,10 @@
 Copyright (c) 2025, Oracle Corporation and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-The main module for the WebLogic Deploy tool to verify the user's SSH configuration is compatible with WDT.
+Module providing the WebLogic migration archiver.
+Creates per-host archives (domain home, WebLogic home, Java home, and custom directories),
+handles remote archive generation over SSH, downloads archives to the admin host,
+and supports uploading them to OCI Object Storage.
 """
 import os
 import re
