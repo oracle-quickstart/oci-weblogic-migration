@@ -716,15 +716,6 @@ Example:
 cd /opt/scripts
 python3 cleanup_resources.py
 ```
-
-> **Warning**
-> 
-> If you run **terraform destroy** without first executing the cleanup script, the destroy operation may fail with errors such as:
-> ```
-> Error: 409-IncorrectState, Local Peering Gateway ocid1.localpeeringgateway.oc1... is associated with one or more entities that are in use
-> ```
->  In that case, you will need to manually delete the Local Peering Gateway (LPG) and any related route rules or security lists before retrying the destroy operation.
-
 Sample output:
 ```bash
 Cleaning up security list...
@@ -736,11 +727,6 @@ Removed route to 9.1.1.0/24 via ocid1.localpeeringgateway.oc1.phx.aaaxxxxxxx7ukj
 Removed route to 7.0.2.0/24 via ocid1.localpeeringgateway.oc1.phx.aaaxxxxxxxxxxtdidsi7pvts4qa6h6u2wy2kewink2cekejbc7wifxeaa
 Cleanup complete. You can now safely run 'terraform destroy'.
 ``` 
-
-#### For Non-JRF Domains
-
-If your stack is non-JRF, you can directly run the terraform destroy command to remove all resources — no additional cleanup is required.
-
 > **Note**  
 > The cleanup script performs operations such as deleting security lists and modifying route tables and subnets.  
 > To allow these actions, ensure the **dynamic group** used for migration has the following IAM policies in place:
@@ -751,6 +737,53 @@ If your stack is non-JRF, you can directly run the terraform destroy command to 
 > | `Allow dynamic-group <dynamic-group> to manage virtual-network-family in compartment MyNetworkCompartment` | WebLogic Network Compartment |
 >
 > These permissions enable the cleanup script to manage network resources that were created outside of Terraform before running the `terraform destroy` operation.
+
+
+
+> **Warning**
+> 
+> If you run **terraform destroy** without first executing the cleanup script, the destroy operation may fail with errors such as:
+> ```
+> Error: 409-IncorrectState, Local Peering Gateway ocid1.localpeeringgateway.oc1... is associated with one or more entities that are in use
+> ```
+>  In that case, the destroy process will not remove certain dynamically created networking resources (for example, route rules or security lists).
+> 
+> If this issue occurs, run the cleanup script in the **Cloud Shell** before retrying the destroy operation.
+>This script requires proper execution permissions in Cloud Shell and specific IAM policies to be granted to your user group.
+> 
+> The cleanup script is located in the tool repository at:
+>  ```
+>  $toolHome/bin/cloud_shell_cleanup.py
+> ```
+> Copy the script and save the file in **Cloud Shell**, for example, as "cloud_shell_cleanup.py".
+> 
+> Before executing the script, ensure it has execution permission:
+> ```bash
+> chmod +x cloud_shell_cleanup.py
+> ```
+> Run the following command in OCI Cloud Shell:
+>  ```bash
+> python3 cloud_shell_cleanup.py --stack-id <your_stack_ocid>
+> ```
+> The following IAM policies must be granted at the compartment level:
+> 
+>| Policy Statement                                                                                     | Purpose                                                       | Policy Location       |
+>|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|-----------------------|
+>| `Allow group Non-Admin to read orm-family in compartment MyCompartment`                              | To read stack, job, and Terraform state data.                 | Stack Compartment     |
+>| `Allow group Non-Admin to manage virtual-network-family in compartment MyNetworkCompartment`         | To delete networking resources (Route rules).                 | WebLogic Network Compartment | 
+>| `Allow group Non-Admin to manage virtual-network-family in compartment MyDatabaseNetworkCompartment` | To delete networking resources (Security Lists, Route rules). | Database Network Compartment |
+>| `Allow group Non-Admin to read database-family in compartment MyDBNetworkCompartment`                | Allows the script to fetch details for DB Systems.            | Database Compartment |
+>| `Allow group Non-Admin to read autonomous-database-family in compartment MyDBNetworkCompartment`     | Allows the script to fetch details for Autonomous Databases.  | Autonomous Database Compartment     |
+>
+> **Note:**
+> 
+> These permissions enables the script to successfully read and modify networking and database-related resources during cleanup.
+
+
+#### For Non-JRF Domains
+
+If your stack is non-JRF, you can directly run the terraform destroy command to remove all resources — no additional cleanup is required.
+
 
  
 ---
