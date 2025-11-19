@@ -426,10 +426,10 @@ def cleanup_archives(file_path, wls_domain_name):
 
     # Only delete these exact archive files
     archive_patterns = (
-        "%s-weblogic_home.tar.gz" % wls_domain_name,
-        "%s-java_home.tar.gz" % wls_domain_name,
-        "%s-domain_home.tar.gz" % wls_domain_name,
-        "%s-custom_dirs.tar.gz" % wls_domain_name
+        "*-%s-weblogic_home.tar.gz" % wls_domain_name,
+        "*-%s-java_home.tar.gz" % wls_domain_name,
+        "*-%s-domain_home.tar.gz" % wls_domain_name,
+        "*-%s-custom_dirs.tar.gz" % wls_domain_name
     )
 
     try:
@@ -447,7 +447,7 @@ def cleanup_archives(file_path, wls_domain_name):
             for fname in os.listdir(dir_path):
                 # Only delete if filename matches one of the expected patterns exactly
                 for pattern in archive_patterns:
-                    if fnmatch.fnmatch(fname, "*%s" % pattern):
+                    if fnmatch.fnmatch(fname, pattern):
                         full_path = os.path.join(dir_path, fname)
                         __logger.info('WLSDPLY-05027',
                                       'Deleting archive %s matching pattern %s'
@@ -502,10 +502,10 @@ def __archive_directories(model, model_context, helper):
 
     # Define the archive file patterns
     archive_patterns = (
-        "%s-weblogic_home.tar.gz" % wls_domain_name,
-        "%s-java_home.tar.gz" % wls_domain_name,
-        "%s-domain_home.tar.gz" % wls_domain_name,
-        "%s-custom_dirs.tar.gz" % wls_domain_name
+        "*-%s-weblogic_home.tar.gz" % wls_domain_name,
+        "*-%s-java_home.tar.gz" % wls_domain_name,
+        "*-%s-domain_home.tar.gz" % wls_domain_name,
+        "*-%s-custom_dirs.tar.gz" % wls_domain_name
     )
 
     # Load the on-prem.env file
@@ -573,7 +573,7 @@ def __archive_directories(model, model_context, helper):
             admin_out = model_context.get_local_output_dir()
             for fname in os.listdir(admin_out):
                 for pattern in archive_patterns:
-                    if fnmatch.fnmatch(fname, "*%s" % pattern):
+                    if fnmatch.fnmatch(fname, pattern):
                         upload_to_bucket(os.path.join(admin_out, fname), log_file, on_prem_values, wls_domain_name)
                         delete_local(os.path.join(admin_out, fname))
                         # remote cleanup on per-host model context
@@ -622,7 +622,7 @@ def __archive_directories(model, model_context, helper):
             node_dir = per_machine_model_context.get_local_output_dir()
             for fname in os.listdir(node_dir):
                 for pattern in archive_patterns:
-                    if fnmatch.fnmatch(fname, "*%s" % pattern):
+                    if fnmatch.fnmatch(fname, pattern):
                         path = os.path.join(node_dir, fname)
                         upload_to_bucket(path,log_file,on_prem_values, wls_domain_name)
                         delete_local(path)
