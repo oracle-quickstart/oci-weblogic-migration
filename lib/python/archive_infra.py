@@ -265,14 +265,13 @@ def ensure_bucket(oci_bucket_name, oci_compartment_id, log_file):
         if result2 != 0:
             # creation failed
             __logger.warning('WLSDPLY-05027',"Error: Failed to create bucket. Check OCI credentials, policies or compartment OCID: %s. Exiting..." %oci_compartment_id, class_name=_class_name, method_name=_method_name)
-            # under Jython/WLST, sys.exit(1) will abort the WLST tool with error
-            sys.exit(1)
+            return result2
 
         # success
         __logger.info('WLSDPLY-05027',"Bucket created.", class_name=_class_name, method_name=_method_name)
 
 
-def upload_to_bucket(file_path, log_file, on_prem_values):
+def upload_to_bucket(file_path, log_file, on_prem_values, wls_domain_name):
     """
     Upload a file to OCI Object Storage using direct OCI CLI calls.
     Reads bucket_name and tenancy_namespace from on-prem.env.
@@ -281,6 +280,7 @@ def upload_to_bucket(file_path, log_file, on_prem_values):
     :param file_path: path of the file to be uploaded to the bucket
     :param log_file: path to a logfile to append oci CLI output to
     :param on_prem_values: The dictionary have all the on-prem.env file values
+    :param wls_domain_name: name of the WebLogic domain, used to construct archive filenames
     """
     global __logger, _class_name
     _method_name = 'upload_to_bucket'
@@ -293,10 +293,16 @@ def upload_to_bucket(file_path, log_file, on_prem_values):
     if not bucket or not namespace or not compartment_id:
         msg = "Missing bucket or namespace or compartment ocid: bucket=%s, namespace=%s, compartment_ocid=%s. Cannot upload %s" % (bucket, namespace, compartment_id, file_path)
         __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
+        # Cleanup any domain-specific archive files (both from admin_out and /tmp)
+        cleanup_archives(file_path, wls_domain_name)
         # under Jython/WLST, sys.exit(1) will abort the WLST tool with error
         sys.exit(1)
 
-    ensure_bucket(bucket, compartment_id, log_file)
+    result = ensure_bucket(bucket, compartment_id, log_file)
+    # Cleanup any domain-specific archive files (both from admin_out and /tmp)
+    if result !=0:
+        cleanup_archives(file_path, wls_domain_name)
+        sys.exit(1)
 
     cmd = "oci os object put --namespace %s --bucket-name %s --file %s --force" % (namespace, bucket, file_path)
     __logger.info('WLSDPLY-05027', 'Running command to upload to oci bucket: %s' %cmd, class_name=_class_name, method_name=_method_name)
@@ -306,6 +312,8 @@ def upload_to_bucket(file_path, log_file, on_prem_values):
     except Exception, e:
         __logger.warning('WLSDPLY-05027', 'Exception running upload command: %s' % str(e),
                          class_name=_class_name, method_name=_method_name)
+        # Cleanup any domain-specific archive files (both from admin_out and /tmp)
+        cleanup_archives(file_path, wls_domain_name)
         return
 
     if result == 0:
@@ -332,6 +340,7 @@ def delete_local(file_path):
         except Exception, e:
             msg = "Failed to delete %s: %s" % (file_path, str(e))
             __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
+
 
 def delete_remote_archives(model_context, file_pattern):
     """
@@ -405,6 +414,56 @@ def delete_remote_archives(model_context, file_pattern):
         return
 
 
+def cleanup_archives(file_path, wls_domain_name):
+    """
+    Delete specific domain-related archive files from the admin_out directory and /tmp.
+
+    :param file_path: path of one of the files (used to derive admin_out)
+    :param wls_domain_name: the WebLogic domain name, used to build archive filenames
+    """
+    global __logger, _class_name
+    _method_name = 'cleanup_archives'
+
+    # Only delete these exact archive files
+    archive_patterns = (
+        "*-%s-weblogic_home.tar.gz" % wls_domain_name,
+        "*-%s-java_home.tar.gz" % wls_domain_name,
+        "*-%s-domain_home.tar.gz" % wls_domain_name,
+        "*-%s-custom_dirs.tar.gz" % wls_domain_name
+    )
+
+    try:
+        __logger.info('WLSDPLY-05027', 'cleanup_archives() called for domain %s' % wls_domain_name,
+                      class_name=_class_name, method_name=_method_name)
+        admin_out = os.path.dirname(file_path)
+        dirs_to_clean = [admin_out, '/tmp']
+
+        for dir_path in dirs_to_clean:
+            if not os.path.isdir(dir_path):
+                continue
+            __logger.info('WLSDPLY-05027',
+                          'Checking directory %s for cleanup' % dir_path,
+                          class_name=_class_name, method_name=_method_name)
+            for fname in os.listdir(dir_path):
+                # Only delete if filename matches one of the expected patterns exactly
+                for pattern in archive_patterns:
+                    if fnmatch.fnmatch(fname, pattern):
+                        full_path = os.path.join(dir_path, fname)
+                        __logger.info('WLSDPLY-05027',
+                                      'Deleting archive %s matching pattern %s'
+                                      % (full_path, pattern),
+                                      class_name=_class_name, method_name=_method_name)
+                        delete_local(os.path.join(dir_path, fname))
+
+        __logger.info('WLSDPLY-05027',
+                      'cleanup_archives() completed for domain %s' % wls_domain_name,
+                      class_name=_class_name, method_name=_method_name)
+
+    except Exception, e:
+        msg = "Exception during cleanup: %s" % str(e)
+        __logger.warning('WLSDPLY-05027', msg, class_name=_class_name, method_name=_method_name)
+
+
 def __archive_directories(model, model_context, helper):
     global init_argument_map
     """
@@ -443,10 +502,10 @@ def __archive_directories(model, model_context, helper):
 
     # Define the archive file patterns
     archive_patterns = (
-        "%s-weblogic_home.tar.gz" % wls_domain_name,
-        "%s-java_home.tar.gz" % wls_domain_name,
-        "%s-domain_home.tar.gz" % wls_domain_name,
-        "%s-custom_dirs.tar.gz" % wls_domain_name
+        "*-%s-weblogic_home.tar.gz" % wls_domain_name,
+        "*-%s-java_home.tar.gz" % wls_domain_name,
+        "*-%s-domain_home.tar.gz" % wls_domain_name,
+        "*-%s-custom_dirs.tar.gz" % wls_domain_name
     )
 
     # Load the on-prem.env file
@@ -514,8 +573,8 @@ def __archive_directories(model, model_context, helper):
             admin_out = model_context.get_local_output_dir()
             for fname in os.listdir(admin_out):
                 for pattern in archive_patterns:
-                    if fnmatch.fnmatch(fname, "*%s" % pattern):
-                        upload_to_bucket(os.path.join(admin_out, fname), log_file, on_prem_values)
+                    if fnmatch.fnmatch(fname, pattern):
+                        upload_to_bucket(os.path.join(admin_out, fname), log_file, on_prem_values, wls_domain_name)
                         delete_local(os.path.join(admin_out, fname))
                         # remote cleanup on per-host model context
                         if per_machine_model_context:
@@ -563,9 +622,9 @@ def __archive_directories(model, model_context, helper):
             node_dir = per_machine_model_context.get_local_output_dir()
             for fname in os.listdir(node_dir):
                 for pattern in archive_patterns:
-                    if fnmatch.fnmatch(fname, "*%s" % pattern):
+                    if fnmatch.fnmatch(fname, pattern):
                         path = os.path.join(node_dir, fname)
-                        upload_to_bucket(path,log_file,on_prem_values)
+                        upload_to_bucket(path,log_file,on_prem_values, wls_domain_name)
                         delete_local(path)
                         # remote cleanup on per-host model context
                         if per_machine_model_context:
@@ -576,6 +635,7 @@ def __archive_directories(model, model_context, helper):
 
     __logger.exiting(class_name=_class_name, method_name=_method_name, result=model.get_model_resources())
     return
+
 
 def load_model(program_name, model_context, aliases, filter_type, wlst_mode, validate_crd_sections=True):
     """
