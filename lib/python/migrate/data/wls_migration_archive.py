@@ -3,7 +3,10 @@
 Copyright (c) 2025, Oracle Corporation and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-The main module for the WebLogic Deploy tool to verify the user's SSH configuration is compatible with WDT.
+Module providing the WebLogic migration archiver.
+Creates per-host archives (domain home, WebLogic home, Java home, and custom directories),
+handles remote archive generation over SSH, downloads archives to the admin host,
+and supports uploading them to OCI Object Storage.
 """
 import os
 import re
@@ -149,7 +152,7 @@ class WLSMigrationArchiver(object):
         self._cmd_helper=CommandHelper(model_context.is_ssh(), self._os_helper, ssh_context)
 
 
-    def archive(self):
+    def archive(self, archive_type):
         _method_name = 'archive'
         _logger.entering(class_name=_class_name, method_name=_method_name)
         local_path=self._model_context.get_local_output_dir()
@@ -171,10 +174,18 @@ class WLSMigrationArchiver(object):
         oracle_path = self._model.get_model_topology()[infra_constants.ORACLE_HOME_DIR] or self._model_context.get_oracle_home()
         extra_directories = self._model.get_model_resources()["Machines"][self._machine]["ExtraOSPaths"]
         # check if it exist, assume same path for everyone.
-        self.__process_java_home(domain_name,_ssh_download_dir)
-        self.__process_domain_home(domain_name,domain_path,_ssh_download_dir)
-        self.__process_weblogic_home(domain_name,oracle_path,_ssh_download_dir)
-        self.__process_custom_directories(domain_name,extra_directories,_ssh_download_dir)
+        if archive_type == "java_home" or archive_type == "all_archives":
+            self.__process_java_home(domain_name,_ssh_download_dir)
+
+        if archive_type == "domain_home" or archive_type == "all_archives":
+            self.__process_domain_home(domain_name,domain_path,_ssh_download_dir)
+
+        if archive_type == "weblogic_home" or archive_type == "all_archives":
+            self.__process_weblogic_home(domain_name,oracle_path,_ssh_download_dir)
+
+        if archive_type == "custom_dirs" or archive_type == "all_archives":
+            self.__process_custom_directories(domain_name,extra_directories,_ssh_download_dir)
+            
         return infra_constants.SUCCESS
 
 

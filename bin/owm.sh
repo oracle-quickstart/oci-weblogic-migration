@@ -140,8 +140,11 @@ function process_archives() {
   fi
 
   SPACE_JSON=$(echo "$SPACE_PRECHECK" | grep -o '{.*}')
+  PER_ARCHIVE_RETURNCODE=$(echo "$SPACE_PRECHECK" | grep -Eo 'Per archive returncode: [0-9]+' | awk '{print $4}')
+
   export SPACE_STATUS_JSON="$SPACE_JSON"
   export SPACE_ADMIN_RETURNCODE=$SPACE_RETURNCODE
+  export SPACE_PER_ARCHIVE_RETURNCODE=$PER_ARCHIVE_RETURNCODE
 
   shift
   SCRIPT_PATH="$toolHome/bin/archiveWLSDomain.sh"

@@ -111,11 +111,12 @@ class SpacePrecheck:
         script_path = os.path.realpath(__file__)
         tool_home = os.path.abspath(os.path.join(script_path, "..", "..", ".."))
         output_dir = os.path.join(tool_home, "out")
-
+        max_archive_mb = 0.0
         # Loop each host and measure remote directories
         for host in hosts:
             print(f"\n----- {host} -----")
             host_size_mb = 0.0  # reset per‐host accumulator
+            max_host_archive_mb = 0.0
 
             # Standard WebLogic env vars
             for env_var in ("ORACLE_HOME", "DOMAIN_HOME", "JAVA_HOME"):
@@ -146,6 +147,7 @@ class SpacePrecheck:
                 # accumulate both per‐host and grand total
                 host_size_mb += size_mb
                 total_size_mb += size_mb
+                max_host_archive_mb = max(max_host_archive_mb, size_mb)
 
             # Any extra paths defined in infra under “ExtraOSPaths”
             extra_paths = self.loader.get_machine_property(host, "ExtraOSPaths") or []
@@ -154,21 +156,29 @@ class SpacePrecheck:
                 size_mb = size_bytes / (1024 ** 2)
                 host_size_mb += size_mb
                 total_size_mb += size_mb
+                max_host_archive_mb = max(max_host_archive_mb, size_mb)
 
             # Report per‐host archive total and local free space
             print(f"Total remote archive size for {host}: {host_size_mb:.2f} MB")
+
+            # Report the largest size of archive in the host
+            print(f"Largest size of remote archive size for {host}: {max_host_archive_mb:.2f} MB")
+
             # show available local space per host
             available_space_mb = self.get_local_free_space_mb(output_dir)
             print(f"Available local disk space on {host}: {available_space_mb:.2f} MB")
 
+            max_archive_mb = max(max_host_archive_mb, max_archive_mb)
+
             # determine per-host status (0=sufficient,1=insufficient)
-            status = 0 if available_space_mb >= host_size_mb * 1.2 else 1
+            status = 0 if available_space_mb >= max_host_archive_mb * 1.2 else 1
             host_statuses.append([host, status])
 
         available_space_mb = self.get_local_free_space_mb(output_dir)
 
         print(f"\n-----------------------------------------------")
         # Summary report
+        print(f"\nLargest archive size among all the hosts: {max_archive_mb:.2f} MB")
         print(f"\nTotal remote archive size combined: {total_size_mb:.2f} MB")
         print(f"Available local disk space on admin VM: {available_space_mb:.2f} MB")
 
@@ -179,10 +189,16 @@ class SpacePrecheck:
         else:
             print("Insufficient space to store all nodes archives on the admin VM.")
 
+        per_archive_status = 0 if (available_space_mb >= max_archive_mb * 1.2) else 1
+        if per_archive_status == 0:
+            print("Sufficient space is available to store the largest archive among all the hosts on the admin VM.")
+        else:
+            print("Insufficient space to store the largest archive among all the hosts on the admin VM.")
+
         print(f"\n-----------------------------------------------")
         # Convert host_statuses to a dictionary
         host_status_dict = {host: status for host, status in host_statuses}
-        return host_status_dict, overall_status  # return host_statuses and overall status code
+        return host_status_dict, per_archive_status, overall_status  # return host_statuses , per archive status and overall status code
 
 
 def main():
@@ -201,8 +217,9 @@ def main():
     args = parser.parse_args()
 
     check_space = SpacePrecheck(args.infrafile)
-    host_statuses, overall_status = check_space.run()
+    host_statuses, per_archive_status, overall_status = check_space.run()
     print(f"The hostname : 0 if space is there else 1- {(json.dumps(host_statuses))}")
+    print(f"Per archive returncode: {per_archive_status}")
     print(f"Admin returncode: {overall_status}")  # send JSON to stdout for shell to consume
     sys.exit(overall_status)  # exit with admin status code only
 

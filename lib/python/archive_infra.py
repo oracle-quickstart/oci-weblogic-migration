@@ -513,6 +513,7 @@ def __archive_directories(model, model_context, helper):
 
     # Read admin-level precheck return code (0=OK,1=not enough space)
     space_admin_rc = int(os.environ.get('SPACE_ADMIN_RETURNCODE', '0'))
+    space_per_archive_rc = int(os.environ.get("SPACE_PER_ARCHIVE_RETURNCODE", "0"))
 
     # Read per-node JSON map {host:0/1}
     json_space_input = os.environ.get('SPACE_STATUS_JSON', '{}')
@@ -540,11 +541,11 @@ def __archive_directories(model, model_context, helper):
         __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
         raise ex
 
-    # Case 1: Admin has enough space-just create the archives, and if skip-transfer is true then don't upload or delete, else upload and delete
+    # Case 1: Admin has enough space-just create all the archives, and if skip-transfer is true then don't upload or delete, else upload and delete
     if space_admin_rc == 0:
         if admin_machine in nodes:
             #Do local Discovery.  It should include any managed server registered.
-            archive_result=WLSMigrationArchiver(admin_machine,model_context, OrderedDict(), base_location, model).archive()
+            archive_result=WLSMigrationArchiver(admin_machine,model_context, OrderedDict(), base_location, model).archive("all_archives")
             if not infra_constants.SUCCESS == archive_result:
                 ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902', "Admin archive failed")
                 __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
@@ -563,7 +564,7 @@ def __archive_directories(model, model_context, helper):
                     __logger.info('WLSDPLY-20045',
                                   init_argument_map, class_name=_class_name, method_name=_method_name)
                 per_machine_model_context = __process_args(init_argument_map, is_encryption_supported)
-                host_result = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model).archive()
+                host_result = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model).archive("all_archives")
                 if not infra_constants.SUCCESS == host_result:
                     ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902', "Node archive failed")
                     __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
@@ -580,15 +581,8 @@ def __archive_directories(model, model_context, helper):
                         if per_machine_model_context:
                             delete_remote_archives(per_machine_model_context, fname)
 
-    # Case 2: Admin has NO space and skip_transfer = true (Manual steps only)
-    elif skip_transfer:
-        __logger.warning('WLSDPLY-05027',
-                         'Admin VM has insufficient space and skip_transfer = true.\n',
-                         class_name=_class_name, method_name=_method_name)
-        return
-
-    # Case 3: Admin has NO space and skip_transfer = false (Selective remote archive + upload + delete)
-    else:
+    # Case 2: Admin has NO space for all the archives together and skip_transfer = false (Selective remote per archive + upload + delete)
+    elif space_per_archive_rc == 0 and not skip_transfer:
         for machine in nodes:
             node_details = OrderedDict()
             listen_address = common.traverse(machine_nodes, machine, model_constants.NODE_MANAGER, model_constants.LISTEN_ADDRESS)
@@ -601,10 +595,10 @@ def __archive_directories(model, model_context, helper):
                 __logger.info('WLSDPLY-20045',
                               init_argument_map, class_name=_class_name, method_name=_method_name)
             per_machine_model_context = __process_args(init_argument_map, is_encryption_supported)
+            archiver = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model)
 
             # checking per node space
             if space_status.get(listen_address, 1) == 1:
-                archiver = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model)
                 archiver.print_per_host_todo_commands()
                 __logger.warning('WLSDPLY-05027',
                                  'Not enough space on %s to create the archives. Please run the commands manually mentioned in the TODO to create the archive, '
@@ -612,23 +606,31 @@ def __archive_directories(model, model_context, helper):
                                  class_name=_class_name, method_name=_method_name)
                 continue
 
-            result = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model).archive()
-            if not infra_constants.SUCCESS == result:
-                ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902', "Node archive failed")
-                __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
-                raise ex
+            for archive_type in ("oracle_home", "weblogic_home", "java_home", "custom_dirs"):
+                result = archiver.archive(archive_type)
+                if not infra_constants.SUCCESS == result:
+                    ex = exception_helper.create_cla_exception(ExitCode.ERROR, 'WLSDPLY-32902', "Node archive failed")
+                    __logger.throwing(ex, class_name=_class_name, method_name=_method_name)
+                    raise ex
 
-            # Upload and delete
-            node_dir = per_machine_model_context.get_local_output_dir()
-            for fname in os.listdir(node_dir):
-                for pattern in archive_patterns:
-                    if fnmatch.fnmatch(fname, pattern):
-                        path = os.path.join(node_dir, fname)
-                        upload_to_bucket(path,log_file,on_prem_values, wls_domain_name)
-                        delete_local(path)
-                        # remote cleanup on per-host model context
-                        if per_machine_model_context:
-                            delete_remote_archives(per_machine_model_context, fname)
+                # Upload and delete
+                node_dir = per_machine_model_context.get_local_output_dir()
+                for fname in os.listdir(node_dir):
+                    for pattern in archive_patterns:
+                        if fnmatch.fnmatch(fname, "*%s" % pattern):
+                            path = os.path.join(node_dir, fname)
+                            upload_to_bucket(path,log_file,on_prem_values)
+                            delete_local(path)
+                            # remote cleanup on per-host model context
+                            if per_machine_model_context:
+                                delete_remote_archives(per_machine_model_context, fname)
+
+    # Case 3: Admin has NO space or skip_transfer = true (Manual steps only)
+    else :
+        __logger.warning('WLSDPLY-05027',
+                         'Admin VM has insufficient space and skip_transfer = true.\n',
+                         class_name=_class_name, method_name=_method_name)
+        return
 
     if len(hosts_details) == 0:
         return
