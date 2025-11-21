@@ -50,6 +50,34 @@ class SpacePrecheck:
         total, used, free = shutil.disk_usage(directory_path)
         return free / (1024 ** 2)
 
+    def get_remote_free_space_mb(self, hostname: str, remote_path: str = "/tmp") -> float:
+        """
+        Check available free disk space on a remote host for a given directory.
+
+        Args:
+            hostname (str): Remote host name.
+            remote_path (str): Remote path to check for free space.
+
+        Returns:
+            MB as float.
+
+        Uses: df -k <remote_path> | awk 'NR==2 {print $4}'
+        awk 'NR==2 {print $4} -->   Extracts value of the fourth column and second row, i.e, available free space.
+        """
+        cmd = f"df -k {remote_path} 2>/dev/null | awk 'NR==2 {{print $4}}'"
+        result = self.ssh.execute_ssh_command(hostname, cmd) #Returns in KB
+
+        result_out = result.stdout.strip()
+        result_err = result.stderr.strip()
+
+        if result.returncode != 0 or not result_out:
+            print(f"Error in checking available space on a remote host {hostname}: {result_err}")
+            return 0.0
+
+        free_kb = int(result_out)
+        return free_kb / 1024.0
+
+
     def retrieve_remote_env_var_path(self, hostname: str, env_var_name: str) -> str:
         """
         Resolve a remote environment variable to an absolute path.
@@ -104,7 +132,7 @@ class SpacePrecheck:
         """
         # Gather all hosts from the infra JSON
         hosts = self.loader.get_machine_hostnames()
-        total_size_mb = 0.0
+        total_archive_size_mb = 0.0
         host_statuses = []  # collect per-host status
 
         # Prepare the local “out” folder path for free‐space checks
@@ -115,7 +143,7 @@ class SpacePrecheck:
         # Loop each host and measure remote directories
         for host in hosts:
             print(f"\n----- {host} -----")
-            host_size_mb = 0.0  # reset per‐host accumulator
+            host_archive_size_mb = 0.0  # reset per‐host accumulator
             max_host_archive_mb = 0.0
 
             # Standard WebLogic env vars
@@ -145,8 +173,8 @@ class SpacePrecheck:
                 size_bytes = self.get_remote_directory_size_bytes(host, path)
                 size_mb = size_bytes / (1024 ** 2)
                 # accumulate both per‐host and grand total
-                host_size_mb += size_mb
-                total_size_mb += size_mb
+                host_archive_size_mb += size_mb
+                total_archive_size_mb += size_mb
                 max_host_archive_mb = max(max_host_archive_mb, size_mb)
 
             # Any extra paths defined in infra under “ExtraOSPaths”
@@ -154,24 +182,24 @@ class SpacePrecheck:
             for extra in extra_paths:
                 size_bytes = self.get_remote_directory_size_bytes(host, extra)
                 size_mb = size_bytes / (1024 ** 2)
-                host_size_mb += size_mb
-                total_size_mb += size_mb
+                host_archive_size_mb += size_mb
+                total_archive_size_mb += size_mb
                 max_host_archive_mb = max(max_host_archive_mb, size_mb)
 
             # Report per‐host archive total and local free space
-            print(f"Total remote archive size for {host}: {host_size_mb:.2f} MB")
+            print(f"Total remote archive size for {host}: {host_archive_size_mb:.2f} MB")
 
             # Report the largest size of archive in the host
             print(f"Largest size of remote archive size for {host}: {max_host_archive_mb:.2f} MB")
 
             # show available local space per host
-            available_space_mb = self.get_local_free_space_mb(output_dir)
-            print(f"Available local disk space on {host}: {available_space_mb:.2f} MB")
+            available_host_space_mb = self.get_remote_free_space_mb(host)
+            print(f"Available disk space on {host}: {available_host_space_mb:.2f} MB")
 
             max_archive_mb = max(max_host_archive_mb, max_archive_mb)
 
-            # determine per-host status (0=sufficient,1=insufficient)
-            status = 0 if available_space_mb >= max_host_archive_mb * 1.2 else 1
+            # determine if the host have sufficient space to store its largest archive.  (0=sufficient,1=insufficient)
+            status = 0 if available_host_space_mb >= max_host_archive_mb * 1.2 else 1
             host_statuses.append([host, status])
 
         available_space_mb = self.get_local_free_space_mb(output_dir)
@@ -179,11 +207,11 @@ class SpacePrecheck:
         print(f"\n-----------------------------------------------")
         # Summary report
         print(f"\nLargest archive size among all the hosts: {max_archive_mb:.2f} MB")
-        print(f"\nTotal remote archive size combined: {total_size_mb:.2f} MB")
+        print(f"\nTotal remote archive size combined: {total_archive_size_mb:.2f} MB")
         print(f"Available local disk space on admin VM: {available_space_mb:.2f} MB")
 
         # Decision based on 20% safety buffer for combined size
-        overall_status = 0 if (available_space_mb >= total_size_mb * 1.2) else 1
+        overall_status = 0 if (available_space_mb >= total_archive_size_mb * 1.2) else 1
         if overall_status == 0:
             print("Sufficient space is available to store all nodes archives on the admin VM.")
         else:
