@@ -62,7 +62,7 @@ class SpacePrecheck:
             MB as float.
 
         Uses: df -k <remote_path> | awk 'NR==2 {print $4}'
-        awk 'NR==2 {print $4} -->   Extracts value of the fourth column and second row, i.e, available free space.
+                Extracts available free space (column 4, second row).
         """
         cmd = f"df -k {remote_path} 2>/dev/null | awk 'NR==2 {{print $4}}'"
         result = self.ssh.execute_ssh_command(hostname, cmd) #Returns in KB
@@ -198,7 +198,7 @@ class SpacePrecheck:
 
             max_archive_mb = max(max_host_archive_mb, max_archive_mb)
 
-            # determine if the host have sufficient space to store its largest archive.  (0=sufficient,1=insufficient)
+            # determine if the host have sufficient space to store its largest archive with 20% buffer.  (0=sufficient,1=insufficient)
             status = 0 if available_host_space_mb >= max_host_archive_mb * 1.2 else 1
             host_statuses.append([host, status])
 
