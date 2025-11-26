@@ -465,10 +465,9 @@ def cleanup_archives(file_path, wls_domain_name):
 
 
 def process_archives(nodes, model, model_context, machine_nodes, base_location, init_argument_map, on_prem_values,
-                     space_status, log_file, wls_domain_name, per_host_space_key, archive_types, do_upload):
+                     space_status, log_file, wls_domain_name, per_host_space_key, archive_types, transfer_to_admin, do_upload):
 
     _method_name = 'process_archives'
-    global __logger
 
     # Define the archive file patterns
     archive_patterns = (
@@ -491,7 +490,7 @@ def process_archives(nodes, model, model_context, machine_nodes, base_location, 
             __logger.info('WLSDPLY-20045', init_argument_map, class_name=_class_name, method_name=_method_name)
 
         per_machine_model_context = __process_args(init_argument_map, is_encryption_supported)
-        archiver = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model)
+        archiver = WLSMigrationArchiver(machine, per_machine_model_context, node_details, base_location, model, transfer_to_admin=transfer_to_admin)
 
         # Check space policy for host
         host_space_info = space_status.get(
@@ -604,20 +603,45 @@ def __archive_directories(model, model_context, helper):
     #   a. If Managed host has space to hold its largest archive, then perform per node per archive upload + delete.
     #   b. For the Managed host which does not have sufficient space to hold its largest archive, it prints TODO messages for the host.
     if space_per_archive_rc == 0 and not skip_transfer:
+        __logger.info(
+            'WLSDPLY-05027',
+            'Admin has space for the largest archive. Managed hosts must have space for largest archive to upload to bucket.',
+            class_name=_class_name, method_name=_method_name
+        )
+
+        __logger.info(
+            'WLSDPLY-05027',
+            'Processing per-host per-archive generation AND upload for archive types: oracle_home, weblogic_home, java_home, custom_dirs',
+            class_name=_class_name, method_name=_method_name
+        )
         process_archives(
             nodes, model, model_context, machine_nodes, base_location,init_argument_map, on_prem_values, space_status,log_file, wls_domain_name,
             per_host_space_key="largest_archive",
             archive_types=("oracle_home", "weblogic_home","java_home", "custom_dirs"),
+            transfer_to_admin=True,
             do_upload=True
         )
+
 # Case 2: Admin does not have space to store the largest archive among all the hosts and skip_transfer = false
     # a. Managed hosts have enough space to hold all its archives then store it there.
-    # b. For Managed nodes doesn’t have space to hold all the archives, print TODO messages.
+    # b. For Managed nodes which don’t have space to hold all the archives, print TODO messages.
     elif space_per_archive_rc == 1 and not skip_transfer:
+        __logger.info(
+            'WLSDPLY-05027',
+            'Admin does NOT have space for the largest archive. Each host will store its own full archive locally. NO transfer to admin.',
+            class_name=_class_name, method_name=_method_name
+        )
+
+        __logger.info(
+            'WLSDPLY-05027',
+            'Processing full archive ("all_archives") on each host with NO upload to bucket',
+            class_name=_class_name, method_name=_method_name
+        )
         process_archives(
             nodes, model, model_context, machine_nodes, base_location,init_argument_map, on_prem_values, space_status,log_file, wls_domain_name,
             per_host_space_key="full_archives",
             archive_types=("all_archives",),
+            transfer_to_admin=False,
             do_upload=False
         )
 
@@ -626,18 +650,35 @@ def __archive_directories(model, model_context, helper):
     # b. Admin doesn’t have enough space to store all the archives but its own archives, then all nodes stores their respective archives including the admin. (Not covered)
     # c. Print TODO messages for any node which doesn’t have enough space to create it’s archive. (Not covered)
     else :
+        __logger.info(
+            'WLSDPLY-05027',
+            'skip_transfer=true. Archives will NOT be uploaded to the bucket.',
+            class_name=_class_name, method_name=_method_name
+        )
         if space_admin_rc == 0:
+            __logger.info(
+                'WLSDPLY-05027',
+                'Admin have enough space to store all the archives. Managed hosts must have space for largest archive to transfer to admin.',
+                class_name=_class_name, method_name=_method_name
+            )
             process_archives(
                 nodes, model, model_context, machine_nodes, base_location,init_argument_map, on_prem_values, space_status,log_file, wls_domain_name,
                 per_host_space_key="largest_archive",
                 archive_types=("oracle_home", "weblogic_home","java_home", "custom_dirs"),
+                transfer_to_admin=True,
                 do_upload=False
             )
         else :
+            __logger.info(
+                'WLSDPLY-05027',
+                'Admin does not have enough space to store all the archives. Each nodes stores their own full archive locally.',
+                class_name=_class_name, method_name=_method_name
+            )
             process_archives(
                 nodes, model, model_context, machine_nodes, base_location,init_argument_map, on_prem_values, space_status,log_file, wls_domain_name,
                 per_host_space_key="full_archives",
                 archive_types=("all_archives",),
+                transfer_to_admin=False,
                 do_upload=False
             )
 
