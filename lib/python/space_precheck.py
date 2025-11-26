@@ -196,11 +196,20 @@ class SpacePrecheck:
             available_host_space_mb = self.get_remote_free_space_mb(host)
             print(f"Available disk space on {host}: {available_host_space_mb:.2f} MB")
 
+            #Updating the largest archive size among all the hosts.
             max_archive_mb = max(max_host_archive_mb, max_archive_mb)
 
-            # determine if the host have sufficient space to store its largest archive with 20% buffer.  (0=sufficient,1=insufficient)
-            status = 0 if available_host_space_mb >= max_host_archive_mb * 1.2 else 1
-            host_statuses.append([host, status])
+            # determine if the host has sufficient space to store its largest archive with 20% buffer.  (0=sufficient,1=insufficient)
+            largest_archive_status = 0 if available_host_space_mb >= max_host_archive_mb * 1.2 else 1
+
+            #determine if the host has sufficient space to store all its archives with 20% buffer. (0=sufficient,1=insufficient)
+            full_archive_status = 0 if available_host_space_mb >= host_archive_size_mb * 1.2 else 1
+            
+            host_statuses.append([host, {
+                "largest_archive": largest_archive_status,
+                "full_archives": full_archive_status
+            }])
+
 
         available_space_mb = self.get_local_free_space_mb(output_dir)
 
@@ -210,7 +219,7 @@ class SpacePrecheck:
         print(f"\nTotal remote archive size combined: {total_archive_size_mb:.2f} MB")
         print(f"Available local disk space on admin VM: {available_space_mb:.2f} MB")
 
-        # Decision based on 20% safety buffer for combined size
+        # Detemine if the admin have space to store all the archives. Decision based on 20% safety buffer for combined size
         overall_status = 0 if (available_space_mb >= total_archive_size_mb * 1.2) else 1
         if overall_status == 0:
             print("Sufficient space is available to store all nodes archives on the admin VM.")
@@ -225,7 +234,10 @@ class SpacePrecheck:
 
         print(f"\n-----------------------------------------------")
         # Convert host_statuses to a dictionary
-        host_status_dict = {host: status for host, status in host_statuses}
+        host_status_dict = {}
+        for host, status_dict in host_statuses:
+            host_status_dict[host] = status_dict
+
         return host_status_dict, per_archive_status, overall_status  # return host_statuses , per archive status and overall status code
 
 
