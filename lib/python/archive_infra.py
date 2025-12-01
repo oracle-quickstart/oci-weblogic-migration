@@ -248,7 +248,9 @@ def ensure_bucket(oci_bucket_name, oci_compartment_id, log_file):
     # 1) Try to 'get' the bucket; redirect stdout+stderr to our log_file
     get_cmd = "oci os bucket get --bucket-name %s >> %s 2>&1" % (oci_bucket_name, log_file)
     result = os.system(get_cmd)
-    if result != 0:
+    if result == 0:
+        return result
+    else:
         # bucket is not there, so try to create it
         __logger.info('WLSDPLY-05027', 'Bucket does not exist. Attempting to create bucket...',
                       class_name=_class_name, method_name=_method_name)
@@ -269,6 +271,7 @@ def ensure_bucket(oci_bucket_name, oci_compartment_id, log_file):
 
         # success
         __logger.info('WLSDPLY-05027',"Bucket created.", class_name=_class_name, method_name=_method_name)
+        return result2
 
 
 def upload_to_bucket(file_path, log_file, on_prem_values, wls_domain_name):
@@ -385,7 +388,7 @@ def delete_remote_archives(model_context, file_pattern):
             "rm -f %s/%s" % (remote_dir, file_pattern)
         ]
 
-        __logger.info('WLSDPLY-05027', 'Running remote cleanup: %s' % (" ".join(cmd_array)),
+        __logger.info('WLSDPLY-05027', 'Running remote cleanup: %s, filepattern %s' % (" ".join(cmd_array), file_pattern),
                       class_name=_class_name, method_name=_method_name)
 
         runtime = Runtime.getRuntime()
@@ -518,16 +521,16 @@ def process_archives(nodes, model, model_context, machine_nodes, base_location, 
                 raise ex
 
         # Upload/delete if enabled
-        if do_upload:
-            node_dir = per_machine_model_context.get_local_output_dir()
+            if do_upload:
+                node_dir = per_machine_model_context.get_local_output_dir()
 
-            for fname in os.listdir(node_dir):
-                for pattern in archive_patterns:
-                    if fnmatch.fnmatch(fname, "*%s" % pattern):
-                        path = os.path.join(node_dir, fname)
-                        upload_to_bucket(path, log_file,on_prem_values, wls_domain_name)
-                        delete_local(path)
-                        delete_remote_archives(per_machine_model_context, fname)
+                for fname in os.listdir(node_dir):
+                    for pattern in archive_patterns:
+                        if fnmatch.fnmatch(fname, "*%s" % pattern):
+                            path = os.path.join(node_dir, fname)
+                            upload_to_bucket(path, log_file,on_prem_values, wls_domain_name)
+                            delete_local(path)
+                            delete_remote_archives(per_machine_model_context, fname)
 
 
 def __archive_directories(model, model_context, helper):
@@ -617,7 +620,7 @@ def __archive_directories(model, model_context, helper):
         process_archives(
             nodes, model, model_context, machine_nodes, base_location,init_argument_map, on_prem_values, space_status,log_file, wls_domain_name,
             per_host_space_key="largest_archive",
-            archive_types=("oracle_home", "weblogic_home","java_home", "custom_dirs"),
+            archive_types=("domain_home","weblogic_home","java_home","custom_dirs"),
             transfer_to_admin=True,
             do_upload=True
         )
@@ -664,7 +667,7 @@ def __archive_directories(model, model_context, helper):
             process_archives(
                 nodes, model, model_context, machine_nodes, base_location,init_argument_map, on_prem_values, space_status,log_file, wls_domain_name,
                 per_host_space_key="largest_archive",
-                archive_types=("oracle_home", "weblogic_home","java_home", "custom_dirs"),
+                archive_types=("domain_home", "weblogic_home","java_home", "custom_dirs"),
                 transfer_to_admin=True,
                 do_upload=False
             )
