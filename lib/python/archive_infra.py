@@ -649,9 +649,9 @@ def __archive_directories(model, model_context, helper):
         )
 
 # Case 3: skip_transfer = true
-    # a. Admin have enough space to store all the archives, then all the archives are stored in the admin. (covered)
-    # b. Admin doesn’t have enough space to store all the archives but its own archives, then all nodes stores their respective archives including the admin. (Not covered)
-    # c. Print TODO messages for any node which doesn’t have enough space to create it’s archive. (Not covered)
+    # a. Admin have enough space to store all the archives, then all the archives are stored in the admin.
+    # b. Admin doesn’t have enough space to store all the archives but its own archives, then all nodes stores their respective archives including the admin.
+    # c. Print TODO messages for any node which doesn’t have enough space to create it’s archive.
     else :
         __logger.info(
             'WLSDPLY-05027',
