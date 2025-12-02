@@ -454,32 +454,40 @@ User will have to provide the following as parameters to the Resource Manager:
 | `Virtual Cloud Network Name`      | Name of the new VCN if Use an Existing VCN is not selected   | `wls-<terraform state id>` |
 | `Virtual Cloud Network CIDR`      | CIDR for the new VCN if Use an Existing VCN is not selected. | `10.0.0.0/16`              |
 
-##### 4. WebLogic Server Compute
+##### 4. Network Security
+| Variable                                      | Description                                                                                                                         | Default |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `Allow Bastion SSH Access to Admin Server`    | Enables SSH (port 22) egress from the Bastion host NSG to the WebLogic Admin Server NSG **when Bastion provisioning is enabled**.   | `true`  |
+| `Allow Bastion SSH Access to Managed Servers` | Enables SSH (port 22) egress from the Bastion host NSG to the WebLogic Managed Server NSG **when Bastion provisioning is enabled**. | `true`  |
+| `Allow Managed Server Internet Egress`        | Allows WebLogic Managed Servers to egress to the internet (0.0.0.0/0) on all protocols and ports.                                   | `true`  |
+| `Secure the Default Security List`            | Removes all default ingress and egress rules from the WebLogic VCN Default Security List **when creating a new VCN**.               | `true`  |
+
+##### 5. WebLogic Server Compute
 | Variable                      | Description                         | Default                                 |
 | ----------------------------- | ----------------------------------- | --------------------------------------- |
 | `Compute Shape`               | Compute shape for WebLogic servers. | VM.Standard.E4.Flex (1 OCPU, 16 GB RAM) |
 | `WebLogic Server Subnet CIDR` | Subnet CIDR for WebLogic instances. | `10.0.2.0/24`                           |
 
-##### 5. Operating System Image
+##### 6. Operating System Image
 | Variable               | Description                                   | Default                                             |
 | ---------------------- | --------------------------------------------- | --------------------------------------------------- |
 | `wlsserver_image_type` | Image license type (Marketplace, Platform).  | Oracle WebLogic Server Enterprise Edition UCM Image |
 | `terms_and_conditions` | Accept terms if using Marketplace UCM images. | `false`                                             |
 
-##### 6. Load Balancer (Optional)
+##### 7. Load Balancer (Optional)
 | Variable             | Description                                             | Default       |
 | -------------------- | ------------------------------------------------------- | ------------- |
 | `LB Subnet CIDR`     | Subnet CIDR for load balancer.                          | `10.0.3.0/24` |
 | `LB MIN Bandwidth`   | Minimum bandwidth (Mbps). Options: 10/100/400/1000/8000 | `10`          |
 | `LB Max Bandwidth`   | Maximum bandwidth (Mbps). Options: 10/100/400/1000/8000 | `100`         |
 
-##### 7. Bastion (Optional)
+##### 8. Bastion (Optional)
 | Variable              | Description                   | Default                                 |
 | --------------------- | ----------------------------- | --------------------------------------- |
 | `Bastion Subnet CIDR` | Subnet CIDR for bastion host. | `10.0.1.0/24`                           |
 | `Bastion shape`       | Compute shape for bastion.    | VM.Standard.E4.Flex (1 OCPU, 16 GB RAM) |
 
-##### 8. Datasource Options
+##### 9. Datasource Options
 For each discovered JDBC datasource, Resource Manager generates a section titled: `DB Connection String #<datasourceName>`.  
 Each datasource can be recreated in OCI using one of the following strategies:
 

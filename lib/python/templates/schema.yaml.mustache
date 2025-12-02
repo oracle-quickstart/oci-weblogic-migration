@@ -133,8 +133,8 @@ variableGroups:
 
   - title: "Network Security"
     variables:
-      - allow_wlsserver_ssh_access
       - allow_adminserver_ssh_access
+      - allow_wlsserver_ssh_access
       - allow_wlsserver_internet_access
       - lockdown_default_seclist
 
@@ -301,7 +301,8 @@ variables:
         - ${create_vcn}
         - ${orm_create_mode}
     type: boolean
-    title: Secure default security list
+    title: Secure the default security list
+    description: Removes all default ingress and egress rules from the Weblogic VCN Default Security List.
     required: true
 
   local_peering_gateways:
@@ -337,7 +338,8 @@ variables:
         - ${orm_create_mode}
         - ${create_bastion}
     type: boolean
-    title: Allow Weblogic Server SSH access 
+    title: Allow Bastion SSH Access to Managed Servers
+    description: Enables SSH (port 22) egress from the Bastion host NSG to the WebLogic Managed Server NSG.
     default: true
     required: true
   allow_adminserver_ssh_access:
@@ -346,13 +348,15 @@ variables:
         - ${orm_create_mode}
         - ${create_bastion}
     type: boolean
-    title: Allow Adminserver Server SSH access
+    title: Allow Bastion SSH Access to Admin Server
+    description: Enables SSH (port 22) egress from the Bastion host NSG to the WebLogic Admin Server NSG.
     default: true
     required: true
   allow_wlsserver_internet_access:
     visible: ${orm_create_mode}
     type: boolean
-    title: Allow Weblogic Server egress to internet
+    title: Allow Managed Server Internet Egress
+    description: Allows WebLogic Managed Servers to egress to the internet (0.0.0.0/0) on all protocols and ports.
     default: true
     required: true
 

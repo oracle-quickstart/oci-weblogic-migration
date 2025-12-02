@@ -199,17 +199,9 @@ class SpacePrecheck:
             #Updating the largest archive size among all the hosts.
             max_archive_mb = max(max_host_archive_mb, max_archive_mb)
 
-            # determine if the host has sufficient space to store its largest archive with 20% buffer.  (0=sufficient,1=insufficient)
-            largest_archive_status = 0 if available_host_space_mb >= max_host_archive_mb * 1.2 else 1
-
-            #determine if the host has sufficient space to store all its archives with 20% buffer. (0=sufficient,1=insufficient)
-            full_archive_status = 0 if available_host_space_mb >= host_archive_size_mb * 1.2 else 1
-            
-            host_statuses.append([host, {
-                "largest_archive": largest_archive_status,
-                "full_archives": full_archive_status
-            }])
-
+            # determine if the host have sufficient space to store its largest archive with 20% buffer.  (0=sufficient,1=insufficient)
+            status = 0 if available_host_space_mb >= max_host_archive_mb * 1.2 else 1
+            host_statuses.append([host, status])
 
         available_space_mb = self.get_local_free_space_mb(output_dir)
 
@@ -219,7 +211,7 @@ class SpacePrecheck:
         print(f"\nTotal remote archive size combined: {total_archive_size_mb:.2f} MB")
         print(f"Available local disk space on admin VM: {available_space_mb:.2f} MB")
 
-        # Detemine if the admin have space to store all the archives. Decision based on 20% safety buffer for combined size
+        # Decision based on 20% safety buffer for combined size
         overall_status = 0 if (available_space_mb >= total_archive_size_mb * 1.2) else 1
         if overall_status == 0:
             print("Sufficient space is available to store all nodes archives on the admin VM.")
