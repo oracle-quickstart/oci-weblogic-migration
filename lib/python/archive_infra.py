@@ -388,7 +388,7 @@ def delete_remote_archives(model_context, file_pattern):
             "rm -f %s/%s" % (remote_dir, file_pattern)
         ]
 
-        __logger.info('WLSDPLY-05027', 'Running remote cleanup: %s, filepattern %s' % (" ".join(cmd_array), file_pattern),
+        __logger.info('WLSDPLY-05027', 'Running remote cleanup: %s, file pattern %s' % (" ".join(cmd_array), file_pattern),
                       class_name=_class_name, method_name=_method_name)
 
         runtime = Runtime.getRuntime()
@@ -469,6 +469,41 @@ def cleanup_archives(file_path, wls_domain_name):
 
 def process_archives(nodes, model, model_context, machine_nodes, base_location, init_argument_map, on_prem_values,
                      space_status, log_file, wls_domain_name, per_host_space_key, archive_types, transfer_to_admin, do_upload):
+    """
+    Execute archive generation and optional transfer/upload for each host.
+
+    This function performs the following operations for each WebLogic machine node:
+      1. Resolve SSH connection details to the host from the model context.
+      2. Validate available disk space on the target host using space_status.
+      3. Run WebLogic migration archiving for the selected archive types
+         (e.g. weblogic_home, java_home, custom_dirs, all_archives).
+      4. Prints TODO messages for the node which doesn't have enough space.
+      5. If enabled, upload each generated archive to OCI Object Storage.
+      6. If upload is enabled and succeeds, cleanup the local and remote archive files.
+
+    The behavior varies based on the arguments passed from __archive_directories():
+      - per_host_space_key controls whether we validate largest_archive or full_archives.
+      - transfer_to_admin determines if archives should be staged on admin.
+      - do_upload triggers OCI bucket upload and later the cleanup workflow.
+
+    :param nodes: dictionary of machine nodes from the model topology
+    :param model: WLSDeploy Model object
+    :param model_context: context containing CLI arguments and SSH settings
+    :param machine_nodes: dictionary from topology containing NODE_MANAGER infos
+    :param base_location: WDT LocationContext used for archive discovery
+    :param init_argument_map: processed CLI argument map used to configure SSH
+    :param on_prem_values: dictionary of on-prem.env configuration values
+    :param space_status: dictionary with disk space flags per host:
+           { "hostname": {"largest_archive": 0/1, "full_archives": 0/1}, ... }
+    :param log_file: path to output file where OCI CLI logs will be appended
+    :param wls_domain_name: domain name used to match archive filenames
+    :param per_host_space_key: "largest_archive" or "full_archives"
+           used to check if the host has enough available space
+    :param archive_types: tuple of archive identifiers to generate,
+           e.g. ("oracle_home", "weblogic_home", "java_home", "custom_dirs")
+    :param transfer_to_admin: if True, archive first stored on admin node before upload
+    :param do_upload: if True, upload archives to OCI and delete after success
+    """
 
     _method_name = 'process_archives'
 
@@ -649,7 +684,7 @@ def __archive_directories(model, model_context, helper):
         )
 
 # Case 3: skip_transfer = true
-    # a. Admin have enough space to store all the archives, then all the archives are stored in the admin.
+    # a. Admin has enough space to store all the archives, then all the archives are stored in the admin.
     # b. Admin doesn’t have enough space to store all the archives but its own archives, then all nodes stores their respective archives including the admin.
     # c. Print TODO messages for any node which doesn’t have enough space to create it’s archive.
     else :
@@ -661,7 +696,7 @@ def __archive_directories(model, model_context, helper):
         if space_admin_rc == 0:
             __logger.info(
                 'WLSDPLY-05027',
-                'Admin have enough space to store all the archives. Managed hosts must have space for largest archive to transfer to admin.',
+                'Admin has enough space to store all the archives. Managed hosts must have space for largest archive to transfer to admin.',
                 class_name=_class_name, method_name=_method_name
             )
             process_archives(
