@@ -5,14 +5,12 @@
 
 #############################################################################################################################
 # Name                 : owm.sh
-# Description          : Discovers a Weblogic Domain Environment and move it to Oracle Cloud.
+# Description          : Discovers a Weblogic Domain Environment and moves it to Oracle Cloud.
 #############################################################################################################################
 scriptName=$(basename "$0")
 scriptPath=$(dirname "$0")
 toolHome=$(builtin cd "$scriptPath/.." ||exit; pwd)
 LOG_FILE_NAME="owm.log"
-# echo $scriptPath
-# echo $toolHome
 ON_PREM_ENV_FILE="$toolHome/config/on-prem.env"
 
 [ "$user_functions_loaded" ] || source "$scriptPath/shared.sh"
@@ -31,22 +29,52 @@ discover(){
   fi
 }
 
-discover_local(){
-  log "info" "<discoverDomain><discover_local><entry> args: $*"
-  file_timestamp=`date +%Y%m%d%H%M`
-  SCRIPT_PATH="$toolHome/bin/discoverWLS.sh"
-  discover "local" "$SCRIPT_PATH" "-domain_home $domain_home" "-java_home $java_home" "-model_file $toolHome/out/Discovered_$file_timestamp.json" "-skip_archive"
-  exit_code=$?
-  log "info" "Executed discover WebLogic with exit code [$exit_code]"
-  if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
-     log "error" "<discoverDomain><discover_local><error> Error executing discover domain"
-     exit 2
+discover_local() {
+  log "info" "<discoverDomain><discover_local><entry> args: $*>"
+  file_timestamp=$(date +%Y%m%d%H%M)
+  # WDT discover tool
+  SCRIPT_PATH="$toolHome/deps/wdt/bin/discoverDomain.sh"
+  # Output JSON model
+  MODEL_PATH="$toolHome/out/Discovered_${file_timestamp}.json"
+
+  # Ensure java_home came from on-prem.env
+  if [ -z "$java_home" ]; then
+      log "error" "java_home is not set in on-prem.env"
+      exit 2
   fi
-  log "info" "<discoverDomain><discover_infra_local><exit> WebLogic Inventory File : $toolHome/out/Discovered_$file_timestamp.json"
-  DISCOVERED_DOMAIN_JSON="$toolHome/out/Discovered_$file_timestamp.json"
+  export JAVA_HOME="$java_home"
+  log "info" "Using JAVA_HOME = $JAVA_HOME"
+
+  # Execute WDT Discover
+  discover "local" "$SCRIPT_PATH" \
+           "-domain_home $domain_home" \
+           "-java_home $JAVA_HOME" \
+           "-model_file $MODEL_PATH" \
+           "-skip_archive"
+  exit_code=$?
+  log "info" "Executed WDT Discover with exit code [$exit_code]"
+  if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
+      log "error" "<discoverDomain><discover_local><error> Error executing WDT discover domain"
+      exit $exit_code
+  fi
+  log "info" "<discoverDomain><discover_local><exit> WebLogic Inventory File: $MODEL_PATH"
+
+  # Post-process WDT JSON:
+  #   - Insert AdminConsolePort (Admin Server only)
+  #   - Insert DomainPath & OraclePath in the topology section
+  PYTHON_SCRIPT="$toolHome/lib/python/patch_discover_wls_model.py"
+  python3 "$PYTHON_SCRIPT" "$MODEL_PATH" "$ON_PREM_ENV_FILE"
+  exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+      log "error" "<discoverDomain><discover_local><error> JSON post-processing failed with exit code $exit_code"
+      exit $exit_code
+  fi
+  log "info" "Successfully updated WebLogic Inventory File with AdminConsolePort, DomainPath, OraclePath"
+
+  # Update migration metadata
+  DISCOVERED_DOMAIN_JSON="$MODEL_PATH"
   update_migration_data_json "wls_json" "$DISCOVERED_DOMAIN_JSON"
 }
-
 
 discover_remote(){
   # http # Future version HTTP Proxy
@@ -243,6 +271,11 @@ fi
 case "$1" in
     "wls")
         load_config "$ON_PREM_ENV_FILE"
+
+        # Ensure JAVA_HOME is exported
+        if [ -n "$java_home" ]; then
+          export JAVA_HOME="$java_home"
+        fi
         discover_local
         ;;
     "remote")
