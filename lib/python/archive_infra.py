@@ -481,11 +481,6 @@ def process_archives(nodes, model, model_context, machine_nodes, base_location, 
       5. If enabled, upload each generated archive to OCI Object Storage.
       6. If upload is enabled and succeeds, cleanup the local and remote archive files.
 
-    The behavior varies based on the arguments passed from __archive_directories():
-      - per_host_space_key controls whether we validate largest_archive or full_archives.
-      - transfer_to_admin determines if archives should be staged on admin.
-      - do_upload triggers OCI bucket upload and later the cleanup workflow.
-
     :param nodes: dictionary of machine nodes from the model topology
     :param model: WLSDeploy Model object
     :param model_context: context containing CLI arguments and SSH settings
