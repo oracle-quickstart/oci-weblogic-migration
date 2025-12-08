@@ -113,7 +113,7 @@ REMOTE_ARCHIVE_PATH = 'ArchivePath'
 
 class WLSMigrationArchiver(object):
 
-    def __init__(self, machine, model_context, dictionary, base_location, model, wlst_mode=None, aliases=None, credential_injector=None):
+    def __init__(self, machine, model_context, dictionary, base_location, model, wlst_mode=None, aliases=None, credential_injector=None, transfer_to_admin=True):
         """
         :param model_context: context about the model for this instance of discoverDomain
         :param base_location: to look for common WebLogic resources. By default, this is the global path or '/'
@@ -138,6 +138,8 @@ class WLSMigrationArchiver(object):
         self._custom_folder = CustomFolderHelper(self._aliases, _logger, self._model_context, ExceptionType.DISCOVER)
         self._weblogic_helper = model_context.get_weblogic_helper()
         self._wlst_helper = WlstHelper(ExceptionType.DISCOVER)
+
+        self._transfer_to_admin = transfer_to_admin
 
         # self._wls_version = model_context.get_effective_wls_version()
         self.path_helper = path_helper.get_path_helper()
@@ -270,7 +272,7 @@ class WLSMigrationArchiver(object):
         is_dry_run = self._model_context.is_skip_archive()
         response=self._cmd_helper.compress_archive(archive_file_name, dir_to_compress, is_dry_run)
         if not is_dry_run :
-            if self._model_context.is_ssh():
+            if self._model_context.is_ssh() and self._transfer_to_admin:
                     entry_path = self._cmd_helper.download_file_from_remote_server(self._model_context,archive_file_name,
                                                                                    self._model_context.get_local_output_dir(),
                                                                                "")
