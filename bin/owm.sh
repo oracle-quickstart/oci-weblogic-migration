@@ -140,7 +140,7 @@ discover_infra_local() {
 
     # Update migration metadata
     DISCOVERED_INFRA_JSON="$output_file"
-    update_migration_data_json "infra_json" "$DISCOVERED_INFRA_JSON"   # FIX #3
+    update_migration_data_json "infra_json" "$DISCOVERED_INFRA_JSON"
 }
 
 discover_infra_remote(){
