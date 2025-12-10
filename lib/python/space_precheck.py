@@ -196,6 +196,7 @@ class SpacePrecheck:
             available_host_space_mb = self.get_remote_free_space_mb(host)
             print(f"Available disk space on {host}: {available_host_space_mb:.2f} MB")
 
+            #Updating the largest archive size among all the hosts.
             max_archive_mb = max(max_host_archive_mb, max_archive_mb)
 
             # determine if the host have sufficient space to store its largest archive with 20% buffer.  (0=sufficient,1=insufficient)
@@ -225,7 +226,10 @@ class SpacePrecheck:
 
         print(f"\n-----------------------------------------------")
         # Convert host_statuses to a dictionary
-        host_status_dict = {host: status for host, status in host_statuses}
+        host_status_dict = {}
+        for host, status_dict in host_statuses:
+            host_status_dict[host] = status_dict
+
         return host_status_dict, per_archive_status, overall_status  # return host_statuses , per archive status and overall status code
 
 
