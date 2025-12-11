@@ -32,15 +32,14 @@ env_file = args.env_file
 # =====================================================================
 # LOAD ENVIRONMENT VARIABLES
 # =====================================================================
-SSH_USER = load_env_var(env_file, "ssh_user") or "oracle"
-SSH_PRIVATE_KEY = load_env_var(env_file, "ssh_private_key_file") or ""
-SSH_PRIVATE_KEY_PASS = load_env_var(env_file, "ssh_private_key_pass_file") or ""
-SSH_PASSWORD_FILE = load_env_var(env_file, "ssh_password_file") or ""
+SSH_USER = load_env_var(env_file, "ssh_user")
+SSH_PRIVATE_KEY = load_env_var(env_file, "ssh_private_key_file")
+SSH_PRIVATE_KEY_PASS = load_env_var(env_file, "ssh_private_key_pass_file")
+SSH_PASSWORD_FILE = load_env_var(env_file, "ssh_password_file")
 
 DOMAIN_HOME = load_env_var(env_file, "domain_home")
 JAVA_HOME = load_env_var(env_file, "java_home")
-ORACLE_HOME = load_env_var(env_file, "oracle_home") or os.environ.get("ORACLE_HOME", "")
-WL_HOME = load_env_var(env_file, "wl_home") or os.environ.get("WL_HOME", "")
+ORACLE_HOME = load_env_var(env_file, "oracle_home")
 
 SSH_PASSWORD = ""
 if SSH_PASSWORD_FILE and os.path.exists(SSH_PASSWORD_FILE):
@@ -217,7 +216,6 @@ def get_owner_details(host):
 # =====================================================================
 TOKEN_MAP = {
     "@@ORACLE_HOME@@": ORACLE_HOME,
-    "@@WL_HOME@@": WL_HOME,
     "@@DOMAIN_HOME@@": DOMAIN_HOME,
     "@@JAVA_HOME@@": JAVA_HOME,
 }
@@ -233,7 +231,7 @@ def resolve_tokens(path):
 def get_extra_os_paths(machine_name, data):
     """
     Identify “extra” directories referenced by deployments or keystores
-    which are not under ORACLE_HOME / WL_HOME / DOMAIN_HOME / JAVA_HOME .
+    which are not under ORACLE_HOME / DOMAIN_HOME / JAVA_HOME .
 
     These paths may or may not exist on each machine. They will be
     validated later using SSH.
@@ -241,7 +239,6 @@ def get_extra_os_paths(machine_name, data):
     extra_dirs = []
 
     ORACLE_HOME = resolve_tokens("@@ORACLE_HOME@@")
-    WL_HOME     = resolve_tokens("@@WL_HOME@@")
     DOMAIN_HOME = resolve_tokens("@@DOMAIN_HOME@@")
     JAVA_HOME   = resolve_tokens("@@JAVA_HOME@@")
 
@@ -253,7 +250,7 @@ def get_extra_os_paths(machine_name, data):
 
         # ignore token-only values
         SKIP_TOKENS = [
-            "@@ORACLE_HOME@@", "@@WL_HOME@@", "@@DOMAIN_HOME@@",
+            "@@ORACLE_HOME@@", "@@DOMAIN_HOME@@",
             "@@JAVA_HOME@@", "@@PWD@@", "@@TMP@@"
         ]
         for tok in SKIP_TOKENS:
@@ -308,7 +305,6 @@ def get_extra_os_paths(machine_name, data):
         ORACLE_HOME.rstrip("/"),
         DOMAIN_HOME.rstrip("/"),
         JAVA_HOME.rstrip("/"),
-        WL_HOME.rstrip("/")
     ])
 
     JVM_PREFIXES = ["-Djava.io.tmpdir=", "-Duser.dir="]
