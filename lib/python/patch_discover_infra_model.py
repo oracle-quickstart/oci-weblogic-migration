@@ -41,10 +41,6 @@ DOMAIN_HOME = load_env_var(env_file, "domain_home")
 JAVA_HOME = load_env_var(env_file, "java_home")
 ORACLE_HOME = load_env_var(env_file, "oracle_home")
 
-SSH_PASSWORD = ""
-if SSH_PASSWORD_FILE and os.path.exists(SSH_PASSWORD_FILE):
-    SSH_PASSWORD = open(SSH_PASSWORD_FILE).read().strip()
-
 # =====================================================================
 # SSH HELPER FUNCTIONS
 # =====================================================================
@@ -66,8 +62,8 @@ def run_ssh(host, cmd):
     target = "%s@%s" % (SSH_USER, host)
     full_cmd = base_cmd + [target, cmd]
 
-    if SSH_PASSWORD:
-        full_cmd = ["sshpass", "-p", SSH_PASSWORD] + full_cmd
+    if SSH_PASSWORD_FILE and os.path.exists(SSH_PASSWORD_FILE):
+        full_cmd = ["sshpass", "-f", SSH_PASSWORD_FILE] + full_cmd
 
     proc = subprocess.Popen(
         full_cmd,
