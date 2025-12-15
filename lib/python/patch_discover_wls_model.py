@@ -63,7 +63,7 @@ def load_env_var(file_path, key):
         return None
 
     pattern = re.compile(
-        r'^\s*(?:export\s+)?' + re.escape(key) + r'\s*=\s*(.+?)\s*$',
+        r'^\s*' + re.escape(key) + r'\s*=\s*(.+?)\s*$',
         re.IGNORECASE,
         )
 

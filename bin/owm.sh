@@ -102,32 +102,45 @@ discover_online(){
    log "info" "<discoverDomain><discover_online><exit> success"
 }
 
-discover_infra_local(){
-   log "info" "<discoverDomain><discover_infra_local><entry> args: $*"
-   wls_inventory_file=$1
-   local file_timestamp=`date +%Y%m%d%H%M`
-   local SCRIPT_PATH="$toolHome/bin/discoverInfra.sh"
-   local model_file_arg=""
-   if [[ -f $wls_inventory_file ]]; then
-      model_file_arg="-model_file $wls_inventory_file"
-   elif [[ -f "$toolHome/out/$wls_inventory_file" ]]; then
-      model_file_arg="-model_file $toolHome/out/$wls_inventory_file"
-   else
-       log "error" "<discoverDomain><discover_infra_local><error> model_file $wls_inventory_file not found. exiting."
-       exit 2
-   fi
-   local ssh_args
-   ssh_args=$(get_ssh_args) # Get SSH options from helper
-   discover "local" "$SCRIPT_PATH" "$model_file_arg" "-archive_file $toolHome/out/infra_output_$file_timestamp.json" "$ssh_args"
-   exit_code=$?
-   log "info" "Executed discover infra with exit code [$exit_code]"
-   if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
-       log "error" "<discoverDomain><discover_infra_local><error> Error executing discover infra"
-       exit $exit_code
-   fi
-   log "info" "<discoverDomain><discover_infra_local><exit> infrastructure_file : $toolHome/out/infra_output_$file_timestamp.json"
-   DISCOVERED_INFRA_JSON="$toolHome/out/infra_output_$file_timestamp.json"
-   update_migration_data_json "infra_json" "$DISCOVERED_INFRA_JSON"
+discover_infra_local() {
+    log "info" "<discoverDomain><discover_infra_local><entry> args: $*"
+
+    wls_inventory_file="$1"
+    file_timestamp=$(date +%Y%m%d%H%M)
+
+    # Validate input file
+    if [[ -f "$wls_inventory_file" ]]; then
+        input_file="$wls_inventory_file"
+    elif [[ -f "$toolHome/out/$wls_inventory_file" ]]; then
+        input_file="$toolHome/out/$wls_inventory_file"
+    else
+        log "error" "<discoverDomain><discover_infra_local><error> model_file $wls_inventory_file not found. exiting."
+        exit 2
+    fi
+
+    # Output file
+    output_file="$toolHome/out/infra_output_${file_timestamp}.json"
+
+    # Python script for patching
+    PYTHON_SCRIPT="$toolHome/lib/python/patch_discover_infra_model.py"
+
+    # Call Python script to patch the model file
+    log "info" "Executing patch_discover_infra_mode.py on $input_file"
+    python3 "$PYTHON_SCRIPT" \
+        --input_model "$input_file" \
+        --output_model "$output_file" \
+        --env_file "$ON_PREM_ENV_FILE"
+    exit_code=$?
+    log "info" "Executed Python patch script with exit code [$exit_code]"
+    if [[ $exit_code -ne 0 ]]; then
+        log "error" "<discoverDomain><discover_infra_local><error> Python script failed"
+        exit $exit_code
+    fi
+    log "info" "<discoverDomain><discover_infra_local><exit> infrastructure_file : $output_file"
+
+    # Update migration metadata
+    DISCOVERED_INFRA_JSON="$output_file"
+    update_migration_data_json "infra_json" "$DISCOVERED_INFRA_JSON"
 }
 
 discover_infra_remote(){
