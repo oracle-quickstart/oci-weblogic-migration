@@ -198,14 +198,26 @@ def get_weblogic_servers(host):
     return sorted(servers, key=lambda x: 0 if "AdminServer" in x else 1)
 
 # =====================================================================
-# ORACLE USER DETAILS
+# WEBLOGIC OWNER DETAILS
 # =====================================================================
+def get_owner_details(host, wls_path):
+    """
+    Return UID/GID and user/group name of the filesystem owner of the given WebLogic path.
+    """
+    # %u = uid, %g = gid, %U = username, %G = group name
+    cmd = f"stat -Lc '%u %g %U %G' '{wls_path}'"
+    out = run_ssh(host, cmd)
 
-def get_owner_details(host):
-    """Return UID/GID information for the 'oracle' user."""
-    uid = run_ssh(host, "id -u oracle") or "1001"
-    gid = run_ssh(host, "id -g oracle") or "1001"
-    return {"uid": uid, "uname": "oracle", "gid": gid, "gname": "oracle"}
+    if not out:
+        return {}
+
+    uid, gid, uname, gname = out.split()
+    return {
+        "uid": uid,
+        "uname": uname,
+        "gid": gid,
+        "gname": gname,
+    }
 
 # =====================================================================
 # EXTRA OS PATH DISCOVERY
@@ -353,7 +365,7 @@ for m in machines:
     print(f"[INFO] Fetching from host {host} ...")
 
     os_details = get_os_details(host)
-    owner = get_owner_details(host)
+    owner = get_owner_details(host, ORACLE_HOME)
     nodemgr = get_node_manager_args(host)
     wls = get_weblogic_servers(host)
 
