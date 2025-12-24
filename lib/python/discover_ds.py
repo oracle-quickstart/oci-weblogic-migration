@@ -3,16 +3,14 @@ Copyright (c) 2025, Oracle Corporation and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 This script processes a WebLogic Deploy Tooling (WDT) model file and extracts
-unique JDBC connection URLs from all JDBCSystemResource entries. It replicates
-the behavior of the WDT discoverDomain functionality ***without requiring any
-Oracle/WLS imports*** and ***without using any third-party Python libraries***.
+unique JDBC connection URLs from all JDBCSystemResource entries.
 
 The script:
   - Loads a WDT model (JSON or YAML)
   - Extracts JDBC URLs from JDBCSystemResource/JDBCDriverParams
   - Ensures uniqueness and order preservation
   - Reads bucket_name from on-prem.env
-  - Renders Mustache templates (pure-Python)
+  - Renders Mustache templates
   - Outputs Terraform-compatible files
 
 Usage:
@@ -37,7 +35,6 @@ import json
 import yaml
 from collections import OrderedDict
 import re
-import argparse
 
 # Resolve toolHome from script location
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -47,7 +44,7 @@ TOOL_HOME = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 TEMPLATE_DIR = os.path.join(TOOL_HOME, "lib", "python", "templates")
 
 # ---------------------------------------------------------
-# Pure-Python Mustache-like template renderer
+# Mustache-like template renderer
 # ---------------------------------------------------------
 
 def render_template_string(template, context):
@@ -56,8 +53,6 @@ def render_template_string(template, context):
 
     This function renders a template string using a simplified Mustache-style
     syntax, suitable for generating YAML or Terraform-compatible files.
-    It preserves indentation, removes standalone section lines, supports nested
-    sections, and collapses excessive blank lines.
 
     Supported syntax:
       - {{var}}        → Replaces with `context['var']` (escaped/str)
@@ -68,12 +63,6 @@ def render_template_string(template, context):
           * List of dicts: renders block for each item, merging item keys into context
           * Nested sections are supported recursively
 
-    Key behaviors:
-      - Preserves indentation within sections
-      - Removes standalone section lines if the section evaluates to empty
-      - Multiple passes to handle nested sections
-      - Cleans up excessive blank lines for YAML safety
-
     Arguments:
         template (str): Raw template string containing Mustache-like placeholders.
         context (dict): Dictionary containing variables and section values for rendering.
@@ -82,13 +71,6 @@ def render_template_string(template, context):
         str: Fully rendered template string, ready for YAML/Terraform use.
     """
 
-    # Regex to match sections including indentation:
-    #   ^[ \t]*           → leading whitespace (indentation) is captured
-    #   {{#(\w+)}}        → section start, captures section name (\w+)
-    #   \s*\n             → allows optional spaces and newline after section start
-    #   (.*?)             → non-greedy capture of all content inside the section
-    #   \n[ \t]*{{/\1}}   → matches section end with same indentation
-    #   \s*$              → optional trailing whitespace until end of line
     section_re = re.compile(
         r'(?m)^[ \t]*{{#(\w+)}}\s*\n(.*?)\n[ \t]*{{/\1}}\s*$',
         re.DOTALL
@@ -238,7 +220,7 @@ def get_bucket_name(env_file):
 
 
 # ---------------------------------------------------------
-# WDT-accurate JDBC URL extraction
+# JDBC URL extraction
 # ---------------------------------------------------------
 
 def extract_jdbc_urls_from_driverparams(params):
@@ -364,7 +346,7 @@ def main(input_model, env_file):
     ds_info = extract_datasources(model)
     ds_info["oci_bucket_name"] = bucket
 
-    # Templates to generate → matching WDT structure
+    # Templates to generate
     template_map = {
         "db-connection-string.auto.tfvars": "db-connection-string.auto.tfvars.mustache",
         "schema.yaml": "schema.yaml.mustache",
