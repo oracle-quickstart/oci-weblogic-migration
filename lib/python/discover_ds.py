@@ -1,5 +1,5 @@
 """
-Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+Copyright (c) 2026, Oracle Corporation and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 This script processes a WebLogic Deploy Tooling (WDT) model file and extracts
@@ -35,6 +35,8 @@ import json
 import yaml
 from collections import OrderedDict
 import re
+import sys
+
 
 # Resolve toolHome from script location
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -71,10 +73,13 @@ def render_template_string(template, context):
         str: Fully rendered template string, ready for YAML/Terraform use.
     """
 
-    section_re = re.compile(
-        r'(?m)^[ \t]*{{#(\w+)}}\s*\n(.*?)\n[ \t]*{{/\1}}\s*$',
-        re.DOTALL
-    )
+    try:
+        section_re = re.compile(
+            r'(?m)^[ \t]*{{#(\w+)}}\s*\n(.*?)\n[ \t]*{{/\1}}\s*$',
+            re.DOTALL
+        )
+    except re.error as e:
+        raise RuntimeError(f"Invalid Mustache section regex: {e}")
 
     def render_section(match):
         """
@@ -91,22 +96,25 @@ def render_template_string(template, context):
         value = context.get(section)
 
         # Boolean section: render block if True
-        if isinstance(value, bool):
-            return render_template_string(block, context) if value else ""
+        try:
+            if isinstance(value, bool):
+                return render_template_string(block, context) if value else ""
 
-        # String section: render block if value is "true" (case-insensitive)
-        if isinstance(value, str):
-            return render_template_string(block, context) if value.lower() == "true" else ""
+            # String section: render block if value is "true" (case-insensitive)
+            if isinstance(value, str):
+                return render_template_string(block, context) if value.lower() == "true" else ""
 
-        # List of dicts: render block for each item, merging context
-        if isinstance(value, list):
-            rendered = []
-            for item in value:
-                sub_ctx = context.copy()
-                if isinstance(item, dict):
-                    sub_ctx.update(item)
-                rendered.append(render_template_string(block, sub_ctx))
-            return "\n".join(rendered)
+            # List of dicts: render block for each item, merging context
+            if isinstance(value, list):
+                rendered = []
+                for item in value:
+                    sub_ctx = context.copy()
+                    if isinstance(item, dict):
+                        sub_ctx.update(item)
+                    rendered.append(render_template_string(block, sub_ctx))
+                return "\n".join(rendered)
+        except Exception as e:
+            raise RuntimeError(f"Failed rendering section '{section}': {e}")
 
         # If section not found or unsupported type, return empty string
         return ""
@@ -117,22 +125,25 @@ def render_template_string(template, context):
         prev = template
         template = section_re.sub(render_section, template)
 
-    # Replace triple braces {{{ var }}} literally
-    template = re.sub(
-        r'{{{\s*(\w+)\s*}}}',
-        lambda m: str(context.get(m.group(1), "")),
-        template
-    )
+    try:
+        # Replace triple braces {{{ var }}} literally
+        template = re.sub(
+            r'{{{\s*(\w+)\s*}}}',
+            lambda m: str(context.get(m.group(1), "")),
+            template
+        )
 
-    # Replace double braces {{ var }} normally
-    template = re.sub(
-        r'{{\s*(\w+)\s*}}',
-        lambda m: str(context.get(m.group(1), "")),
-        template
-    )
+        # Replace double braces {{ var }} normally
+        template = re.sub(
+            r'{{\s*(\w+)\s*}}',
+            lambda m: str(context.get(m.group(1), "")),
+            template
+        )
 
-    # Collapse excessive blank lines to at most two
-    template = re.sub(r'\n{3,}', '\n\n', template)
+        # Collapse excessive blank lines to at most two
+        template = re.sub(r'\n{3,}', '\n\n', template)
+    except re.error as e:
+        raise RuntimeError(f"Template substitution failed: {e}")
 
     # Ensure final output ends with a single newline
     return template.rstrip() + "\n"
@@ -149,15 +160,23 @@ def render_template_file(template_path, output_path, context):
         context (dict): Variables for rendering
     """
 
-    with open(template_path, "r") as f:
-        tmpl = f.read()
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"Template file not found: {template_path}")
+
+    try:
+        with open(template_path, "r") as f:
+            tmpl = f.read()
+    except OSError as e:
+        raise RuntimeError(f"Failed to read template {template_path}: {e}")
 
     rendered = render_template_string(tmpl, context)
 
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-    with open(output_path, "w") as f:
-        f.write(rendered)
+    try:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, "w") as f:
+            f.write(rendered)
+    except OSError as e:
+        raise RuntimeError(f"Failed to write output file {output_path}: {e}")
 
 
 # ---------------------------------------------------------
@@ -174,9 +193,17 @@ def load_model(path):
     Returns:
         dict: Parsed WDT model.
     """
-    if path.lower().endswith((".yaml", ".yml")):
-        return yaml.safe_load(open(path))
-    return json.load(open(path))
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"WDT model file not found: {path}")
+
+    try:
+        if path.lower().endswith((".yaml", ".yml")):
+            return yaml.safe_load(open(path))
+        return json.load(open(path))
+    except (yaml.YAMLError, json.JSONDecodeError) as e:
+        raise ValueError(f"Failed to parse WDT model {path}: {e}")
+    except OSError as e:
+        raise RuntimeError(f"Failed to read WDT model {path}: {e}")
 
 
 # ---------------------------------------------------------
@@ -204,17 +231,20 @@ def get_bucket_name(env_file):
     bucket = ""
     skip = False
 
-    with open(env_file, "r") as f:
-        for line in f:
-            if "=" not in line or line.startswith("#"):
-                continue
+    try:
+        with open(env_file, "r") as f:
+            for line in f:
+                if "=" not in line or line.startswith("#"):
+                    continue
 
-            k, v = [x.strip().strip('"').strip("'") for x in line.split("=", 1)]
+                k, v = [x.strip().strip('"').strip("'") for x in line.split("=", 1)]
 
-            if k == "skip_transfer" and v.lower() in ("true", "1", "yes"):
-                skip = True
-            elif k == "bucket_name":
-                bucket = v
+                if k == "skip_transfer" and v.lower() in ("true", "1", "yes"):
+                    skip = True
+                elif k == "bucket_name":
+                    bucket = v
+    except OSError as e:
+        raise RuntimeError(f"Failed to read env file {env_file}: {e}")
 
     return "" if skip else bucket
 
@@ -270,6 +300,9 @@ def extract_datasources(model):
             is_mds: "true"/"false"
     """
 
+    if not isinstance(model, dict):
+        raise ValueError("Invalid WDT model format")
+
     resources = model.get("resources", {})
     jdbc_sys = resources.get("JDBCSystemResource", {})
 
@@ -319,6 +352,7 @@ def normalize_placeholders(obj):
         return obj
     return obj
 
+
 # ---------------------------------------------------------
 # Main
 # ---------------------------------------------------------
@@ -332,44 +366,49 @@ def main(input_model, env_file):
         env_file (str): Path to on-prem.env file
     """
 
-    # Always use the fixed output directory
-    out_dir = os.path.join(TOOL_HOME, "oci", "generated")
-    os.makedirs(out_dir, exist_ok=True)
+    try:
+        # Always use the fixed output directory
+        out_dir = os.path.join(TOOL_HOME, "oci", "generated")
+        os.makedirs(out_dir, exist_ok=True)
 
-    # Load WDT model
-    model = load_model(input_model)
+        # Load WDT model
+        model = load_model(input_model)
 
-    # Read bucket name
-    bucket = get_bucket_name(env_file)
+        # Read bucket name
+        bucket = get_bucket_name(env_file)
 
-    # Extract datasource URLs
-    ds_info = extract_datasources(model)
-    ds_info["oci_bucket_name"] = bucket
+        # Extract datasource URLs
+        ds_info = extract_datasources(model)
+        ds_info["oci_bucket_name"] = bucket
 
-    # Templates to generate
-    template_map = {
-        "db-connection-string.auto.tfvars": "db-connection-string.auto.tfvars.mustache",
-        "schema.yaml": "schema.yaml.mustache",
-        "locals-db-connection-string.tf": "locals-db-connection-string.tf.mustache",
-        "data-oci-db-resources.tf": "data-oci-db-resources.tf.mustache",
-        "variables-db-connection-string.tf": "variables-db-connection-string.tf.mustache"
-    }
+        # Templates to generate
+        template_map = {
+            "db-connection-string.auto.tfvars": "db-connection-string.auto.tfvars.mustache",
+            "schema.yaml": "schema.yaml.mustache",
+            "locals-db-connection-string.tf": "locals-db-connection-string.tf.mustache",
+            "data-oci-db-resources.tf": "data-oci-db-resources.tf.mustache",
+            "variables-db-connection-string.tf": "variables-db-connection-string.tf.mustache"
+        }
 
-    # Render each mustache template into output files
-    for outfile, tmpl in template_map.items():
-        render_template_file(
-            os.path.join(TEMPLATE_DIR, tmpl),
-            os.path.join(out_dir, outfile),
-            ds_info
-        )
+        # Render each mustache template into output files
+        for outfile, tmpl in template_map.items():
+            render_template_file(
+                os.path.join(TEMPLATE_DIR, tmpl),
+                os.path.join(out_dir, outfile),
+                ds_info
+            )
 
-    # Summary output
-    print("\nGenerated Terraform datasource artifacts in:")
-    print(os.path.abspath(out_dir))
+        # Summary output
+        print("\nGenerated Terraform datasource artifacts in:")
+        print(os.path.abspath(out_dir))
 
-    print("\nDiscovered JDBC URLs:")
-    for d in ds_info["datasources"]:
-        print("  -", d["datasourceUrl"])
+        print("\nDiscovered JDBC URLs:")
+        for d in ds_info["datasources"]:
+            print("  -", d["datasourceUrl"])
+
+    except Exception as e:
+        print(f"\nERROR: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 # ---------------------------------------------------------
