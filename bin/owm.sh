@@ -154,13 +154,34 @@ discover_infra_remote(){
 }
 
 process_datasources(){
-  local wls_inventory_file=$1
-  SCRIPT_PATH="$toolHome/bin/discoverDatasources.sh"
-  discover "local" "$SCRIPT_PATH" "-model_file $wls_inventory_file"
+  # Input file as a parameter to the function
+  local wls_inventory_file="$1"
+
+  # Validate input file
+  if [[ -f "$wls_inventory_file" ]]; then
+      # If the file exists, use it
+      input_file="$wls_inventory_file"
+  elif [[ -f "$toolHome/out/$wls_inventory_file" ]]; then
+      # If not found directly, check in the tool's output directory
+      input_file="$toolHome/out/$wls_inventory_file"
+  else
+      # Log an error if the file is not found
+      log "error" "<discoverDomain><process_datasources><error> Model file [$wls_inventory_file] not found in [$toolHome/out]. Exiting."
+      exit 2
+  fi
+
+  # Path to the Python script for discovering datasources
+  PYTHON_SCRIPT="$toolHome/lib/python/discover_ds.py"
+
+  # Log the start of Python script execution
+  log "info" "Executing discover_ds.py on [$input_file]"
+  python3 "$PYTHON_SCRIPT" \
+          --input_model "$input_file" \
+          --env_file "$ON_PREM_ENV_FILE"
   exit_code=$?
-  log "info" "Executed discoverDatasources.sh with exit code [$exit_code]"
+  log "info" "Executed discover_ds.py with exit code [$exit_code]"
   if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
-      log "error" "<discoverDomain><process_datasources><error> Error executing datasource discovery"
+      log "error" "<discoverDomain><process_datasources><error> Error executing datasource discovery with exit code [$exit_code]."
       exit $exit_code
   fi
   log "info" "<discoverDomain><process_datasources><exit>"
