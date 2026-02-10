@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Copyright (c) 2026, Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 #
 #
@@ -49,9 +49,9 @@
 
 variable "image_instance_requirements" {
   type        = any
-  description = "The metadata info to send it to instance to determine if its ucm image based instance or not"
+  description = "The metadata info to send it to instance to determine if its UCM/BYOL image based instance or not"
   validation {
     condition = var.image_instance_requirements.agreement ? var.image_instance_requirements.tnc ? true : false: true
-    error_message = "Must accept Terms and Conditions for UCM Image selected"
+    error_message = "Must accept the Terms and Conditions for the Image selected"
   }
 }

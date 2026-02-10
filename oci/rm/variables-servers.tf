@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Copyright (c) 2026, Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 # Identity
@@ -44,9 +44,21 @@ variable "wlsserver_image_type" {
   }
 }
 
-variable "terms_and_conditions" {
+variable "terms_and_conditions_byol" {
   type        = bool
-  description = "Terms and conditions for user to accept Oracle WebLogic Server Enterprise Edition UCM or Oracle WebLogic Suite UCM license agreement"
+  description = "Terms and conditions for user to accept Oracle WebLogic Server Enterprise Edition BYOL Image or Oracle Weblogic Suite BYOL Image license agreement"
+  default     = false
+}
+
+variable "terms_and_conditions_ee_ucm" {
+  type        = bool
+  description = "Terms and conditions for user to accept Oracle WebLogic Server Enterprise Edition UCM Image license agreement"
+  default     = false
+}
+
+variable "terms_and_conditions_suite_ucm" {
+  type        = bool
+  description = "Terms and conditions for user to accept Oracle WebLogic Suite UCM Image license agreement"
   default     = false
 }
 

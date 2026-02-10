@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Copyright (c) 2026, Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 title: "Weblogic Migration: Restore a Weblogic Domain in Oracle Cloud Infrastructure"
@@ -152,7 +152,10 @@ variableGroups:
   - title: "Operating System Image"
     variables:
       - wlsserver_image_type
-      - terms_and_conditions
+      - terms_and_conditions_byol
+      - terms_and_conditions_ee_ucm
+      - terms_and_conditions_suite_ucm
+
       - wlsserver_image_platform_id
       - wlsserver_image_custom_id
 
@@ -602,7 +605,24 @@ variables:
       shape: ${wlsserver_shape}
     visible: false
 
-  terms_and_conditions:
+  terms_and_conditions_byol:
+    visible:
+      and:
+        - ${orm_create_mode}
+        - or:
+          - eq:
+            - wlsserver_image_type
+            - "Oracle WebLogic Server Enterprise Edition BYOL Image"
+          - eq:
+            - wlsserver_image_type
+            - "Oracle Weblogic Suite BYOL Image"
+    type: boolean
+    default: false
+    title: "I have reviewed and accept the Oracle Terms and Conditions"
+    description: "I have reviewed and accept the <a target=\"_blank\" href=\"https://cloud.oracle.com/plugins/pacman-prod-consumer-content/ocid1.mktpubtermversion.oc1.iad.amaaaaaadogctgialwvx57zzr43dhvruypxe37jxhd3qouwj43v5uolgiiwa.html\">Oracle terms and conditions</a>"
+    required: true
+
+  terms_and_conditions_ee_ucm:
     visible:
       and:
         - ${orm_create_mode}
@@ -610,13 +630,24 @@ variables:
           - eq:
             - wlsserver_image_type
             - "Oracle WebLogic Server Enterprise Edition UCM Image"
+    type: boolean
+    default: false
+    title: "I have reviewed and accept the Oracle Terms and Conditions"
+    description: "I have reviewed and accept the <a target=\"_blank\" href=\"https://objectstorage.us-phoenix-1.oraclecloud.com/n/axxu7cichsnt/b/terms/o/wlsoci_ee_terms_and_conditions.txt\">Oracle terms and conditions</a>"
+    required: true
+
+  terms_and_conditions_suite_ucm:
+    visible:
+      and:
+        - ${orm_create_mode}
+        - or:
           - eq:
             - wlsserver_image_type
             - "Oracle Weblogic Suite UCM Image"
     type: boolean
     default: false
-    title: "I have reviewed and accept the Oracle Terms of Use"
-    description: "I have reviewed and accept the <a target=\"_blank\" href=\"https://objectstorage.us-phoenix-1.oraclecloud.com/n/axxu7cichsnt/b/terms/o/wlsoci_ee_terms_and_conditions.txt\">Oracle terms of use</a>"
+    title: "I have reviewed and accept the Oracle Terms and Conditions"
+    description: "I have reviewed and accept the <a target=\"_blank\" href=\"https://cloud.oracle.com/plugins/pacman-prod-consumer-content/ocid1.mktpubtermversion.oc1.iad.amaaaaaadogctgia5fsgh6o2uh3hvbdju5mz2gvc4iffeodj76fiadw5s4cq.html\">Oracle terms and conditions</a>"
     required: true
 
   wlsserver_block_volume_type:
