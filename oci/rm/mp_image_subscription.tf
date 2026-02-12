@@ -1,17 +1,17 @@
-# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Copyright (c) 2025, 2026, Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 
 #Get EE BYOL Image Agreement
 resource "oci_core_app_catalog_listing_resource_version_agreement" "wls_mp_byol_image_agreement" {
-  count                    = var.use_marketplace_image ? 1 : 0
+  count                    = var.use_marketplace_image && var.terms_and_conditions_byol ? 1 : 0
   listing_id               = var.byol_listing_id
   listing_resource_version = var.byol_listing_resource_version
 }
 
 #Accept Terms and Subscribe to the image, placing the image in a particular compartment BYOL
 resource "oci_core_app_catalog_subscription" "wls_mp_byol_image_subscription" {
-  count                    = var.use_marketplace_image ? 1 : 0
+  count                    = var.use_marketplace_image && var.terms_and_conditions_byol ? 1 : 0
   compartment_id           = var.compartment_ocid
   eula_link                = oci_core_app_catalog_listing_resource_version_agreement.wls_mp_byol_image_agreement[0].eula_link
   listing_id               = oci_core_app_catalog_listing_resource_version_agreement.wls_mp_byol_image_agreement[0].listing_id
@@ -27,14 +27,14 @@ resource "oci_core_app_catalog_subscription" "wls_mp_byol_image_subscription" {
 
 #Get SUITE BYOL Image Agreement
 resource "oci_core_app_catalog_listing_resource_version_agreement" "wls_mp_suite_byol_image_agreement" {
-  count                    = var.use_marketplace_image ? 1 : 0
+  count                    = var.use_marketplace_image && var.terms_and_conditions_byol ? 1 : 0
   listing_id               = var.suite_byol_listing_id
   listing_resource_version = var.suite_byol_listing_resource_version
 }
 
 #Accept Terms and Subscribe to the image, placing the image in a particular compartment BYOL
 resource "oci_core_app_catalog_subscription" "wls_mp_suite_byol_image_subscription" {
-  count                    = var.use_marketplace_image ? 1 : 0
+  count                    = var.use_marketplace_image && var.terms_and_conditions_byol ? 1 : 0
   compartment_id           = var.compartment_ocid
   eula_link                = oci_core_app_catalog_listing_resource_version_agreement.wls_mp_suite_byol_image_agreement[0].eula_link
   listing_id               = oci_core_app_catalog_listing_resource_version_agreement.wls_mp_suite_byol_image_agreement[0].listing_id
@@ -50,14 +50,14 @@ resource "oci_core_app_catalog_subscription" "wls_mp_suite_byol_image_subscripti
 
 ##Subscribe to the EE UCM market place image only from BYOL bundles
 resource "oci_core_app_catalog_listing_resource_version_agreement" "wls_mp_ucm_image_agreement" {
-  count                    = var.use_marketplace_image && var.terms_and_conditions ? 1 : 0
+  count                    = var.use_marketplace_image && var.terms_and_conditions_ee_ucm ? 1 : 0
   listing_id               = var.ucm_listing_id
   listing_resource_version = var.ucm_listing_resource_version
 }
 
 #Accept Terms and Subscribe to the image, placing the image in a particular compartment - EE
 resource "oci_core_app_catalog_subscription" "wls_mp_ucm_image_subscription" {
-  count                    = var.use_marketplace_image && var.terms_and_conditions ? 1 : 0
+  count                    = var.use_marketplace_image && var.terms_and_conditions_ee_ucm ? 1 : 0
   compartment_id           = var.compartment_ocid
   eula_link                = oci_core_app_catalog_listing_resource_version_agreement.wls_mp_ucm_image_agreement[0].eula_link
   listing_id               = oci_core_app_catalog_listing_resource_version_agreement.wls_mp_ucm_image_agreement[0].listing_id
@@ -73,14 +73,14 @@ resource "oci_core_app_catalog_subscription" "wls_mp_ucm_image_subscription" {
 
 # SUITE
 resource "oci_core_app_catalog_listing_resource_version_agreement" "wls_mp_suite_ucm_image_agreement" {
-  count                    = var.use_marketplace_image && var.terms_and_conditions ? 1 : 0
+  count                    = var.use_marketplace_image && var.terms_and_conditions_suite_ucm ? 1 : 0
   listing_id               = var.suite_ucm_listing_id
   listing_resource_version = var.suite_ucm_listing_resource_version
 }
 
 #Accept Terms and Subscribe to the image, placing the image in a particular compartment - SUITE
 resource "oci_core_app_catalog_subscription" "wls_mp_suite_ucm_image_subscription" {
-  count                    = var.use_marketplace_image && var.terms_and_conditions ? 1 : 0
+  count                    = var.use_marketplace_image && var.terms_and_conditions_suite_ucm ? 1 : 0
   compartment_id           = var.compartment_ocid
   eula_link                = oci_core_app_catalog_listing_resource_version_agreement.wls_mp_suite_ucm_image_agreement[0].eula_link
   listing_id               = oci_core_app_catalog_listing_resource_version_agreement.wls_mp_suite_ucm_image_agreement[0].listing_id

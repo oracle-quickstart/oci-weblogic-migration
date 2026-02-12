@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Copyright (c) 2025, 2026, Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 
@@ -9,13 +9,13 @@ locals{
       listing_id = var.byol_listing_id,
       listing_resource_version= var.byol_listing_resource_version,
       instance_image_id = var.byol_instance_image_id
-      agreement_needed = false
+      agreement_needed = true
     }
     suite-byol = {
       listing_id = var.suite_byol_listing_id,
       listing_resource_version= var.suite_byol_listing_resource_version,
       instance_image_id = var.suite_byol_instance_image_id
-      agreement_needed = false
+      agreement_needed = true
     }
     ee-ucm = {
       listing_id = var.ucm_listing_id,
@@ -46,6 +46,13 @@ locals{
     ["ee-ucm", "suite-ucm", "ee-byol", "suite-byol", "custom", "platform"]
   )
 
+  terms_and_conditions_map = {
+    ee-byol    = var.terms_and_conditions_byol
+    suite-byol = var.terms_and_conditions_byol
+    ee-ucm     = var.terms_and_conditions_ee_ucm
+    suite-ucm  = var.terms_and_conditions_suite_ucm
+  }
+
   image_type_selected_key          = local.marketplace_images_schema_map[var.wlsserver_image_type]
   vm_instance_image_id  = lookup(local.marketplace_images_map[local.image_type_selected_key],"instance_image_id","ohhh")
   listing_id_selected = lookup(local.marketplace_images_map[local.image_type_selected_key],"listing_id", "none")
@@ -53,7 +60,11 @@ locals{
   vm_scripts_path_selected = lookup(local.marketplace_images_map[local.image_type_selected_key],"vm_scripts_path", null )
 
   vm_instance_image_requirements = {
-    tnc = var.terms_and_conditions
+    tnc = lookup(
+      local.terms_and_conditions_map,
+      local.image_type_selected_key,
+      false
+    )
     agreement = lookup(local.marketplace_images_map[local.image_type_selected_key],"agreement_needed", false)
   }
 
