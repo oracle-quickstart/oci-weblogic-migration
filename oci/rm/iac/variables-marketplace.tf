@@ -49,7 +49,7 @@
 
 variable "image_instance_requirements" {
   type        = any
-  description = "The metadata info to send it to instance to determine if its UCM/BYOL image based instance or not"
+  description = "The metadata info to send it to instance to determine if it is UCM/BYOL image based instance"
   validation {
     condition = var.image_instance_requirements.agreement ? var.image_instance_requirements.tnc ? true : false: true
     error_message = "Must accept the Terms and Conditions for the Image selected"
