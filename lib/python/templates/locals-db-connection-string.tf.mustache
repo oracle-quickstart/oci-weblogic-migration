@@ -1,4 +1,4 @@
-# Copyright (c) 2025, 2026 Oracle Corporation and/or its affiliates.
+# Copyright (c) 2025, 2026, Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 # shellcheck disable=SC1091
 # This is an auto-generated file.
@@ -10,7 +10,7 @@ locals {
     #   - find database home
     #   - get field connection_strings and cdb_default to have easy connect string.
     #   - if pdbname is !="", replace cdb string with pdb, else assume connection is to cdb.
-    #   - replace(connetion, cdb, pdb_name)
+    #   - replace(connection, cdb, pdb_name)
     #   db_unique_name or cdb#
     #    "Database System" = one(data.oci_database_database.ocidb_database_1).db_unique_name #,
     #        "Database System" = var.oci_db_pdb_service_name_1 #)
@@ -29,14 +29,7 @@ locals {
 {{#datasources}}
     {{{datasourceName}}} = {
             on_prem = var.ds_{{{datasourceName}}}
-            oci = (
-              startswith(
-                trimspace(try(local.db_options_{{{datasourceName}}}[var.db_strategy_{{{datasourceName}}}], "")),
-                local.jdbc_driver_thin_string
-              )
-              ? trimspace(try(local.db_options_{{{datasourceName}}}[var.db_strategy_{{{datasourceName}}}], ""))
-              : format("%s%s", local.jdbc_driver_thin_string, trimspace(try(local.db_options_{{{datasourceName}}}[var.db_strategy_{{{datasourceName}}}], "")))
-            )
+            oci = startswith(local.oci_trimmed_{{{datasourceName}}},local.jdbc_driver_thin_string) ? local.oci_trimmed_{{{datasourceName}}} : format("%s%s", local.jdbc_driver_thin_string, local.oci_trimmed_{{{datasourceName}}})
             is_atp = trimspace(var.atp_db_id_{{{datasourceName}}} != ""
             is_oci_db = local.is_oci_db_{{{datasourceName}}}
             db_id = coalesce(var.atp_db_id_{{{datasourceName}}}, var.oci_db_dbsystem_id_{{{datasourceName}}}, "none")
@@ -58,6 +51,7 @@ locals {
 # Database
 locals {
 {{#datasources}}
+    oci_trimmed_{{{datasourceName}}} = trimspace(try(local.db_options_{{{datasourceName}}}[var.db_strategy_{{{datasourceName}}}], "empty"))
     is_atp_db_{{{datasourceName}}} = trimspace(var.atp_db_id_{{{datasourceName}}}) != ""
     is_atp_dedicated_{{{datasourceName}}} = try(one(data.oci_database_autonomous_database.atp_db_{{{datasourceName}}}).is_dedicated,"none")
     is_atp_with_private_endpoints_{{{datasourceName}}} = local.is_atp_db_{{{datasourceName}}} ? var.atp_db_uses_private_endpoint_{{{datasourceName}}} : false

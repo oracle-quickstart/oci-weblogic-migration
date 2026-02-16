@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Copyright (c) 2025, 2026, Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 fileName=$(basename $BASH_SOURCE)
@@ -50,7 +50,16 @@ cd "${domain_home}/config/jdbc" || (echo "Failed to cd to ${domain_home}/config/
   on_prem_jdbc_string="${jdbc_string.on_prem}"
   oci_jdbc_string="${jdbc_string.oci}"
 
-  #Opening port in the subnet of the selected ATP with private endpoint or OCI Database, if the checkbox is checked.
+  # Fail if OCI JDBC string is required but invalid.
+  if [[ $is_atp == "true" ]] || [[ $is_oci_db == "true" ]] || [[ "$is_custom_jdbc" == "true" ]]; then
+     if [[ "$oci_jdbc_string" == "jdbc:oracle:thin:@empty" ]]; then
+       echo "Invalid OCI JDBC string for datasource '${config_key}'. is_atp=$is_atp, is_oci_db=$is_oci_db, is_custom_jdbc=$is_custom_jdbc, oci_jdbc_string='$oci_jdbc_string'" \
+         | log | tee -a "$log_file" >> "$error_log_file"
+       exit 1
+     fi
+  fi
+
+  # Opening port in the subnet of the selected ATP with private endpoint or OCI Database, if the checkbox is checked.
   if [[ "$is_admin_instance" == "true" ]] && [[ "${jdbc_string.existing_vcn_add_seclist}" == "true" ]]; then
      output=$(python3 /opt/scripts/open_db_port.py "${config_key}" "${jdbc_string.db_port}" "${jdbc_string.db_network_compartment_id}" "${jdbc_string.db_existing_vcn_id}" "${jdbc_string.db_subnet_id}" 2>&1)
      exit_code=$?
