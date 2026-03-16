@@ -1,22 +1,50 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Multi-node WLS migration archiver (Python 3, no WDT/WLST imports)
+# Copyright (c) 2025, 2026, Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-Behavior (UPDATED)
+"""
+Multi-node WLS migration archiver
+Creates per-host archives (domain home, WebLogic home, Java home, and custom directories),
+handles remote archive generation over SSH, downloads archives to the admin host,
+and supports (optional) uploading them to OCI Object Storage.
+
+Behavior
 ------------------
 Per host:
-  0) SSH precheck
-  1) Estimate largest archive input size for that host (remote du-based).
-  2) If admin does NOT have enough space to receive the largest tar for that host:
+  0) SSH precheck (remote: `echo OK`)
+     - If SSH fails:
+       * Print WARNING (WLSDPLY-05027)
+       * Print TODO tar commands to create archives manually (WLSDPLY-06042)
+       * Skip further processing for that host
+
+  1) Estimate archive input sizes for that host (remote du-based; per archive type).
+     - If du estimation fails:
+       * Print WARNING (WLSDPLY-05027)
+       * Print TODO tar commands (WLSDPLY-06042)
+       * Skip further processing for that host
+
+  2) Admin space gating (based on the largest estimated archive input size + headroom):
+     If admin does NOT have enough space to receive the largest archive for that host:
        - Create ALL tars on that host in /tmp (tar-by-tar, with /tmp space checks)
        - Do NOT SCP or upload anything for that host
-       - Leave all tars in /tmp on that host
-       - Print WARNING with admin free/required info
-       - Print TODO with manual scp + OCI put commands (OCI CLI only on admin)
-  3) Else (admin has enough for largest):
-       For each archive type:
-         tar on remote -> scp to admin out -> (optional) oci put -> cleanup remote+local -> next
+       - Leave all generated tars in /tmp on that host
+       - Print WARNING (WLSDPLY-05028) with admin free/required info
+       - Print TODO with manual scp commands (WLSDPLY-06043) to copy archives to tool_home/out on the admin host
+       - If skip_transfer=false, also print TODO with manual OCI put commands (WLSDPLY-06044) to be run on the admin host
+         after manually SCP’ing the archive(s) to tool_home/out (as per WLSDPLY-06043).
+       - Note: OCI CLI usage is expected on the admin host
+
+  3) Else (admin has enough space for the largest):
+     For each archive type (java_home, domain_home, weblogic_home, and custom_dirs if present):
+       1) Create tar.gz on the remote host under /tmp
+       2) SCP the tar.gz to the admin host output directory (tool_home/out)
+       3) If skip_transfer=false:
+            - Ensure the OCI Object Storage bucket exists (create if needed)
+            - Upload the tar.gz to OCI (oci os object put)
+            - Cleanup: delete both local and remote tar.gz after successful upload
+          If skip_transfer=true:
+            - Skip bucket validation and OCI upload entirely
+            - Cleanup: delete the remote tar.gz only
+            - Retain the local tar.gz in tool_home/out on the admin host (OCI CLI only on admin)
 
 Output format
 -------------
@@ -24,24 +52,14 @@ WARNING Messages:
         N. WLSDPLY-.....
 TODO Messages:
         N. WLSDPLY-.....
-Tar TODO format matches the intended "cd / && tar ..." style.
+Tar TODO format matches the intended "cd / && /usr/bin/tar ..." style.
 
 Logging
 -------
 All command outputs and INFO messages are appended to:
   tool_home/logs/migration_script.log
-
-Security note
--------------
-Archives may contain sensitive data (keystores, configs). Handle per Oracle/customer security & compliance.
-
-Notes / fixes included in this version
---------------------------------------
-- FIX: MessageCollector methods properly indented (no accidental top-level def / nested methods)
-- FIX: log_info() safely handles log_file=None
-- IMPROVE: ensure_bucket() includes --namespace-name for "bucket get" (common OCI CLI requirement)
-  (Verify your OCI CLI version/standards; some environments require additional flags/policies.)
 """
+
 import argparse
 import json
 import shlex
@@ -112,7 +130,7 @@ def fmt_bytes(n: int) -> str:
 def run_local(cmd: List[str], log_file: Optional[str] = None) -> Tuple[int, str]:
     """
     Run a local command and optionally append redacted command + combined output to log_file.
-    Captures stdout+stderr (merged).
+    Captures stdout+stderr.
     """
     kwargs: Dict[str, Any] = dict(stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if sys.version_info >= (3, 7):
@@ -178,7 +196,7 @@ def scp_get(
 
 
 def load_env_from_on_prem_env(on_prem_env_path: str) -> Dict[str, str]:
-    """Load key=value pairs from on-prem.env (no shell execution)."""
+    """Load key=value pairs from on-prem.env."""
     p = Path(on_prem_env_path)
     if not p.is_file():
         raise RuntimeError(f"Env file not found: {on_prem_env_path}")
@@ -340,7 +358,7 @@ def tar_many_dirs_cmd(src_dirs: List[str], out_file: str) -> str:
 
 def ensure_bucket(namespace: str, bucket: str, compartment_id: str, log_file: str) -> int:
     """
-    Ensure OCI Object Storage bucket exists (best-effort).
+    Ensure OCI Object Storage bucket exists.
     Common CLI requirement: include --namespace-name for bucket get.
     """
     rc, _ = run_local(
@@ -392,7 +410,7 @@ def delete_remote_file(
 
 
 class MessageCollector:
-    """Collect and print WARNING and TODO messages in required WLSDPLY-xxxxx format."""
+    """Collect and print WARNING and TODO messages in WLSDPLY-xxxxx format."""
 
     def __init__(self):
         self.warnings: List[str] = []
