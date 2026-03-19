@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2025, Oracle Corporation and/or its affiliates.
+# Copyright (c) 2025, 2026, Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
 
 #############################################################################################################################
@@ -187,56 +187,42 @@ process_datasources(){
   log "info" "<discoverDomain><process_datasources><exit>"
 }
 
-function process_archives() {
-  log "info" "<discoverDomain><process_archives><entry> args: $*"
-  wls_inventory_file=$1
+process_archives() {
+  local wls_inventory_file="$1"
+  local input_file=""
 
-  SPACE_PRECHECK=$(python3 "$toolHome/lib/python/space_precheck.py" --infrafile "$wls_inventory_file" 2>&1)
-  SPACE_RETURNCODE=$?
-  log "info" "<process_archives><space_precheck_output> $SPACE_PRECHECK"
-
-  # checking if the admin returncode value is other than 0/1 then log an error and exit
-  if [ $SPACE_RETURNCODE -ne 0 ] && [ $SPACE_RETURNCODE -ne 1 ]; then
-      log "error" "<discoverDomain><process_archives><error> Space precheck failed with some error. exiting."
-      exit 1
+  if [[ -f "$wls_inventory_file" ]]; then
+      input_file="$wls_inventory_file"
+  elif [[ -f "$toolHome/out/$wls_inventory_file" ]]; then
+      input_file="$toolHome/out/$wls_inventory_file"
+  else
+      log "error" "<discoverDomain><process_archives><error> Model file [$wls_inventory_file] not found in [$toolHome/out]. Exiting."
+      exit 2
   fi
 
-  SPACE_JSON=$(echo "$SPACE_PRECHECK" | grep -o '{.*}')
-  PER_ARCHIVE_RETURNCODE=$(echo "$SPACE_PRECHECK" | grep -Eo 'Per archive returncode: [0-9]+' | awk '{print $4}')
+  local PYTHON_SCRIPT="$toolHome/lib/python/archive_infra.py"
 
-  export SPACE_STATUS_JSON="$SPACE_JSON"
-  export SPACE_ADMIN_RETURNCODE=$SPACE_RETURNCODE
-  export SPACE_PER_ARCHIVE_RETURNCODE=$PER_ARCHIVE_RETURNCODE
+  log "info" "Executing archive_infra.py on [$input_file]"
+  python3 "$PYTHON_SCRIPT" \
+      --input-model "$input_file" \
+      --tool-home "$toolHome"
 
-  shift
-  SCRIPT_PATH="$toolHome/bin/archiveWLSDomain.sh"
-  local model_file_arg=""
-     if [[ -f $wls_inventory_file ]]; then
-        model_file_arg="-model_file $wls_inventory_file"
-     elif [[ -f "$toolHome/out/$wls_inventory_file" ]]; then
-        model_file_arg="-model_file $toolHome/out/$wls_inventory_file"
-     else
-         log "error" "<discoverDomain><process_archives><error> model_file $wls_inventory_file not found. exiting."
-         exit 1
-     fi
-     local ssh_args
-     ssh_args=$(get_ssh_args) # Get SSH options from helper
-     discover "local" "$SCRIPT_PATH" "$model_file_arg" "-remote_output_dir /tmp" "-local_output_dir $toolHome/out" "$@" "$ssh_args"
-     exit_code=$?
-     log "info" "Executed create archive with exit code [$exit_code]"
-     if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
-         log "error" "<discoverDomain><process_archives><error> Error executing archives"
-         exit $exit_code
-     fi
+  exit_code=$?
+  log "info" "Executed archive_infra.py with exit code [$exit_code]"
 
-     if [ $exit_code -eq 1 ]; then
-         log "warning" "<discoverDomain><process_archives><warning> Archive executed with some warning"
-         exit $exit_code
-     fi
+  if [ $exit_code -ne 0 ] && [ $exit_code -ne 1 ]; then
+      log "error" "<discoverDomain><process_archives><error> Error executing archive infra with exit code [$exit_code]."
+      exit $exit_code
+  fi
 
-     log "info" "<discoverDomain><process_archives><exit> Archives created successfully!"
+  if [ $exit_code -eq 1 ]; then
+      log "warning" "<discoverDomain><process_archives><warning> Archive executed with warnings"
+      exit $exit_code
+  fi
 
+  log "info" "<discoverDomain><process_archives><exit>"
 }
+
 upload_to_oci(){
   local inventory_file=$1
   local archive_folder_name=$2
@@ -327,7 +313,7 @@ case "$1" in
     "archive")
        load_config "$ON_PREM_ENV_FILE"
        shift
-       process_archives "$@"
+       process_archives "$1"
        ;;
     "lift")
        load_config "$ON_PREM_ENV_FILE"
